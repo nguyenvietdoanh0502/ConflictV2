@@ -1,0 +1,71 @@
+package com.conflict.be.core.exception;
+
+import com.conflict.be.core.common.ApiResponse;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ControllerAdvice;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.dao.DataIntegrityViolationException;
+
+import java.nio.file.AccessDeniedException;
+
+@ControllerAdvice
+@Slf4j
+public class GlobalExceptionHandler {
+
+    @ExceptionHandler(value = Exception.class)
+    ResponseEntity<ApiResponse<Void>> handlingRuntimeException(RuntimeException exception) {
+        log.error("Exception: ", exception);
+        ApiResponse<Void> apiResponse = ApiResponse.error(ErrorCode.UNCATEGORIZED_EXCEPTION.getMessage(), 
+                ErrorCode.UNCATEGORIZED_EXCEPTION.getCode());
+
+        return ResponseEntity.badRequest().body(apiResponse);
+    }
+
+    @ExceptionHandler(value = DataIntegrityViolationException.class)
+    ResponseEntity<ApiResponse<Void>> handlingDataIntegrityViolationException(DataIntegrityViolationException exception) {
+        log.error("DataIntegrityViolationException: ", exception);
+        ErrorCode errorCode = ErrorCode.USER_EXISTED; // Assuming duplicate key is for email or pin code
+        ApiResponse<Void> apiResponse = ApiResponse.error(errorCode.getMessage(), errorCode.getCode());
+
+        return ResponseEntity.status(400).body(apiResponse);
+    }
+
+    @ExceptionHandler(value = AppException.class)
+    ResponseEntity<ApiResponse<Void>> handlingAppException(AppException exception) {
+        ErrorCode errorCode = exception.getErrorCode();
+        ApiResponse<Void> apiResponse = ApiResponse.error(errorCode.getMessage(), errorCode.getCode());
+
+        return ResponseEntity.status(400).body(apiResponse);
+    }
+
+    @ExceptionHandler(value = AccessDeniedException.class)
+    ResponseEntity<ApiResponse<Void>> handlingAccessDeniedException(AccessDeniedException exception) {
+        ErrorCode errorCode = ErrorCode.UNAUTHORIZED;
+        ApiResponse<Void> apiResponse = ApiResponse.error(errorCode.getMessage(), errorCode.getCode());
+
+        return ResponseEntity.status(403).body(apiResponse);
+    }
+
+    @ExceptionHandler(value = MethodArgumentNotValidException.class)
+    ResponseEntity<ApiResponse<Void>> handlingValidation(MethodArgumentNotValidException exception) {
+        String enumKey = exception.hasFieldErrors() 
+                ? exception.getFieldError().getDefaultMessage() 
+                : exception.getGlobalError().getDefaultMessage();
+
+        ErrorCode errorCode = ErrorCode.INVALID_KEY;
+
+        try {
+            if (enumKey != null) {
+                errorCode = ErrorCode.valueOf(enumKey);
+            }
+        } catch (IllegalArgumentException e) {
+            log.error("Invalid ErrorCode key: {}", enumKey);
+        }
+
+        ApiResponse<Void> apiResponse = ApiResponse.error(errorCode.getMessage(), errorCode.getCode());
+
+        return ResponseEntity.badRequest().body(apiResponse);
+    }
+}
