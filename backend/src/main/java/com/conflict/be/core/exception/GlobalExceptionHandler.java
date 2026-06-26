@@ -17,41 +17,53 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(value = Exception.class)
     ResponseEntity<ApiResponse<Void>> handlingRuntimeException(RuntimeException exception) {
         log.error("Exception: ", exception);
-        ApiResponse<Void> apiResponse = ApiResponse.error(ErrorCode.UNCATEGORIZED_EXCEPTION.getMessage(), 
-                ErrorCode.UNCATEGORIZED_EXCEPTION.getCode());
+        ErrorCode errorCode = ErrorCode.UNCATEGORIZED_EXCEPTION;
+        ApiResponse<Void> apiResponse = ApiResponse.error(
+                errorCode.getHttpStatus(),
+                errorCode.getMessage(),
+                errorCode.getCode());
 
-        return ResponseEntity.badRequest().body(apiResponse);
+        return ResponseEntity.status(errorCode.getHttpStatus()).body(apiResponse);
     }
 
     @ExceptionHandler(value = DataIntegrityViolationException.class)
     ResponseEntity<ApiResponse<Void>> handlingDataIntegrityViolationException(DataIntegrityViolationException exception) {
         log.error("DataIntegrityViolationException: ", exception);
-        ErrorCode errorCode = ErrorCode.USER_EXISTED; // Assuming duplicate key is for email or pin code
-        ApiResponse<Void> apiResponse = ApiResponse.error(errorCode.getMessage(), errorCode.getCode());
+        ErrorCode errorCode = ErrorCode.USER_EXISTED;
+        ApiResponse<Void> apiResponse = ApiResponse.error(
+                errorCode.getHttpStatus(),
+                errorCode.getMessage(),
+                errorCode.getCode());
 
-        return ResponseEntity.status(400).body(apiResponse);
+        return ResponseEntity.status(errorCode.getHttpStatus()).body(apiResponse);
     }
 
     @ExceptionHandler(value = AppException.class)
     ResponseEntity<ApiResponse<Void>> handlingAppException(AppException exception) {
         ErrorCode errorCode = exception.getErrorCode();
-        ApiResponse<Void> apiResponse = ApiResponse.error(errorCode.getMessage(), errorCode.getCode());
+        ApiResponse<Void> apiResponse = ApiResponse.error(
+                errorCode.getHttpStatus(),
+                errorCode.getMessage(),
+                errorCode.getCode());
 
-        return ResponseEntity.status(400).body(apiResponse);
+        return ResponseEntity.status(errorCode.getHttpStatus()).body(apiResponse);
     }
 
     @ExceptionHandler(value = AccessDeniedException.class)
     ResponseEntity<ApiResponse<Void>> handlingAccessDeniedException(AccessDeniedException exception) {
         ErrorCode errorCode = ErrorCode.UNAUTHORIZED;
-        ApiResponse<Void> apiResponse = ApiResponse.error(errorCode.getMessage(), errorCode.getCode());
+        ApiResponse<Void> apiResponse = ApiResponse.error(
+                errorCode.getHttpStatus(),
+                errorCode.getMessage(),
+                errorCode.getCode());
 
-        return ResponseEntity.status(403).body(apiResponse);
+        return ResponseEntity.status(errorCode.getHttpStatus()).body(apiResponse);
     }
 
     @ExceptionHandler(value = MethodArgumentNotValidException.class)
     ResponseEntity<ApiResponse<Void>> handlingValidation(MethodArgumentNotValidException exception) {
-        String enumKey = exception.hasFieldErrors() 
-                ? exception.getFieldError().getDefaultMessage() 
+        String enumKey = exception.hasFieldErrors()
+                ? exception.getFieldError().getDefaultMessage()
                 : exception.getGlobalError().getDefaultMessage();
 
         ErrorCode errorCode = ErrorCode.INVALID_KEY;
@@ -64,8 +76,11 @@ public class GlobalExceptionHandler {
             log.error("Invalid ErrorCode key: {}", enumKey);
         }
 
-        ApiResponse<Void> apiResponse = ApiResponse.error(errorCode.getMessage(), errorCode.getCode());
+        ApiResponse<Void> apiResponse = ApiResponse.error(
+                errorCode.getHttpStatus(),
+                errorCode.getMessage(),
+                errorCode.getCode());
 
-        return ResponseEntity.badRequest().body(apiResponse);
+        return ResponseEntity.status(errorCode.getHttpStatus()).body(apiResponse);
     }
 }

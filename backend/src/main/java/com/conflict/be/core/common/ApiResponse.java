@@ -14,6 +14,7 @@ import java.time.Instant;
 @NoArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ApiResponse<T> {
+    private int code;
     private String status;
     private String message;
     private T data;
@@ -23,6 +24,7 @@ public class ApiResponse<T> {
 
     public static <T> ApiResponse<T> success(T data) {
         return ApiResponse.<T>builder()
+                .code(200)
                 .status("success")
                 .data(data)
                 .build();
@@ -30,21 +32,24 @@ public class ApiResponse<T> {
 
     public static <T> ApiResponse<T> success(String message, T data) {
         return ApiResponse.<T>builder()
+                .code(200)
                 .status("success")
                 .message(message)
                 .data(data)
                 .build();
     }
 
-    public static <T> ApiResponse<T> error(String message) {
+    public static <T> ApiResponse<T> error(int code, String message) {
         return ApiResponse.<T>builder()
+                .code(code)
                 .status("error")
                 .message(message)
                 .build();
     }
 
-    public static <T> ApiResponse<T> error(String message, String errorCode) {
+    public static <T> ApiResponse<T> error(int code, String message, String errorCode) {
         return ApiResponse.<T>builder()
+                .code(code)
                 .status("error")
                 .message(message)
                 .errorCode(errorCode)
