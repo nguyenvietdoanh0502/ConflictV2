@@ -22,6 +22,9 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+
+import com.conflict.be.modules.auth.service.OtpService.OtpType;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -71,7 +74,7 @@ public class AuthControllerTest {
                     .build();
 
             Mockito.when(userRepository.save(any(User.class))).thenReturn(savedUser);
-            Mockito.when(otpService.generateAndSaveOtp(any())).thenReturn("123456");
+            Mockito.when(otpService.generateAndSaveOtp(anyString(), any(OtpType.class))).thenReturn("123456");
 
             // Act & Assert
             mockMvc.perform(post("/api/v1/auth/register")
@@ -110,7 +113,7 @@ public class AuthControllerTest {
             mockMvc.perform(post("/api/v1/auth/register")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)))
-                    .andExpect(status().isBadRequest())
+                    .andExpect(status().isConflict())
                     .andExpect(jsonPath("$.status").value("error"))
                     .andExpect(jsonPath("$.errorCode").value("USER_EXISTED"))
                     .andExpect(jsonPath("$.message").value("User existed"));

@@ -33,4 +33,19 @@ public class MailService {
             log.error("Failed to send OTP email to {}", toEmail, e);
         }
     }
+    @Async
+    public void sendOtpEmailForResetPassword(String toEmail, String otpCode) {
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(fromEmail);
+            message.setTo(toEmail);
+            message.setSubject("Roamly - Verify Your Reset Password");
+            message.setText("Welcome to Roamly! Your OTP code for reset password is: " + otpCode + "\n\nThis code will expire in 5 minutes.");
+
+            mailSender.send(message);
+            log.info("OTP email sent successfully to {}", toEmail);
+        } catch (Exception e) {
+            log.error("Failed to send OTP email to {}", toEmail, e);
+        }
+    }
 }

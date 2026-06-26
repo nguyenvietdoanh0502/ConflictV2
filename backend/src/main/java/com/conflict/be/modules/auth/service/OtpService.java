@@ -14,25 +14,36 @@ public class OtpService {
     private final StringRedisTemplate redisTemplate;
     private final SecureRandom secureRandom = new SecureRandom();
 
-    private static final String OTP_PREFIX = "otp:register:";
     private static final long OTP_TTL_MINUTES = 5;
 
-    public String generateAndSaveOtp(String email) {
-        // Generate a 6-digit OTP
+    public enum OtpType {
+        REGISTER("otp:register:"),
+        FORGOT_PASSWORD("otp:forgot:");
+
+        private final String prefix;
+
+        OtpType(String prefix) {
+            this.prefix = prefix;
+        }
+
+        public String getPrefix() {
+            return prefix;
+        }
+    }
+
+    public String generateAndSaveOtp(String email, OtpType type) {
         int otpNumber = 100000 + secureRandom.nextInt(900000);
         String otpCode = String.valueOf(otpNumber);
 
-        // Save to Redis with 5 minutes TTL
-        redisTemplate.opsForValue().set(OTP_PREFIX + email, otpCode, Duration.ofMinutes(OTP_TTL_MINUTES));
+        redisTemplate.opsForValue().set(type.getPrefix() + email, otpCode, Duration.ofMinutes(OTP_TTL_MINUTES));
 
         return otpCode;
     }
 
-    public boolean verifyOtp(String email, String otpCode) {
-        String savedOtp = redisTemplate.opsForValue().get(OTP_PREFIX + email);
+    public boolean verifyOtp(String email, String otpCode, OtpType type) {
+        String savedOtp = redisTemplate.opsForValue().get(type.getPrefix() + email);
         if (savedOtp != null && savedOtp.equals(otpCode)) {
-            // Delete OTP after successful verification
-            redisTemplate.delete(OTP_PREFIX + email);
+            redisTemplate.delete(type.getPrefix() + email);
             return true;
         }
         return false;
