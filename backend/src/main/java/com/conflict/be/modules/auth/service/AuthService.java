@@ -42,6 +42,8 @@ public class AuthService {
     private long jwtExpiration;
     @Value("${conflict.jwt.refresh-token-expiration}")
     private long refreshExpiration;
+    @Value("${conflict.jwt.reset-password-expiration}")
+    private long resetExpiration;
 
     public void register(RegisterRequest request) {
         UserRegistrationCommand command = UserRegistrationCommand.builder()
@@ -193,7 +195,7 @@ public class AuthService {
         redisTemplate.opsForValue().set(
                 redisKey,
                 resetToken,
-                Duration.ofMillis(jwtExpiration)
+                Duration.ofMillis(resetExpiration)
         );
         return VerifyOtpForgotPasswordResponse.builder().resetToken(resetToken).build();
     }
