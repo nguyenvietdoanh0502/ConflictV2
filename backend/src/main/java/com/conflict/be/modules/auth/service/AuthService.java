@@ -40,6 +40,10 @@ public class AuthService {
 
     @Value("${conflict.jwt.access-token-expiration}")
     private long jwtExpiration;
+    @Value("${conflict.jwt.refresh-token-expiration}")
+    private long refreshExpiration;
+    @Value("${conflict.jwt.reset-password-expiration}")
+    private long resetExpiration;
 
     public void register(RegisterRequest request) {
         UserRegistrationCommand command = UserRegistrationCommand.builder()
@@ -104,12 +108,12 @@ public class AuthService {
                 .expiresIn(jwtExpiration / 1000)
                 .build();
     }
-    public RefreshTokenResponse refreshToken(RefreshTokenRequest request){
-        UserDetails userDetails = jwtProvider.validateRefreshToken(request.getRefreshToken());
+    public RefreshTokenResponse refreshToken(String request){
+        UserDetails userDetails = jwtProvider.validateRefreshToken(request);
         String email = userDetails.getUsername();
         String redisKey = "refresh:" + email;
         String storedToken = redisTemplate.opsForValue().get(redisKey);
-        if(storedToken==null || !storedToken.equals(request.getRefreshToken())){
+        if(storedToken==null || !storedToken.equals(request)){
             throw new AppException(ErrorCode.INVALID_REFRESH_TOKEN);
         }
 
@@ -191,7 +195,7 @@ public class AuthService {
         redisTemplate.opsForValue().set(
                 redisKey,
                 resetToken,
-                Duration.ofMillis(jwtExpiration)
+                Duration.ofMillis(resetExpiration)
         );
         return VerifyOtpForgotPasswordResponse.builder().resetToken(resetToken).build();
     }
@@ -237,6 +241,13 @@ public class AuthService {
         String accessToken = jwtProvider.generateToken(userDetails);
         String refreshToken = jwtProvider.generateRefreshToken(userDetails);
 
+        String redisKey = "refresh:"+userDTO.getEmail();
+
+        redisTemplate.opsForValue().set(
+                redisKey,
+                refreshToken,
+                Duration.ofMillis(refreshExpiration)
+        );
         return AuthResponse.builder()
                 .user(userDTO)
                 .accessToken(accessToken)
