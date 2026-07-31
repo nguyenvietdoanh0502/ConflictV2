@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import logoWordmark from "../assets/logo3.png";
 
 const categories = [
   {
@@ -217,64 +217,19 @@ export default function HomePage() {
         <div className="absolute inset-0 bg-gradient-to-b from-[#141414]/80 via-[#141414]/20 to-[#141414]" />
         <div className="absolute inset-0 bg-gradient-to-r from-[#141414]/30 via-transparent to-[#141414]/30" />
 
-        <header className="relative z-20 mx-auto flex max-w-[1440px] items-center justify-between px-5 py-6 sm:px-8 lg:px-12 lg:py-8">
-          <img
-            className="h-auto w-[145px] sm:w-[166px]"
-            src="/home/icons/logo.svg"
-            alt="StreamVibe"
-          />
-
-          <nav
-            className="hidden items-center gap-1 rounded-xl border-4 border-[#1F1F1F] bg-[#0F0F0F] p-2 lg:flex"
-            aria-label="Điều hướng chính"
-          >
-            <span className="rounded-lg bg-[#1A1A1A] px-5 py-3 text-sm font-medium text-white">
-              Trang chủ
-            </span>
-            {["Phim & Chương trình", "Hỗ trợ", "Gói dịch vụ"].map((item) => (
-              <span
-                key={item}
-                className="px-5 py-3 text-sm text-[#BFBFBF]"
-              >
-                {item}
-              </span>
-            ))}
-          </nav>
-
-          <div className="flex items-center gap-2 sm:gap-5">
-            <button
-              type="button"
-              className="grid h-9 w-9 place-items-center rounded-lg transition hover:bg-black/30"
-              aria-label="Tìm kiếm"
-            >
-              <img
-                className="h-6 w-6"
-                src="/home/icons/search.svg"
-                alt=""
-              />
-            </button>
-            <button
-              type="button"
-              className="relative hidden h-9 w-9 place-items-center rounded-lg transition hover:bg-black/30 sm:grid"
-              aria-label="Thông báo"
-            >
-              <img className="h-6 w-6" src="/home/icons/bell.svg" alt="" />
-              <span className="absolute right-1 top-1 h-2 w-2 rounded-full border-2 border-[#141414] bg-[#E50000]" />
-            </button>
-            <Link
-              to="/login"
-              className="rounded-lg bg-[#E50000] px-3.5 py-2.5 text-xs font-semibold text-white shadow-[0_8px_24px_rgba(229,0,0,0.2)] transition hover:bg-[#FF1919] focus:outline-none focus:ring-4 focus:ring-[#E50000]/25 sm:px-5 sm:text-sm"
-            >
-              Đăng nhập
-            </Link>
-          </div>
-        </header>
-
         <div className="relative z-10 mx-auto flex min-h-[640px] max-w-4xl flex-col items-center justify-end px-5 pb-20 pt-32 text-center sm:px-8 sm:pb-24">
           <span className="rounded-full border border-white/10 bg-black/30 px-4 py-2 text-xs font-medium text-[#E4E4E7] backdrop-blur">
             Hàng ngàn bộ phim đang chờ bạn khám phá
           </span>
-          <h1 className="mt-6 text-4xl font-bold leading-tight tracking-[-0.03em] text-white sm:text-5xl lg:text-[58px]">
+          <img
+            className="mt-7 h-auto w-[340px] max-w-full drop-shadow-[0_10px_32px_rgba(229,0,0,0.28)] sm:w-[480px] lg:w-[620px]"
+            src={logoWordmark}
+            alt="Conflict"
+          />
+          <h1
+            className="mt-7 whitespace-nowrap font-bold leading-tight tracking-[-0.03em] text-white"
+            style={{ fontSize: "clamp(0.875rem, 4.2vw, 3.25rem)" }}
+          >
             Trải nghiệm xem phim tuyệt vời nhất
           </h1>
           <p className="mt-5 max-w-3xl text-sm leading-7 text-[#B3B3B3] sm:text-base lg:text-lg">
@@ -335,7 +290,7 @@ export default function HomePage() {
         <section className="border-t border-[#1F1F1F] py-16 sm:py-20">
           <SectionHeading
             title="Đang thịnh hành"
-            description="Những tựa phim đang được cộng đồng StreamVibe xem và bàn luận nhiều nhất tuần này."
+            description="Những tựa phim đang được cộng đồng Conflict xem và bàn luận nhiều nhất tuần này."
           />
           <MovieRow movies={trendingMovies} />
         </section>
@@ -364,7 +319,7 @@ export default function HomePage() {
                 Bắt đầu trải nghiệm miễn phí ngay hôm nay
               </h2>
               <p className="mt-3 text-sm leading-6 text-[#B3B3B3] sm:text-base">
-                Tham gia StreamVibe và khám phá kho nội dung giải trí không giới
+                Tham gia Conflict và khám phá kho nội dung giải trí không giới
                 hạn trên mọi thiết bị.
               </p>
             </div>
@@ -377,58 +332,6 @@ export default function HomePage() {
           </div>
         </section>
       </div>
-
-      <footer className="border-t border-[#1F1F1F] bg-[#0F0F0F]">
-        <div className="mx-auto max-w-[1280px] px-5 py-12 sm:px-8 sm:py-16">
-          <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-[1.3fr_repeat(3,1fr)]">
-            <div>
-              <img
-                className="w-[150px]"
-                src="/home/icons/logo.svg"
-                alt="StreamVibe"
-                loading="lazy"
-              />
-              <p className="mt-5 max-w-xs text-sm leading-6 text-[#999999]">
-                Không gian giải trí trực tuyến dành cho những người yêu điện
-                ảnh và các series chất lượng.
-              </p>
-            </div>
-
-            {[
-              {
-                title: "Khám phá",
-                links: ["Trang chủ", "Phim", "Series", "Thể loại"],
-              },
-              {
-                title: "Hỗ trợ",
-                links: ["Liên hệ", "Câu hỏi thường gặp", "Trung tâm trợ giúp"],
-              },
-              {
-                title: "Pháp lý",
-                links: ["Điều khoản", "Quyền riêng tư", "Cookie"],
-              },
-            ].map((column) => (
-              <div key={column.title}>
-                <h3 className="text-sm font-semibold text-white">
-                  {column.title}
-                </h3>
-                <ul className="mt-4 space-y-3">
-                  {column.links.map((link) => (
-                    <li key={link} className="text-sm text-[#999999]">
-                      {link}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-12 flex flex-col gap-3 border-t border-[#1F1F1F] pt-6 text-xs text-[#666666] sm:flex-row sm:items-center sm:justify-between">
-            <p>© 2026 StreamVibe. Bản Home demo giao diện.</p>
-            <p>Các chức năng sẽ được tích hợp sau.</p>
-          </div>
-        </div>
-      </footer>
     </main>
   );
 }

@@ -1,6 +1,6 @@
 import {createApi, fetchBaseQuery} from "@reduxjs/toolkit/query/react"
 import {Mutex} from "async-mutex"
-import { clearCredentials,setCredentials } from "../features/auth/authSlice"
+import { clearCredentials,setCredentials, setAccessToken } from "../features/auth/authSlice"
 
 const mutex = new Mutex();
 const PUBLIC_AUTH_URLS = new Set([
@@ -61,13 +61,7 @@ const baseQueryWithReauth = async(
         );
         const newAccessToken = refreshResult.data?.data?.accessToken;
         if(newAccessToken){
-            const currentUser = api.getState().auth.user
-            api.dispatch(
-                setCredentials({
-                    user:currentUser,
-                    accessToken:newAccessToken,
-                }),
-            );
+            api.dispatch(setAccessToken(newAccessToken));
             result = await rawBaseQuery(
                 args,
                 api,
