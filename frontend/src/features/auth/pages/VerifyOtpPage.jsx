@@ -163,22 +163,6 @@ export default function VerifyOtpPage() {
   return (
     <>
               <div className="mb-8">
-                <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-[#333333] bg-[#1A1A1A] text-[#FF1919]">
-                  <svg
-                    className="h-5 w-5"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                    aria-hidden="true"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M15.75 7.5V6A3.75 3.75 0 0 0 12 2.25h-1.5A3.75 3.75 0 0 0 6.75 6v12A3.75 3.75 0 0 0 10.5 21.75H12A3.75 3.75 0 0 0 15.75 18v-1.5M13.5 12h8.25m0 0-3-3m3 3-3 3"
-                    />
-                  </svg>
-                </span>
 
                 <h2 className="mt-5 text-3xl font-bold tracking-tight text-white">
                   Nhập OTP

@@ -7,11 +7,13 @@ import AuthLayout from "./features/auth/layouts/AuthLayout";
 import ForgotPasswordPage from "./features/auth/pages/ForgotPasswordPage";
 import VerifyOtpForgotPasswordPage from "./features/auth/pages/VerifyOtpForgotPassword";
 import ResetPasswordPage from "./features/auth/pages/ResetPasswordPage";
+import ProfilePage from "./features/profile/pages/ProfilePage";
+import MainLayout from "./layouts/MainLayout";
+import ProtectedRoute from "./features/auth/components/ProtectedRoute";
 
 function App() {
   return (
     <Routes>
-      {/* Các trang xác thực dùng chung AuthLayout */}
       <Route element={<AuthLayout />}>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
@@ -20,11 +22,12 @@ function App() {
         <Route path="/verify-otp-forgot-password" element={<VerifyOtpForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
       </Route>
-
-      {/* Home không sử dụng AuthLayout */}
-      <Route path="/" element={<HomePage />} />
-
-      {/* Đường dẫn không tồn tại sẽ quay về Home */}
+      <Route element={<MainLayout/>}>
+        <Route path="/" element={<HomePage/>} />
+        <Route element = {<ProtectedRoute/>}>
+          <Route path="/profile/*" element={<ProfilePage/>}/>
+        </Route>
+      </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

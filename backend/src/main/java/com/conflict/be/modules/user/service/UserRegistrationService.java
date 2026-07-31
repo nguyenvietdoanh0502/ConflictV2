@@ -90,4 +90,5 @@ public class UserRegistrationService {
         User savedUser = userRepository.save(user);
         return mapToDTO(savedUser);
     }
+
 }

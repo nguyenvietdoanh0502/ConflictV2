@@ -5,13 +5,16 @@ import App from './App.jsx'
 import { Provider } from 'react-redux'
 import { BrowserRouter } from "react-router-dom";
 import { store } from "./app/store";
+import AuthInitializer from './features/auth/components/AuthInitializer.jsx'
 
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <Provider store={store}>
       <BrowserRouter>
-        <App />
+        <AuthInitializer>
+          <App/>
+        </AuthInitializer>  
       </BrowserRouter>
     </Provider>
   </StrictMode>,

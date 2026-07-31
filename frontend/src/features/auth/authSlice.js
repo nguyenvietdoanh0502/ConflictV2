@@ -47,6 +47,9 @@ const authSlice = createSlice({
                 email:null,
                 resetToken: null,
             }
+        },
+        setAccessToken:(state,action)=>{
+            state.accessToken = action.payload ?? null;
         }
     }
 })
@@ -57,6 +60,7 @@ export const {
     setAuthInitialized,
     setPasswordResetContext,
     clearPasswordResetContext,
+    setAccessToken,
 
 }=authSlice.actions;
 

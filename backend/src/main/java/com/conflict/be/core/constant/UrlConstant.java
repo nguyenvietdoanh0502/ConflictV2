@@ -15,4 +15,8 @@ public class UrlConstant {
         public static final String VERIFY_OTP_FORGOT_PASSWORD = "/auth/verify-otp-forgot-password";
         public static final String RESET_PASSWORD = "/auth/reset-password";
     }
+    public static class User{
+        public static final String ME = "/users/me";
+    }
+
 }

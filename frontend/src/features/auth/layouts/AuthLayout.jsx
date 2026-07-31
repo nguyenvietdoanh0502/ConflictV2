@@ -1,8 +1,22 @@
 
-import { Outlet} from "react-router-dom";
+import { Link, Outlet, useNavigate } from "react-router-dom";
+import logoMark from "../../../assets/logo2.png";
+import logoWordmark from "../../../assets/logo3.png";
 
 
 export default function AuthLayout() {
+  const navigate = useNavigate();
+
+  function handleBack() {
+    const historyIndex = window.history.state?.idx;
+
+    if (typeof historyIndex === "number" && historyIndex > 0) {
+      navigate(-1);
+      return;
+    }
+
+    navigate("/", { replace: true });
+  }
 
   return (
     <main
@@ -33,25 +47,23 @@ export default function AuthLayout() {
 
       <header className="absolute inset-x-0 top-0 z-20">
         <div className="mx-auto flex max-w-[1440px] items-center justify-between px-5 py-6 sm:px-8 lg:px-12 lg:py-8">
-          <div className="flex items-center gap-3">
-            <span className="relative grid h-11 w-11 place-items-center rounded-xl bg-[#E50000] shadow-[0_0_32px_rgba(229,0,0,0.3)]">
-              <svg
-                className="h-6 w-6"
-                viewBox="0 0 24 24"
-                fill="none"
-                aria-hidden="true"
-              >
-                <path
-                  d="M8.25 6.4c0-1.08 1.18-1.74 2.1-1.18l8.1 4.95a1.38 1.38 0 0 1 0 2.36l-8.1 4.95a1.38 1.38 0 0 1-2.1-1.18V6.4Z"
-                  fill="currentColor"
-                />
-              </svg>
-              <span className="absolute -inset-1 -z-10 rounded-[14px] border border-[#FF3333]/35" />
-            </span>
-            <span className="text-xl font-bold tracking-tight sm:text-2xl">
-              Stream<span className="text-[#E50000]">Vibe</span>
-            </span>
-          </div>
+          <Link
+            to="/"
+            className="flex items-center gap-2.5 rounded-lg transition hover:opacity-85 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E50000]/70"
+            aria-label="Về trang chủ Conflict"
+          >
+            <img
+              className="h-10 w-10 shrink-0 object-contain sm:h-11 sm:w-11"
+              src={logoMark}
+              alt=""
+              aria-hidden="true"
+            />
+            <img
+              className="h-7 w-auto object-contain sm:h-8"
+              src={logoWordmark}
+              alt="Conflict"
+            />
+          </Link>
 
           <span className="hidden items-center gap-2 rounded-lg border border-[#262626] bg-[#0F0F0F]/80 px-3 py-2 text-xs font-medium text-[#B3B3B3] backdrop-blur sm:inline-flex">
             <span className="h-2 w-2 rounded-full bg-[#E50000] shadow-[0_0_10px_#E50000]" />
@@ -114,6 +126,29 @@ export default function AuthLayout() {
           </section>
         <section className="mx-auto w-full max-w-[500px]">
             <div className="rounded-2xl border border-[#262626] bg-[#0F0F0F]/95 p-6 shadow-[0_24px_80px_rgba(0,0,0,0.55)] backdrop-blur-md sm:p-9 lg:p-10">
+              <button
+                type="button"
+                onClick={handleBack}
+                className="mb-5 inline-flex min-h-9 items-center gap-2 rounded-lg border border-transparent px-2 text-sm font-medium text-[#B3B3B3] transition hover:border-[#333333] hover:bg-[#1A1A1A] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E50000]/70"
+                aria-label="Quay lại trang trước"
+              >
+                <svg
+                  className="h-4 w-4"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="m15 18-6-6 6-6"
+                  />
+                </svg>
+                Quay lại
+              </button>
+
               <Outlet />
             </div>
         </section>
