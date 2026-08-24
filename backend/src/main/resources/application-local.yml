@@ -39,6 +39,11 @@ spring:
     enabled: true
     baseline-on-migrate: true
 
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 6MB
+
 conflict:
   jwt:
     secret: ${JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970} # Default secret for local dev
@@ -49,6 +54,12 @@ conflict:
     cookie:
       secure: ${COOKIE_SECURE:false}
       same-site: ${COOKIE_SAME_SITE:Lax}
+  cloudinary:
+    cloud-name: ${CLOUDINARY_CLOUD_NAME}
+    api-key: ${CLOUDINARY_API_KEY}
+    api-secret: ${CLOUDINARY_API_SECRET}
+    folder: ${CLOUDINARY_FOLDER:conflict/avatars}
+
 
 logging:
   level:

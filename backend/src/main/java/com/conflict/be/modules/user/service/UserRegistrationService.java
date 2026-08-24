@@ -74,6 +74,9 @@ public class UserRegistrationService {
                 .fullName(savedUser.getFullName())
                 .pinCode(savedUser.getPinCode())
                 .avatarUrl(savedUser.getAvatarUrl())
+                .dateOfBirth(savedUser.getDateOfBirth())
+                .address(savedUser.getAddress())
+                .gender(savedUser.getGender())
                 .build();
     }
 

@@ -37,6 +37,9 @@ public enum ErrorCode {
 
     MISSING_FULL_NAME("MISSING_FULL_NAME", "Full name is required", 400),
     INVALID_FULL_NAME("INVALID_FULL_NAME", "Full name must be between 2 and 100 characters", 400),
+    INVALID_DATE_OF_BIRTH("INVALID_DATE_OF_BIRTH", "Date of birth must be a valid date that is not in the future", 400),
+    INVALID_ADDRESS("INVALID_ADDRESS", "Address must not exceed 255 characters", 400),
+    INVALID_GENDER("INVALID_GENDER", "Gender must be MALE, FEMALE, or OTHER", 400),
 
     MISSING_OTP("MISSING_OTP", "OTP is required", 400),
     INVALID_OTP_FORMAT("INVALID_OTP_FORMAT", "OTP must be exactly 6 digits", 400),
@@ -60,7 +63,30 @@ public enum ErrorCode {
     OTP_INVALID("OTP_INVALID", "Invalid OTP code", 400),
     INVALID_OLD_PASSWORD("INVALID_OLD_PASSWORD", "Current password is incorrect", 400),
     MISSING_RESET_TOKEN("MISSING_RESET_TOKEN", "Reset token is required", 400),
-    SAME_PASSWORD("SAME_PASSWORD", "New password must be different from current password", 400);
+    SAME_PASSWORD("SAME_PASSWORD", "New password must be different from current password", 400),
+    INVALID_AVATAR_FILE(
+        "INVALID_AVATAR_FILE",
+                "Avatar must be a JPEG, PNG, or WebP image",
+                400
+    ),
+
+    AVATAR_TOO_LARGE(
+        "AVATAR_TOO_LARGE",
+                "Avatar must not exceed 5 MB",
+                413
+    ),
+
+    AVATAR_UPLOAD_FAILED(
+        "AVATAR_UPLOAD_FAILED",
+                "Unable to upload avatar",
+                500
+    ),
+
+    AVATAR_DELETE_FAILED(
+        "AVATAR_DELETE_FAILED",
+                "Unable to delete old avatar",
+                500
+    );
 
     private final String code;
     private final String message;

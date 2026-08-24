@@ -1,6 +1,6 @@
 import {createApi, fetchBaseQuery} from "@reduxjs/toolkit/query/react"
 import {Mutex} from "async-mutex"
-import { clearCredentials,setCredentials, setAccessToken } from "../features/auth/authSlice"
+import { clearCredentials, setAccessToken } from "../features/auth/authSlice"
 
 const mutex = new Mutex();
 const PUBLIC_AUTH_URLS = new Set([
@@ -90,6 +90,7 @@ const baseQueryWithReauth = async(
 export const baseApi = createApi({
     reducerPath: "baseApi",
     baseQuery: baseQueryWithReauth,
+    tagTypes: ["CurrentUser"],
     endpoints: ()=>({}),
 })
 

@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="70496e7e-72df-4c20-b529-c227ab6320ab" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/backend/src/main/java/com/conflict/be/core/config/CloudinaryConfig.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/src/main/java/com/conflict/be/modules/user/dto/AvatarUploadResult.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/src/main/java/com/conflict/be/modules/user/dto/UpdateProfileRequest.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/src/main/java/com/conflict/be/modules/user/service/AvatarStorageService.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/src/main/java/com/conflict/be/modules/user/service/CloudinaryAvatarStorageService.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/src/main/resources/db/migration/V2__add_avatar_public_id_to_users.sql" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/.env.example" beforeDir="false" afterPath="$PROJECT_DIR$/backend/.env.example" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/backend/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/conflict/be/core/constant/UrlConstant.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/conflict/be/core/constant/UrlConstant.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/conflict/be/core/exception/ErrorCode.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/conflict/be/core/exception/ErrorCode.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/conflict/be/core/exception/GlobalExceptionHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/conflict/be/core/exception/GlobalExceptionHandler.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/conflict/be/modules/user/controller/UserController.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/conflict/be/modules/user/controller/UserController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/conflict/be/modules/user/entity/User.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/conflict/be/modules/user/entity/User.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/conflict/be/modules/user/service/UserService.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/conflict/be/modules/user/service/UserService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/resources/application-local.yml" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/resources/application-local.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/test/java/com/conflict/be/modules/auth/service/AuthServiceTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/test/java/com/conflict/be/modules/auth/service/AuthServiceTest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/test/resources/application-test.yml" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/test/resources/application-test.yml" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="ProjectColorInfo"><![CDATA[{
+  "associatedIndex": 5
+}]]></component>
+  <component name="ProjectId" id="3HUSDeRSHGrK6INH4j6I44mjnh0" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "git-widget-placeholder": "feat/backend/update-profile-user",
+    "ignore.virus.scanning.warn.message": "true",
+    "kotlin-language-version-configured": "true",
+    "last_opened_file_path": "E:/ConflictV2"
+  }
+}]]></component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="70496e7e-72df-4c20-b529-c227ab6320ab" name="Changes" comment="" />
+      <created>1785921035623</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1785921035623</updated>
+    </task>
+    <servers />
+  </component>
+</project>

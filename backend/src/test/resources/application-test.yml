@@ -14,6 +14,10 @@ spring:
     redis:
       repositories:
         enabled: false
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 6MB
 
 conflict:
   jwt:
@@ -21,3 +25,8 @@ conflict:
     access-token-expiration: 86400000
     refresh-token-expiration: 2592000000
     reset-password-expiration: 300000
+  cloudinary:
+    cloud-name: test-cloud
+    api-key: test-key
+    api-secret: test-secret
+    folder: test/avatars

@@ -8,11 +8,16 @@ CREATE TABLE users (
     password_hash   VARCHAR(255),
     full_name       VARCHAR(100) NOT NULL,
     avatar_url      TEXT,
+    avatar_public_id VARCHAR(255),
+    date_of_birth   DATE,
+    address         VARCHAR(255),
+    gender          VARCHAR(10),
     pin_code        VARCHAR(10) UNIQUE NOT NULL,
     google_id       VARCHAR(255) UNIQUE,
     created_at      TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at      TIMESTAMP NOT NULL DEFAULT NOW(),
-    is_deleted      BOOLEAN NOT NULL DEFAULT FALSE
+    is_deleted      BOOLEAN NOT NULL DEFAULT FALSE,
+    CONSTRAINT chk_users_gender CHECK (gender IN ('MALE', 'FEMALE', 'OTHER'))
 );
 
 CREATE INDEX idx_users_email ON users(email) WHERE is_deleted = FALSE;
