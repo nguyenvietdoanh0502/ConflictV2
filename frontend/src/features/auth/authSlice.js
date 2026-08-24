@@ -50,12 +50,20 @@ const authSlice = createSlice({
         },
         setAccessToken:(state,action)=>{
             state.accessToken = action.payload ?? null;
+        },
+        setCurrentUser: (state, action)=>{
+            if(!action.payload){
+                return;
+            }
+            state.user = action.payload;
+            state.isAuthenticated = true;
         }
     }
 })
 
 export const {
     setCredentials,
+    setCurrentUser,
     clearCredentials,
     setAuthInitialized,
     setPasswordResetContext,

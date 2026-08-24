@@ -3,6 +3,13 @@ import { useSelector } from "react-redux";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { selectCurrentUser } from "../../auth/authSelectors";
 import LogoutConfirmModal from "../components/LogoutConfirmModal";
+import UpdateProfileModal from "../components/UpdateProfileModal";
+
+const genderLabels = {
+  MALE: "Nam",
+  FEMALE: "Nữ",
+  OTHER: "Khác",
+};
 
 const profileNavigation = [
   {
@@ -10,6 +17,11 @@ const profileNavigation = [
     description: "Hồ sơ và tài khoản",
     to: "/profile",
     end: true,
+  },
+  {
+    label: "Bạn bè",
+    description: "Kết nối của bạn",
+    to: "/profile/friends",
   },
   {
     label: "Phim yêu thích",
@@ -31,8 +43,20 @@ function getCurrentSection(pathname) {
   );
 }
 
+function formatDateOfBirth(dateOfBirth) {
+  if (!dateOfBirth) {
+    return "Chưa cập nhật";
+  }
+
+  const [year, month, day] = dateOfBirth.split("-");
+  return year && month && day
+    ? `${day}/${month}/${year}`
+    : dateOfBirth;
+}
+
 export default function ProfilePage() {
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [isUpdateProfileModalOpen, setIsUpdateProfileModalOpen] = useState(false)
   const user = useSelector(selectCurrentUser);
   const location = useLocation();
 
@@ -42,6 +66,16 @@ export default function ProfilePage() {
   const avatarUrl = user?.avatarUrl?.trim();
   const avatarLetter = displayName.charAt(0).toUpperCase();
   const currentSection = getCurrentSection(location.pathname);
+  const isProfileInfoSection =
+    location.pathname === "/profile" || location.pathname === "/profile/";
+
+  const openUpdateProfileModal = useCallback(() => {
+    setIsUpdateProfileModalOpen(true);
+  }, []);
+
+  const closeUpdateProfileModal = useCallback(() => {
+    setIsUpdateProfileModalOpen(false);
+  }, []);
 
   const openLogoutModal = useCallback(() => {
     setIsLogoutModalOpen(true);
@@ -54,7 +88,6 @@ export default function ProfilePage() {
   const handleConfirmLogout = useCallback(() => {
     setIsLogoutModalOpen(false);
 
-    // Gắn logic gọi API logout của bạn tại đây.
   }, []);
 
   return (
@@ -198,7 +231,120 @@ export default function ProfilePage() {
             className="min-h-[500px] px-5 pb-28 pt-6 sm:px-7 sm:pt-8"
             aria-label={`Nội dung ${currentSection.label.toLowerCase()}`}
           >
-            <Outlet />
+            {isProfileInfoSection ? (
+              <div className="space-y-6">
+                <section className="overflow-hidden rounded-2xl border border-[#2B2B2B] bg-[#141414]">
+                  <div className="flex flex-col gap-6 border-b border-[#2B2B2B] bg-gradient-to-r from-[#1D1D1D] to-[#141414] p-5 sm:flex-row sm:items-center sm:p-6">
+                    <div className="shrink-0">
+                      {avatarUrl ? (
+                        <img
+                          src={avatarUrl}
+                          alt={`Ảnh đại diện của ${displayName}`}
+                          className="h-24 w-24 rounded-2xl border border-[#404040] object-cover shadow-[0_12px_30px_rgba(0,0,0,0.3)]"
+                        />
+                      ) : (
+                        <span className="grid h-24 w-24 place-items-center rounded-2xl border border-[#FF3333]/40 bg-gradient-to-br from-[#E50000] to-[#990000] text-3xl font-bold text-white">
+                          {avatarLetter}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#E50000]">
+                        Thông tin cá nhân
+                      </p>
+                      <h3 className="mt-2 truncate text-2xl font-bold text-white">
+                        {displayName}
+                      </h3>
+                      <p className="mt-1 truncate text-sm text-[#999999]">
+                        {email}
+                      </p>
+                    </div>
+                  </div>
+
+                  <dl className="grid gap-px bg-[#2B2B2B] sm:grid-cols-2">
+                    <div className="bg-[#141414] p-5 sm:p-6">
+                      <dt className="text-xs font-semibold uppercase tracking-[0.12em] text-[#777777]">
+                        Họ và tên
+                      </dt>
+                      <dd className="mt-2 break-words text-sm font-medium text-[#E6E6E6]">
+                        {user?.fullName?.trim() || "Chưa cập nhật"}
+                      </dd>
+                    </div>
+
+                    <div className="bg-[#141414] p-5 sm:p-6">
+                      <dt className="text-xs font-semibold uppercase tracking-[0.12em] text-[#777777]">
+                        Email
+                      </dt>
+                      <dd className="mt-2 break-words text-sm font-medium text-[#E6E6E6]">
+                        {user?.email || "Chưa cập nhật"}
+                      </dd>
+                    </div>
+
+                    <div className="bg-[#141414] p-5 sm:p-6">
+                      <dt className="text-xs font-semibold uppercase tracking-[0.12em] text-[#777777]">
+                        Ngày sinh
+                      </dt>
+                      <dd className="mt-2 break-words text-sm font-medium text-[#E6E6E6]">
+                        {formatDateOfBirth(user?.dateOfBirth)}
+                      </dd>
+                    </div>
+
+                    <div className="bg-[#141414] p-5 sm:p-6">
+                      <dt className="text-xs font-semibold uppercase tracking-[0.12em] text-[#777777]">
+                        Giới tính
+                      </dt>
+                      <dd className="mt-2 break-words text-sm font-medium text-[#E6E6E6]">
+                        {genderLabels[user?.gender] || "Chưa cập nhật"}
+                      </dd>
+                    </div>
+
+                    <div className="bg-[#141414] p-5 sm:col-span-2 sm:p-6">
+                      <dt className="text-xs font-semibold uppercase tracking-[0.12em] text-[#777777]">
+                        Địa chỉ
+                      </dt>
+                      <dd className="mt-2 break-words text-sm font-medium leading-6 text-[#E6E6E6]">
+                        {user?.address?.trim() || "Chưa cập nhật"}
+                      </dd>
+                    </div>
+
+                    <div className="bg-[#141414] p-5 sm:p-6">
+                      <dt className="text-xs font-semibold uppercase tracking-[0.12em] text-[#777777]">
+                        Mã người dùng
+                      </dt>
+                      <dd className="mt-2 break-words text-sm font-medium text-[#E6E6E6]">
+                        {user?.pinCode || "Chưa cập nhật"}
+                      </dd>
+                    </div>
+
+                    <div className="bg-[#141414] p-5 sm:p-6">
+                      <dt className="text-xs font-semibold uppercase tracking-[0.12em] text-[#777777]">
+                        Trạng thái tài khoản
+                      </dt>
+                      <dd className="mt-2 inline-flex items-center gap-2 text-sm font-medium text-[#E6E6E6]">
+                        <span
+                          className="h-2 w-2 rounded-full bg-[#22C55E]"
+                          aria-hidden="true"
+                        />
+                        Đang hoạt động
+                      </dd>
+                    </div>
+                  </dl>
+                </section>
+
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={openUpdateProfileModal}
+                    className="inline-flex min-h-11 items-center justify-center rounded-lg bg-[#E50000] px-5 text-sm font-semibold text-white transition hover:bg-[#FF1A1A] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#E50000]/25"
+                  >
+                    Chỉnh sửa thông tin
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <Outlet />
+            )}
           </div>
 
           <div className="absolute inset-x-0 bottom-0 flex justify-end border-t border-[#262626] bg-[#0F0F0F]/95 px-5 py-5 backdrop-blur sm:px-7">
@@ -219,7 +365,12 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
-
+      {isUpdateProfileModalOpen && (
+        <UpdateProfileModal
+          isOpen={isUpdateProfileModalOpen}
+          onClose={closeUpdateProfileModal}
+        />
+      )}
       <LogoutConfirmModal
         isOpen={isLogoutModalOpen}
         onClose={closeLogoutModal}

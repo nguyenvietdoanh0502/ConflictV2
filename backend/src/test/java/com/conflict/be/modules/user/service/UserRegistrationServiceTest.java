@@ -6,6 +6,7 @@ import com.conflict.be.modules.user.dto.UserDTO;
 import com.conflict.be.modules.user.dto.UserRegistrationCommand;
 import com.conflict.be.modules.user.entity.User;
 import com.conflict.be.modules.user.enums.AccountStatus;
+import com.conflict.be.modules.user.enums.Gender;
 import com.conflict.be.modules.user.repository.UserRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -15,6 +16,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDate;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -32,6 +34,26 @@ class UserRegistrationServiceTest {
 
     @InjectMocks
     private UserRegistrationService userRegistrationService;
+
+    @Test
+    @DisplayName("Should include optional profile fields when mapping a user")
+    void mapToDTO_IncludesOptionalProfileFields() {
+        User user = User.builder()
+                .id(UUID.randomUUID())
+                .email("profile@example.com")
+                .fullName("Profile User")
+                .pinCode("RML-123456")
+                .dateOfBirth(LocalDate.of(1995, 6, 15))
+                .address("Can Tho")
+                .gender(Gender.MALE)
+                .build();
+
+        UserDTO result = userRegistrationService.mapToDTO(user);
+
+        assertThat(result.getDateOfBirth()).isEqualTo(LocalDate.of(1995, 6, 15));
+        assertThat(result.getAddress()).isEqualTo("Can Tho");
+        assertThat(result.getGender()).isEqualTo(Gender.MALE);
+    }
 
     @Nested
     @DisplayName("registerNewUser Tests")

@@ -2,12 +2,14 @@ package com.conflict.be.modules.user.entity;
 
 import com.conflict.be.core.common.utils.PinCodeGenerator;
 import com.conflict.be.modules.user.enums.AccountStatus;
+import com.conflict.be.modules.user.enums.Gender;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
@@ -35,6 +37,19 @@ public class User implements UserDetails {
 
     @Column(name = "avatar_url")
     private String avatarUrl;
+
+    @Column(name = "avatar_public_id")
+    private String avatarPublicId;
+
+    @Column(name = "date_of_birth")
+    private LocalDate dateOfBirth;
+
+    @Column(length = 255)
+    private String address;
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 10)
+    private Gender gender;
 
     @Column(name = "pin_code", unique = true, nullable = false)
     private String pinCode;

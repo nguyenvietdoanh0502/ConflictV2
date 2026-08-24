@@ -17,6 +17,7 @@ public class UrlConstant {
     }
     public static class User{
         public static final String ME = "/users/me";
+        public static final String UPDATE_PROFILE = "/user/update-profile";
     }
 
 }
