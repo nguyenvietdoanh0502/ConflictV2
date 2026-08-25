@@ -51,7 +51,7 @@ public class User implements UserDetails {
     @Column(length = 10)
     private Gender gender;
 
-    @Column(name = "pin_code", unique = true, nullable = false)
+    @Column(name = "pin_code", unique = true, nullable = false, length = 10, updatable = false)
     private String pinCode;
 
     @Column(name = "google_id", unique = true)
