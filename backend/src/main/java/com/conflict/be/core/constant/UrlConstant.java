@@ -19,5 +19,11 @@ public class UrlConstant {
         public static final String ME = "/users/me";
         public static final String UPDATE_PROFILE = "/user/update-profile";
     }
+    public static class Friendship {
+        public static final String FRIENDS = "/friends";
+        public static final String REQUESTS = "/friends/requests";
+        public static final String INCOMING = "/friends/requests/incoming";
+        public static final String OUTGOING = "/friends/requests/outgoing";
+    }
 
 }

@@ -12,12 +12,14 @@ CREATE TABLE users (
     date_of_birth   DATE,
     address         VARCHAR(255),
     gender          VARCHAR(10),
+    status          VARCHAR(16) NOT NULL DEFAULT 'PENDING',
     pin_code        VARCHAR(10) UNIQUE NOT NULL,
     google_id       VARCHAR(255) UNIQUE,
     created_at      TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at      TIMESTAMP NOT NULL DEFAULT NOW(),
     is_deleted      BOOLEAN NOT NULL DEFAULT FALSE,
-    CONSTRAINT chk_users_gender CHECK (gender IN ('MALE', 'FEMALE', 'OTHER'))
+    CONSTRAINT chk_users_gender CHECK (gender IN ('MALE', 'FEMALE', 'OTHER')),
+    CONSTRAINT chk_users_status CHECK (status IN ('PENDING', 'ACTIVE', 'BANNED'))
 );
 
 CREATE INDEX idx_users_email ON users(email) WHERE is_deleted = FALSE;
@@ -26,17 +28,41 @@ CREATE INDEX idx_users_full_name ON users(full_name) WHERE is_deleted = FALSE;
 
 -- 2. Friendships Table
 CREATE TABLE friendships (
-    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    requester_id    UUID NOT NULL REFERENCES users(id),
-    addressee_id    UUID NOT NULL REFERENCES users(id),
-    created_at      TIMESTAMP NOT NULL DEFAULT NOW(),
-    
-    CONSTRAINT chk_no_self_friend CHECK (requester_id != addressee_id),
-    CONSTRAINT uq_friendship UNIQUE (requester_id, addressee_id)
+    id              UUID PRIMARY KEY,
+    low_user_id     UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    high_user_id    UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    requested_by_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    status          VARCHAR(16) NOT NULL DEFAULT 'PENDING',
+    created_at      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    accepted_at     TIMESTAMP WITH TIME ZONE,
+
+    CONSTRAINT chk_friendships_no_self CHECK (low_user_id <> high_user_id),
+    CONSTRAINT chk_friendships_requester_is_member CHECK (
+        requested_by_id IN (low_user_id, high_user_id)
+    ),
+    CONSTRAINT chk_friendships_status CHECK (status IN ('PENDING', 'ACCEPTED')),
+    CONSTRAINT chk_friendships_accepted_at CHECK (
+        (status = 'PENDING' AND accepted_at IS NULL)
+        OR
+        (status = 'ACCEPTED' AND accepted_at IS NOT NULL)
+    )
 );
 
-CREATE INDEX idx_friendships_requester ON friendships(requester_id);
-CREATE INDEX idx_friendships_addressee ON friendships(addressee_id);
+CREATE UNIQUE INDEX uq_friendships_unordered_pair
+    ON friendships (
+        LEAST(low_user_id, high_user_id),
+        GREATEST(low_user_id, high_user_id)
+    );
+
+CREATE INDEX idx_friendships_low_user_status_created
+    ON friendships(low_user_id, status, created_at DESC);
+
+CREATE INDEX idx_friendships_high_user_status_created
+    ON friendships(high_user_id, status, created_at DESC);
+
+CREATE INDEX idx_friendships_requested_by_status_created
+    ON friendships(requested_by_id, status, created_at DESC);
 
 -- 3. Groups Table
 CREATE TABLE groups (

@@ -86,8 +86,88 @@ public enum ErrorCode {
         "AVATAR_DELETE_FAILED",
                 "Unable to delete old avatar",
                 500
-    );
+    ),
 
+    // ==========================================
+    // FRIENDSHIP ERRORS
+    // ==========================================
+    MISSING_PIN_CODE(
+            "MISSING_PIN_CODE",
+            "PIN code is required",
+            400
+    ),
+
+    INVALID_PIN_CODE(
+            "INVALID_PIN_CODE",
+            "PIN code is invalid",
+            400
+    ),
+
+    PIN_CODE_NOT_FOUND(
+            "PIN_CODE_NOT_FOUND",
+            "User was not found",
+            404
+    ),
+
+    CANNOT_FRIEND_SELF(
+            "CANNOT_FRIEND_SELF",
+            "You cannot add yourself as a friend",
+            400
+    ),
+
+    FRIEND_REQUEST_ALREADY_SENT(
+            "FRIEND_REQUEST_ALREADY_SENT",
+            "Friend request has already been sent",
+            409
+    ),
+
+    FRIEND_REQUEST_ALREADY_RECEIVED(
+            "FRIEND_REQUEST_ALREADY_RECEIVED",
+            "This user has already sent you a friend request",
+            409
+    ),
+
+    FRIEND_REQUEST_ALREADY_EXISTS(
+            "FRIEND_REQUEST_ALREADY_EXISTS",
+            "A friend request already exists",
+            409
+    ),
+
+    ALREADY_FRIENDS(
+            "ALREADY_FRIENDS",
+            "Users are already friends",
+            409
+    ),
+
+    FRIEND_REQUEST_NOT_FOUND(
+            "FRIEND_REQUEST_NOT_FOUND",
+            "Friend request was not found",
+            404
+    ),
+
+    INVALID_FRIEND_REQUEST_STATE(
+            "INVALID_FRIEND_REQUEST_STATE",
+            "Friend request is not in a valid state",
+            409
+    ),
+
+    FRIEND_REQUEST_FORBIDDEN(
+            "FRIEND_REQUEST_FORBIDDEN",
+            "You cannot perform this action",
+            403
+    ),
+
+    FRIENDSHIP_NOT_FOUND(
+            "FRIENDSHIP_NOT_FOUND",
+            "Friendship was not found",
+            404
+    ),
+
+    FRIENDSHIP_FORBIDDEN(
+            "FRIENDSHIP_FORBIDDEN",
+            "You are not a member of this friendship",
+            403
+    );
     private final String code;
     private final String message;
     private final int httpStatus;

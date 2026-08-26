@@ -10,6 +10,7 @@ import ResetPasswordPage from "./features/auth/pages/ResetPasswordPage";
 import ProfilePage from "./features/profile/pages/ProfilePage";
 import MainLayout from "./layouts/MainLayout";
 import ProtectedRoute from "./features/auth/components/ProtectedRoute";
+import FriendsPage from "./features/friend/pages/FriendsPage";
 
 function App() {
   return (
@@ -25,7 +26,10 @@ function App() {
       <Route element={<MainLayout/>}>
         <Route path="/" element={<HomePage/>} />
         <Route element = {<ProtectedRoute/>}>
-          <Route path="/profile/*" element={<ProfilePage/>}/>
+          <Route path="/profile" element={<ProfilePage/>}>
+            <Route path="friends" element={<FriendsPage />} />
+            <Route path="*" element={null} />
+          </Route>
         </Route>
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
