@@ -12,6 +12,7 @@ const PUBLIC_AUTH_URLS = new Set([
   "/v1/auth/verify-otp-forgot-password",
   "/v1/auth/reset-password",
 ]);
+
 const rawBaseQuery = fetchBaseQuery({
     baseUrl: import.meta.env.VITE_API_URL,
 
@@ -90,7 +91,7 @@ const baseQueryWithReauth = async(
 export const baseApi = createApi({
     reducerPath: "baseApi",
     baseQuery: baseQueryWithReauth,
-    tagTypes: ["CurrentUser"],
+    tagTypes: ["CurrentUser", "Friend", "FriendRequest"],
     endpoints: ()=>({}),
 })
 
