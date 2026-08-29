@@ -1,337 +1,350 @@
-import logoWordmark from "../assets/logo3.png";
+import { Link } from "react-router-dom";
+import { useSelector } from "react-redux";
+import {
+  selectCurrentUser,
+  selectIsAuthenticated,
+} from "../features/auth/authSelectors";
 
-const categories = [
+const stories = [
+  { name: "An Nhiên", initial: "A", gradient: "from-[#FF8FB3] to-[#FFD8BE]", theme: "from-[#ffd4e2] via-[#ffc7b8] to-[#b8eadd]", emoji: "🌷" },
+  { name: "Minh Khang", initial: "M", gradient: "from-[#7C6EE6] to-[#B7AEF7]", theme: "from-[#b6adf8] via-[#8b7fe5] to-[#554d88]", emoji: "🎧" },
+  { name: "Hà Linh", initial: "L", gradient: "from-[#54B99F] to-[#B8EADD]", theme: "from-[#b8eadd] via-[#8ed5c3] to-[#e7f8f3]", emoji: "🌿" },
+  { name: "Tuấn Anh", initial: "T", gradient: "from-[#F2B861] to-[#FFE9A9]", theme: "from-[#ffe9a9] via-[#ffd8be] to-[#f4a7bb]", emoji: "🌤️" },
+  { name: "Mai Chi", initial: "C", gradient: "from-[#A98FE8] to-[#FF8FB3]", theme: "from-[#eedcff] via-[#ffcadb] to-[#fff0d7]", emoji: "✨" },
+];
+
+const contacts = [
+  { name: "An Nhiên", initial: "A", gradient: "from-[#FF8FB3] to-[#FFD8BE]" },
+  { name: "Minh Khang", initial: "M", gradient: "from-[#7C6EE6] to-[#B7AEF7]" },
+  { name: "Hà Linh", initial: "L", gradient: "from-[#54B99F] to-[#B8EADD]" },
+  { name: "Tuấn Anh", initial: "T", gradient: "from-[#F2B861] to-[#FFE9A9]" },
+];
+
+const posts = [
   {
-    name: "Hành động",
-    images: [
-      "/home/posters/poster-01.jpg",
-      "/home/posters/poster-02.jpg",
-      "/home/posters/poster-03.jpg",
-      "/home/posters/poster-04.jpg",
-    ],
+    id: 1,
+    author: "An Nhiên",
+    initial: "A",
+    gradient: "from-[#FF8FB3] to-[#FFD8BE]",
+    time: "18 phút",
+    content: "Một buổi chiều không có deadline, chỉ có nắng đẹp và hội bạn thân. Cuối tuần của mọi người thế nào rồi? 🌤️",
+    visual: "sunset",
+    reactions: "Minh Khang và 126 người khác",
+    comments: "24 bình luận",
   },
   {
-    name: "Phiêu lưu",
-    images: [
-      "/home/posters/poster-05.jpg",
-      "/home/posters/poster-06.jpg",
-      "/home/posters/poster-07.jpg",
-      "/home/posters/poster-08.jpg",
-    ],
-  },
-  {
-    name: "Hài",
-    images: [
-      "/home/posters/poster-09.jpg",
-      "/home/posters/poster-10.jpg",
-      "/home/posters/poster-11.jpg",
-      "/home/posters/poster-12.jpg",
-    ],
-  },
-  {
-    name: "Chính kịch",
-    images: [
-      "/home/posters/poster-13.jpg",
-      "/home/posters/poster-14.jpg",
-      "/home/posters/poster-15.jpg",
-      "/home/posters/poster-16.jpg",
-    ],
-  },
-  {
-    name: "Kinh dị",
-    images: [
-      "/home/posters/poster-17.jpg",
-      "/home/posters/poster-18.jpg",
-      "/home/posters/poster-19.jpg",
-      "/home/posters/poster-20.jpg",
-    ],
+    id: 2,
+    author: "Minh Khang",
+    initial: "M",
+    gradient: "from-[#7C6EE6] to-[#B7AEF7]",
+    time: "1 giờ",
+    content: "Nhắc nhẹ bản thân và những ai đang cần nghe điều này hôm nay:",
+    visual: "quote",
+    reactions: "Hà Linh và 89 người khác",
+    comments: "16 bình luận",
   },
 ];
 
-const trendingMovies = [
-  {
-    title: "Black Panther",
-    image: "/home/posters/poster-02.jpg",
-    meta: "2 giờ 14 phút",
-    badge: "IMDb 8.6",
-  },
-  {
-    title: "The Batman",
-    image: "/home/posters/poster-03.jpg",
-    meta: "2 giờ 56 phút",
-    badge: "Top 10",
-  },
-  {
-    title: "Expendables 3",
-    image: "/home/posters/poster-04.jpg",
-    meta: "2 giờ 06 phút",
-    badge: "4K",
-  },
-  {
-    title: "Good Newwz",
-    image: "/home/posters/poster-09.jpg",
-    meta: "2 giờ 12 phút",
-    badge: "IMDb 7.4",
-  },
-  {
-    title: "Joker",
-    image: "/home/posters/poster-14.jpg",
-    meta: "2 giờ 02 phút",
-    badge: "Top 10",
-  },
-  {
-    title: "Scream",
-    image: "/home/posters/poster-18.jpg",
-    meta: "1 giờ 54 phút",
-    badge: "4K",
-  },
-];
+function Avatar({ initial, gradient, imageUrl, size = "md" }) {
+  const sizeClass = size === "sm" ? "h-9 w-9 text-xs" : "h-11 w-11 text-sm";
 
-const latestMovies = [
-  {
-    title: "Archer",
-    image: "/home/posters/poster-05.jpg",
-    meta: "2024",
-    badge: "Mới",
-  },
-  {
-    title: "Jungle Cruise",
-    image: "/home/posters/poster-06.jpg",
-    meta: "2023",
-    badge: "4K",
-  },
-  {
-    title: "Central Intelligence",
-    image: "/home/posters/poster-10.jpg",
-    meta: "2024",
-    badge: "Mới",
-  },
-  {
-    title: "Bhool Bhulaiyaa 2",
-    image: "/home/posters/poster-11.jpg",
-    meta: "2023",
-    badge: "HD",
-  },
-  {
-    title: "Us",
-    image: "/home/posters/poster-17.jpg",
-    meta: "2024",
-    badge: "Mới",
-  },
-  {
-    title: "The Human Centipede",
-    image: "/home/posters/poster-20.jpg",
-    meta: "2022",
-    badge: "HD",
-  },
-];
+  if (imageUrl) {
+    return <img src={imageUrl} alt="" className={`${sizeClass} shrink-0 rounded-full object-cover ring-2 ring-white`} />;
+  }
 
-function SectionHeading({ title, description }) {
   return (
-    <div className="flex items-end justify-between gap-6">
-      <div className="max-w-3xl">
-        <h2 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
-          {title}
-        </h2>
-        <p className="mt-3 text-sm leading-6 text-[#999999] sm:text-base">
-          {description}
-        </p>
+    <span className={`grid ${sizeClass} shrink-0 place-items-center rounded-full bg-gradient-to-br ${gradient} font-extrabold text-white ring-2 ring-white`} aria-hidden="true">
+      {initial}
+    </span>
+  );
+}
+
+function MoreIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor" aria-hidden="true">
+      <circle cx="5" cy="12" r="1.8" />
+      <circle cx="12" cy="12" r="1.8" />
+      <circle cx="19" cy="12" r="1.8" />
+    </svg>
+  );
+}
+
+function SearchIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" aria-hidden="true">
+      <path d="m20 20-4.4-4.4m2.4-5.1a7.5 7.5 0 1 1-15 0 7.5 7.5 0 0 1 15 0Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function LeftSidebar({ isAuthenticated, displayName, avatarUrl, avatarLetter }) {
+  const profileTarget = isAuthenticated ? "/profile" : "/login";
+  const friendTarget = isAuthenticated ? "/friends" : "/login";
+  const items = [
+    { label: "Bạn bè", icon: "👥", to: friendTarget, color: "bg-[#E8E4FB]" },
+    { label: "Kỷ niệm", icon: "🕘", color: "bg-[#E6F6F1]" },
+    { label: "Đã lưu", icon: "🔖", color: "bg-[#FFE9F0]" },
+    { label: "Nhóm", icon: "🫶", color: "bg-[#FFF0DE]" },
+  ];
+
+  return (
+    <aside className="sticky top-20 hidden max-h-[calc(100vh-5.5rem)] overflow-y-auto px-2 pb-6 lg:block" aria-label="Lối tắt">
+      <nav className="space-y-1">
+        <Link to={profileTarget} className="flex items-center gap-3 rounded-xl px-2 py-2.5 font-bold text-[#383247] hover:bg-white/80">
+          <Avatar initial={avatarLetter} gradient="from-social-violet to-social-pink" imageUrl={avatarUrl} size="sm" />
+          <span className="truncate text-sm">{isAuthenticated ? displayName : "Đăng nhập tài khoản"}</span>
+        </Link>
+
+        {items.map((item) => {
+          const content = (
+            <>
+              <span className={`grid h-9 w-9 place-items-center rounded-xl text-base ${item.color}`} aria-hidden="true">{item.icon}</span>
+              <span className="text-sm font-bold text-[#4A4459]">{item.label}</span>
+            </>
+          );
+
+          return item.to ? (
+            <Link key={item.label} to={item.to} className="flex items-center gap-3 rounded-xl px-2 py-2 hover:bg-white/80">{content}</Link>
+          ) : (
+            <div key={item.label} className="flex items-center gap-3 rounded-xl px-2 py-2 text-[#4A4459]">{content}</div>
+          );
+        })}
+      </nav>
+
+      <div className="mt-4 border-t border-[#DDD9E6] pt-4">
+        <p className="px-2 text-xs font-extrabold uppercase tracking-[0.12em] text-[#77718C]">Lối tắt của bạn</p>
+        <div className="mt-3 flex items-center gap-3 rounded-xl px-2 py-2">
+          <span className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-[#DCD6FF] to-[#FFD4E2] text-base" aria-hidden="true">☕</span>
+          <span className="text-sm font-bold text-[#4A4459]">Hội chill cuối tuần</span>
+        </div>
       </div>
 
-      <div className="hidden items-center gap-2 rounded-xl border border-[#1F1F1F] bg-[#0F0F0F] p-2 sm:flex">
-        <span className="grid h-10 w-10 place-items-center rounded-lg border border-[#1F1F1F] bg-[#1A1A1A]">
-          <img
-            className="h-5 w-5 rotate-180"
-            src="/home/icons/arrow.svg"
-            alt=""
-          />
-        </span>
-        <span className="h-1 w-6 rounded-full bg-[#E50000]" />
-        <span className="h-1 w-3 rounded-full bg-[#333333]" />
-        <span className="h-1 w-3 rounded-full bg-[#333333]" />
-        <span className="grid h-10 w-10 place-items-center rounded-lg border border-[#1F1F1F] bg-[#1A1A1A]">
-          <img className="h-5 w-5" src="/home/icons/arrow.svg" alt="" />
-        </span>
+      <p className="mt-5 px-2 text-[11px] leading-5 text-[#77718C]">Quyền riêng tư · Điều khoản · Trợ giúp · Conflict © 2026</p>
+    </aside>
+  );
+}
+
+function Stories({ avatarUrl, avatarLetter }) {
+  return (
+    <section aria-labelledby="stories-title" className="overflow-hidden">
+      <div className="mb-3 flex items-center justify-between px-1">
+        <h1 id="stories-title" className="text-lg font-extrabold text-[#332D42]">Tin</h1>
+        <button type="button" disabled title="Tính năng đang được hoàn thiện" className="cursor-default rounded-lg px-3 py-1.5 text-sm font-bold text-social-violet">Xem tất cả</button>
       </div>
+
+      <div className="feed-scroll flex snap-x gap-2.5 overflow-x-auto pb-2 outline-none focus-visible:ring-4 focus-visible:ring-social-violet/20" tabIndex={0} aria-label="Danh sách tin, dùng phím mũi tên để xem thêm">
+        <article className="relative h-[188px] w-[112px] shrink-0 snap-start overflow-hidden rounded-2xl border border-[#DFDCE6] bg-white shadow-[0_1px_3px_rgba(47,42,69,0.10)] sm:w-[120px]">
+          <div className="h-[132px] bg-gradient-to-br from-[#DCD6FF] via-[#C9C1F7] to-[#FFB9D0] p-3">
+            <Avatar initial={avatarLetter} gradient="from-social-violet to-social-pink" imageUrl={avatarUrl} size="sm" />
+          </div>
+          <span className="absolute bottom-9 left-1/2 grid h-9 w-9 -translate-x-1/2 place-items-center rounded-full border-4 border-white bg-social-violet text-xl font-bold text-white" aria-hidden="true">+</span>
+          <p className="absolute inset-x-1 bottom-2 text-center text-xs font-extrabold text-[#3D374B]">Tạo tin</p>
+        </article>
+
+        {stories.map((story) => (
+          <article key={story.name} className={`relative h-[188px] w-[112px] shrink-0 snap-start overflow-hidden rounded-2xl bg-gradient-to-b ${story.theme} shadow-[0_1px_4px_rgba(47,42,69,0.14)] sm:w-[120px]`}>
+            <div className="absolute inset-0 bg-gradient-to-t from-black/[.55] via-transparent to-white/10" />
+            <div className="absolute left-3 top-3">
+              <Avatar initial={story.initial} gradient={story.gradient} size="sm" />
+            </div>
+            <span className="absolute inset-0 grid place-items-center pt-4 text-4xl drop-shadow-md" aria-hidden="true">{story.emoji}</span>
+            <p className="absolute inset-x-3 bottom-3 text-xs font-extrabold leading-4 text-white">{story.name}</p>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function Composer({ isAuthenticated, displayName, avatarUrl, avatarLetter }) {
+  return (
+    <section className="rounded-none border-y border-[#E1DEE8] bg-white px-4 py-3 shadow-[0_1px_2px_rgba(47,42,69,0.08)] sm:rounded-2xl sm:border" aria-label="Tạo bài viết">
+      <div className="flex items-center gap-3">
+        <Avatar initial={avatarLetter} gradient="from-social-violet to-social-pink" imageUrl={avatarUrl} />
+        {isAuthenticated ? (
+          <button type="button" disabled title="Tính năng đăng bài đang được hoàn thiện" className="min-h-11 flex-1 cursor-default rounded-full bg-[#F1F0F4] px-4 text-left text-sm font-medium text-[#716A80]">
+            {displayName}, bạn đang nghĩ gì?
+          </button>
+        ) : (
+          <Link to="/login" className="flex min-h-11 flex-1 items-center rounded-full bg-[#F1F0F4] px-4 text-sm font-medium text-[#716A80] hover:bg-[#EAE8EF]">
+            Đăng nhập để chia sẻ khoảnh khắc của bạn
+          </Link>
+        )}
+      </div>
+
+      <div className="mt-3 grid grid-cols-3 border-t border-[#ECE9F0] pt-2">
+        {[
+          ["🎥", "Video trực tiếp"],
+          ["🖼️", "Ảnh / video"],
+          ["😊", "Cảm xúc"],
+        ].map(([icon, label]) => (
+          <button key={label} type="button" disabled aria-label={label} title="Tính năng đang được hoàn thiện" className="flex min-h-10 cursor-default items-center justify-center gap-2 rounded-lg px-2 text-xs font-bold text-[#645D73] sm:text-sm">
+            <span className="text-lg" aria-hidden="true">{icon}</span>
+            <span className="hidden truncate sm:block">{label}</span>
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function PostVisual({ type }) {
+  if (type === "quote") {
+    return (
+      <div className="relative grid aspect-[1.25] overflow-hidden bg-gradient-to-br from-[#B8EADD] via-[#E3F5EF] to-[#FFD8BE] p-8 text-center sm:aspect-[1.55]">
+        <span className="absolute -left-12 -top-12 h-40 w-40 rounded-full bg-white/[.35]" />
+        <span className="absolute -bottom-16 -right-12 h-52 w-52 rounded-full bg-[#7C6EE6]/[.15]" />
+        <div className="relative m-auto max-w-md rounded-[24px] border border-white/80 bg-white/75 px-6 py-8 shadow-sm backdrop-blur-sm">
+          <p className="text-xl font-black leading-snug tracking-[-0.03em] text-[#332D42] sm:text-2xl">“Bạn không cần hoàn hảo<br />để có một ngày thật vui.”</p>
+          <p className="mt-3 text-xs font-extrabold uppercase tracking-[0.15em] text-social-violet">tiny reminder ✦</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative aspect-[1.25] overflow-hidden bg-gradient-to-b from-[#B9C9F2] via-[#F8C7C2] to-[#F6C88E] sm:aspect-[1.55]">
+      <div className="absolute left-[10%] top-[12%] h-16 w-16 rounded-full bg-[#FFF2C6] shadow-[0_0_45px_rgba(255,242,198,0.9)]" />
+      <div className="absolute inset-x-0 bottom-0 h-[46%] bg-[#7C6EE6]/30 [clip-path:polygon(0_48%,22%_14%,42%_45%,63%_3%,82%_36%,100%_12%,100%_100%,0_100%)]" />
+      <div className="absolute inset-x-0 bottom-0 h-[28%] bg-[#5A8D7D]/[.65] [clip-path:polygon(0_35%,18%_2%,39%_30%,61%_7%,81%_32%,100%_5%,100%_100%,0_100%)]" />
+      <div className="absolute bottom-5 left-5 rounded-full bg-white/80 px-3 py-1.5 text-xs font-extrabold text-[#5B5474] shadow-sm backdrop-blur">cuối tuần thật dịu 🌤️</div>
     </div>
   );
 }
 
-function MovieRow({ movies }) {
+function PostCard({ post }) {
   return (
-    <div className="home-scroll -mx-5 mt-8 flex snap-x gap-4 overflow-x-auto px-5 pb-3 sm:-mx-8 sm:px-8 lg:mx-0 lg:grid lg:grid-cols-6 lg:gap-5 lg:overflow-visible lg:px-0">
-      {movies.map((movie) => (
-        <article
-          key={movie.title}
-          className="group min-w-[170px] snap-start rounded-xl border border-[#262626] bg-[#1A1A1A] p-3 transition duration-300 hover:-translate-y-1 hover:border-[#404040] sm:min-w-[210px] lg:min-w-0"
-        >
-          <div className="relative aspect-[2/3] overflow-hidden rounded-lg bg-[#0F0F0F]">
-            <img
-              className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-              src={movie.image}
-              alt={`Poster phim ${movie.title}`}
-              loading="lazy"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-            <span className="absolute left-2.5 top-2.5 rounded-md bg-[#E50000] px-2 py-1 text-[10px] font-semibold text-white">
-              {movie.badge}
-            </span>
-          </div>
+    <article className="overflow-hidden rounded-none border-y border-[#E1DEE8] bg-white shadow-[0_1px_2px_rgba(47,42,69,0.08)] sm:rounded-2xl sm:border">
+      <header className="flex items-center gap-3 px-4 py-3">
+        <Avatar initial={post.initial} gradient={post.gradient} />
+        <div className="min-w-0 flex-1">
+          <h2 className="truncate text-sm font-extrabold text-[#332D42]">{post.author}</h2>
+          <p className="mt-0.5 flex items-center gap-1 text-xs font-medium text-[#77718C]">
+            {post.time} · <span role="img" aria-label="Công khai">🌐</span>
+          </p>
+        </div>
+        <button type="button" disabled title="Tính năng đang được hoàn thiện" className="grid h-9 w-9 cursor-default place-items-center rounded-full text-[#77718C]" aria-label={`Tùy chọn bài viết của ${post.author}`}>
+          <MoreIcon />
+        </button>
+      </header>
 
-          <div className="px-1 pb-1 pt-4">
-            <h3 className="truncate text-sm font-semibold text-white sm:text-base">
-              {movie.title}
-            </h3>
-            <div className="mt-2 flex items-center justify-between text-xs text-[#999999]">
-              <span>{movie.meta}</span>
-              <span className="rounded-md border border-[#262626] bg-[#141414] px-2 py-1">
-                Full HD
-              </span>
+      <p className="px-4 pb-3 text-[15px] leading-6 text-[#3F394C]">{post.content}</p>
+      <PostVisual type={post.visual} />
+
+      <div className="px-4">
+        <div className="flex items-center justify-between gap-3 border-b border-[#E9E6ED] py-3 text-xs font-medium text-[#77718C] sm:text-sm">
+          <span className="flex min-w-0 items-center gap-2 truncate">
+            <span className="inline-flex -space-x-1" aria-hidden="true">
+              <span className="grid h-5 w-5 place-items-center rounded-full bg-social-violet text-[10px] text-white ring-1 ring-white">♡</span>
+              <span className="grid h-5 w-5 place-items-center rounded-full bg-social-pink text-[10px] text-white ring-1 ring-white">♥</span>
+            </span>
+            <span className="truncate">{post.reactions}</span>
+          </span>
+          <span className="shrink-0">{post.comments}</span>
+        </div>
+
+        <div className="grid grid-cols-3 py-1">
+          {[
+            ["♡", "Thích"],
+            ["◌", "Bình luận"],
+            ["↗", "Chia sẻ"],
+          ].map(([icon, label]) => (
+            <button key={label} type="button" disabled title="Tính năng đang được hoàn thiện" className="flex min-h-10 cursor-default items-center justify-center gap-2 rounded-lg text-sm font-bold text-[#665F74]">
+              <span className="text-lg" aria-hidden="true">{icon}</span>
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function RightSidebar({ isAuthenticated }) {
+  const friendTarget = isAuthenticated ? "/friends" : "/login";
+
+  return (
+    <aside className="sticky top-20 hidden max-h-[calc(100vh-5.5rem)] overflow-y-auto px-2 pb-6 xl:block" aria-label="Kết nối và liên hệ">
+      <section className="rounded-2xl border border-[#E3E0E9] bg-white p-4 shadow-[0_1px_2px_rgba(47,42,69,0.06)]">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-extrabold text-[#4A4459]">Gợi ý kết nối</h2>
+          <Link to={friendTarget} className="rounded-lg px-2 py-1 text-xs font-bold text-social-violet hover:bg-[#EFECF9]">Xem tất cả</Link>
+        </div>
+
+        <div className="mt-3 space-y-3">
+          {contacts.slice(0, 2).map((contact) => (
+            <div key={contact.name} className="flex items-center gap-3">
+              <Avatar initial={contact.initial} gradient={contact.gradient} size="sm" />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-bold text-[#3F394C]">{contact.name}</p>
+                <p className="mt-0.5 text-[11px] text-[#77718C]">3 bạn chung</p>
+              </div>
+              <Link to={friendTarget} className="rounded-lg bg-[#ECE8FB] px-3 py-2 text-xs font-extrabold text-social-violet hover:bg-[#E2DCF8]">Kết nối</Link>
             </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-4 border-t border-[#DDD9E6] pt-4">
+        <div className="flex items-center justify-between px-2">
+          <h2 className="text-sm font-extrabold text-[#625B70]">Người liên hệ</h2>
+          <div className="flex items-center gap-1">
+            <button type="button" disabled title="Tính năng đang được hoàn thiện" className="grid h-8 w-8 cursor-default place-items-center rounded-full text-[#77718C]" aria-label="Tìm người liên hệ"><SearchIcon /></button>
+            <button type="button" disabled title="Tính năng đang được hoàn thiện" className="grid h-8 w-8 cursor-default place-items-center rounded-full text-[#77718C]" aria-label="Tùy chọn người liên hệ"><MoreIcon /></button>
           </div>
-        </article>
-      ))}
-    </div>
+        </div>
+
+        <ul className="mt-2 space-y-1">
+          {contacts.map((contact) => (
+            <li key={contact.name} className="flex items-center gap-3 rounded-xl px-2 py-2 hover:bg-white/80">
+              <span className="relative">
+                <Avatar initial={contact.initial} gradient={contact.gradient} size="sm" />
+                <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-[#F3F2F7] bg-[#55B99E]" aria-hidden="true" />
+              </span>
+              <span className="truncate text-sm font-bold text-[#4A4459]">{contact.name}</span>
+              <span className="sr-only">Đang hoạt động</span>
+            </li>
+          ))}
+        </ul>
+      </section>
+    </aside>
   );
 }
 
 export default function HomePage() {
+  const user = useSelector(selectCurrentUser);
+  const isAuthenticated = useSelector(selectIsAuthenticated);
+  const displayName = user?.fullName?.trim() || user?.email || "bạn";
+  const avatarUrl = user?.avatarUrl?.trim();
+  const avatarLetter = displayName.charAt(0).toUpperCase();
+
   return (
-    <main
-      className="min-h-screen overflow-hidden bg-[#141414] text-white"
-      style={{ fontFamily: '"Manrope", sans-serif' }}
-    >
-      <style>
-        {`@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap");
-        .home-scroll { scrollbar-width: none; }
-        .home-scroll::-webkit-scrollbar { display: none; }`}
-      </style>
-
-      <section className="relative min-h-[760px] overflow-hidden">
-        <img
-          className="absolute inset-0 h-full w-full object-cover object-top"
-          src="/login/streamvibe-hero.jpg"
-          alt=""
-          aria-hidden="true"
+    <main className="mx-auto w-full max-w-[1460px] px-0 py-4 sm:px-4 lg:px-5">
+      <div className="grid items-start justify-center gap-5 lg:grid-cols-[240px_minmax(0,680px)] xl:grid-cols-[240px_minmax(0,680px)_300px]">
+        <LeftSidebar
+          isAuthenticated={isAuthenticated}
+          displayName={displayName}
+          avatarUrl={avatarUrl}
+          avatarLetter={avatarLetter}
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-[#141414]/80 via-[#141414]/20 to-[#141414]" />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#141414]/30 via-transparent to-[#141414]/30" />
 
-        <div className="relative z-10 mx-auto flex min-h-[640px] max-w-4xl flex-col items-center justify-end px-5 pb-20 pt-32 text-center sm:px-8 sm:pb-24">
-          <span className="rounded-full border border-white/10 bg-black/30 px-4 py-2 text-xs font-medium text-[#E4E4E7] backdrop-blur">
-            Hàng ngàn bộ phim đang chờ bạn khám phá
-          </span>
-          <img
-            className="mt-7 h-auto w-[340px] max-w-full drop-shadow-[0_10px_32px_rgba(229,0,0,0.28)] sm:w-[480px] lg:w-[620px]"
-            src={logoWordmark}
-            alt="Conflict"
+        <div className="min-w-0 space-y-4">
+          <div className="px-3 sm:px-0">
+            <Stories avatarUrl={avatarUrl} avatarLetter={avatarLetter} />
+          </div>
+          <Composer
+            isAuthenticated={isAuthenticated}
+            displayName={displayName}
+            avatarUrl={avatarUrl}
+            avatarLetter={avatarLetter}
           />
-          <h1
-            className="mt-7 whitespace-nowrap font-bold leading-tight tracking-[-0.03em] text-white"
-            style={{ fontSize: "clamp(0.875rem, 4.2vw, 3.25rem)" }}
-          >
-            Trải nghiệm xem phim tuyệt vời nhất
-          </h1>
-          <p className="mt-5 max-w-3xl text-sm leading-7 text-[#B3B3B3] sm:text-base lg:text-lg">
-            Thưởng thức những bộ phim bom tấn, series hấp dẫn và chương trình
-            yêu thích của bạn mọi lúc, mọi nơi với chất lượng hình ảnh tốt nhất.
-          </p>
-          <button
-            type="button"
-            className="mt-8 inline-flex items-center gap-2 rounded-lg bg-[#E50000] px-6 py-4 text-sm font-semibold text-white shadow-[0_12px_34px_rgba(229,0,0,0.22)] transition hover:bg-[#FF1919] focus:outline-none focus:ring-4 focus:ring-[#E50000]/25 sm:text-base"
-          >
-            <img className="h-5 w-5" src="/home/icons/play.svg" alt="" />
-            Bắt đầu xem ngay
-          </button>
+          {posts.map((post) => <PostCard key={post.id} post={post} />)}
         </div>
-      </section>
 
-      <div className="mx-auto max-w-[1280px] px-5 sm:px-8">
-        <section className="py-16 sm:py-20 lg:py-24">
-          <SectionHeading
-            title="Khám phá đa dạng thể loại"
-            description="Từ hành động kịch tính đến hài hước nhẹ nhàng, luôn có một thế giới nội dung phù hợp với tâm trạng của bạn."
-          />
-
-          <div className="mt-8 grid grid-cols-2 gap-4 md:grid-cols-3 lg:mt-10 xl:grid-cols-5 xl:gap-5">
-            {categories.map((category) => (
-              <article
-                key={category.name}
-                className="group rounded-xl border border-[#262626] bg-[#1A1A1A] p-3 transition duration-300 hover:-translate-y-1 hover:border-[#404040] sm:p-4"
-              >
-                <div className="relative grid h-44 grid-cols-2 gap-1.5 overflow-hidden rounded-lg sm:h-52">
-                  {category.images.map((image) => (
-                    <img
-                      key={image}
-                      className="h-full min-h-0 w-full object-cover"
-                      src={image}
-                      alt=""
-                      loading="lazy"
-                    />
-                  ))}
-                  <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#1A1A1A]" />
-                </div>
-
-                <div className="flex items-center justify-between gap-3 px-1 pb-1 pt-3">
-                  <h3 className="text-sm font-semibold text-white sm:text-base">
-                    {category.name}
-                  </h3>
-                  <img
-                    className="h-5 w-5 transition group-hover:translate-x-1"
-                    src="/home/icons/arrow.svg"
-                    alt=""
-                  />
-                </div>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <section className="border-t border-[#1F1F1F] py-16 sm:py-20">
-          <SectionHeading
-            title="Đang thịnh hành"
-            description="Những tựa phim đang được cộng đồng Conflict xem và bàn luận nhiều nhất tuần này."
-          />
-          <MovieRow movies={trendingMovies} />
-        </section>
-
-        <section className="border-t border-[#1F1F1F] py-16 sm:py-20">
-          <SectionHeading
-            title="Mới cập nhật"
-            description="Danh sách nội dung vừa được thêm vào thư viện để bạn luôn có điều mới mẻ để thưởng thức."
-          />
-          <MovieRow movies={latestMovies} />
-        </section>
-
-        <section className="relative my-16 overflow-hidden rounded-2xl border border-[#262626] sm:my-20">
-          <img
-            className="absolute inset-0 h-full w-full object-cover"
-            src="/login/streamvibe-hero.jpg"
-            alt=""
-            aria-hidden="true"
-            loading="lazy"
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#0F0F0F] via-[#0F0F0F]/95 to-[#E50000]/35" />
-
-          <div className="relative flex flex-col items-start justify-between gap-7 px-6 py-10 sm:px-10 sm:py-12 lg:flex-row lg:items-center">
-            <div className="max-w-2xl">
-              <h2 className="text-2xl font-bold text-white sm:text-3xl">
-                Bắt đầu trải nghiệm miễn phí ngay hôm nay
-              </h2>
-              <p className="mt-3 text-sm leading-6 text-[#B3B3B3] sm:text-base">
-                Tham gia Conflict và khám phá kho nội dung giải trí không giới
-                hạn trên mọi thiết bị.
-              </p>
-            </div>
-            <button
-              type="button"
-              className="shrink-0 rounded-lg bg-[#E50000] px-6 py-4 text-sm font-semibold text-white transition hover:bg-[#FF1919] focus:outline-none focus:ring-4 focus:ring-[#E50000]/25"
-            >
-              Dùng thử miễn phí
-            </button>
-          </div>
-        </section>
+        <RightSidebar isAuthenticated={isAuthenticated} />
       </div>
+
+      <style>{`.feed-scroll { scrollbar-width: none; } .feed-scroll::-webkit-scrollbar { display: none; }`}</style>
     </main>
   );
 }

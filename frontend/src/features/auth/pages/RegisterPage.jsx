@@ -1,8 +1,6 @@
 import { useState } from "react";
-import { useDispatch } from "react-redux";
-import { Link,useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useRegisterMutation } from "../authApi";
-import { setCredentials } from "../authSlice";
 
 const initialForm = {
   email: "",
@@ -33,7 +31,6 @@ export default function RegisterPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [serverError, setServerError] = useState("");
 
-  const dispatch = useDispatch();
   const navigate = useNavigate();
   const [register, { isLoading }] = useRegisterMutation();
 
@@ -55,7 +52,7 @@ export default function RegisterPage() {
     setServerError("");
 
     try {
-      const apiResponse = await register({
+      await register({
         email: form.email.trim(),
         password: form.password,
         confirmPassword: form.confirmPassword,
@@ -73,27 +70,42 @@ export default function RegisterPage() {
 
   return (
     <>
-              <div className="mb-8">
+      <div className="mb-7">
+        <span className="grid h-12 w-12 place-items-center rounded-[18px] bg-[#FFF0F5] text-[#C0577B]">
+          <svg
+            className="h-6 w-6"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            aria-hidden="true"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M15 6.75a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM3.75 20.25a7.5 7.5 0 0 1 15 0M19.5 8.25v6m3-3h-6"
+            />
+          </svg>
+        </span>
+        <h2 className="mt-5 text-3xl font-extrabold tracking-[-0.035em] text-[#2F2A45] sm:text-[34px]">
+          Gia nhập cộng đồng
+        </h2>
+        <p className="mt-2.5 text-sm leading-6 text-[#777087]">
+          Tạo tài khoản và bắt đầu chia sẻ những điều bạn yêu thích.
+        </p>
+      </div>
 
-                <h2 className="mt-5 text-3xl font-bold tracking-tight text-white">
-                  Chào mừng
-                </h2>
-                <p className="mt-3 text-sm leading-6 text-[#999999]">
-                  Đăng ký tài khoản để tiếp tục hành trình điện ảnh của bạn.
-                </p>
-              </div>
-
-              <form className="space-y-5" onSubmit={handleSubmit}>
+      <form className="space-y-4" onSubmit={handleSubmit}>
                 <div>
                   <label
-                    className="mb-2.5 block text-sm font-semibold text-[#E4E4E7]"
+                    className="mb-2 block text-sm font-bold text-[#4B4562]"
                     htmlFor="email"
                   >
                     Email
                   </label>
                   <div className="relative">
                     <svg
-                      className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#666666]"
+                      className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#8B82B7]"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
@@ -117,7 +129,7 @@ export default function RegisterPage() {
                       disabled={isLoading}
                       aria-invalid={Boolean(serverError)}
                       aria-describedby={serverError ? "register-error" : undefined}
-                      className="h-14 w-full rounded-lg border border-[#262626] bg-[#141414] pl-12 pr-4 text-sm text-white outline-none transition placeholder:text-[#666666] hover:border-[#333333] focus:border-[#E50000] focus:ring-4 focus:ring-[#E50000]/10 disabled:cursor-not-allowed disabled:opacity-60"
+                      className="h-14 w-full rounded-[18px] border border-[#E8E3F7] bg-[#FAF9FD] pl-12 pr-4 text-sm font-medium text-[#2F2A45] outline-none transition placeholder:font-normal placeholder:text-[#77718C] hover:border-[#CFC6EF] focus:border-[#7C6EE6] focus:bg-white focus:ring-4 focus:ring-[#7C6EE6]/10 disabled:cursor-not-allowed disabled:opacity-60"
                       required
                     />
                   </div>
@@ -125,14 +137,14 @@ export default function RegisterPage() {
 
                 <div>
                   <label
-                    className="mb-2.5 block text-sm font-semibold text-[#E4E4E7]"
+                    className="mb-2 block text-sm font-bold text-[#4B4562]"
                     htmlFor="password"
                   >
                     Mật khẩu
                   </label>
                   <div className="relative">
                     <svg
-                      className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#666666]"
+                      className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#8B82B7]"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
@@ -156,14 +168,14 @@ export default function RegisterPage() {
                       disabled={isLoading}
                       aria-invalid={Boolean(serverError)}
                       aria-describedby={serverError ? "register-error" : undefined}
-                      className="h-14 w-full rounded-lg border border-[#262626] bg-[#141414] pl-12 pr-12 text-sm text-white outline-none transition placeholder:text-[#666666] hover:border-[#333333] focus:border-[#E50000] focus:ring-4 focus:ring-[#E50000]/10 disabled:cursor-not-allowed disabled:opacity-60"
+                      className="h-14 w-full rounded-[18px] border border-[#E8E3F7] bg-[#FAF9FD] pl-12 pr-12 text-sm font-medium text-[#2F2A45] outline-none transition placeholder:font-normal placeholder:text-[#77718C] hover:border-[#CFC6EF] focus:border-[#7C6EE6] focus:bg-white focus:ring-4 focus:ring-[#7C6EE6]/10 disabled:cursor-not-allowed disabled:opacity-60"
                       required
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword((current) => !current)}
                       disabled={isLoading}
-                      className="absolute right-3 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-lg text-[#666666] transition hover:bg-[#262626] hover:text-[#BFBFBF] focus:outline-none focus:ring-2 focus:ring-[#E50000] disabled:cursor-not-allowed"
+                      className="absolute right-3 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-xl text-[#77718C] transition hover:bg-[#EEEAF9] hover:text-[#675BAF] focus:outline-none focus:ring-2 focus:ring-[#7C6EE6]/40 disabled:cursor-not-allowed"
                       aria-label={
                         showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"
                       }
@@ -207,14 +219,14 @@ export default function RegisterPage() {
 
                 <div>
                   <label
-                    className="mb-2.5 block text-sm font-semibold text-[#E4E4E7]"
+                    className="mb-2 block text-sm font-bold text-[#4B4562]"
                     htmlFor="confirmPassword"
                   >
                     Nhập lại mật khẩu
                   </label>
                   <div className="relative">
                     <svg
-                      className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#666666]"
+                      className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#8B82B7]"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
@@ -238,14 +250,14 @@ export default function RegisterPage() {
                       disabled={isLoading}
                       aria-invalid={Boolean(serverError)}
                       aria-describedby={serverError ? "register-error" : undefined}
-                      className="h-14 w-full rounded-lg border border-[#262626] bg-[#141414] pl-12 pr-12 text-sm text-white outline-none transition placeholder:text-[#666666] hover:border-[#333333] focus:border-[#E50000] focus:ring-4 focus:ring-[#E50000]/10 disabled:cursor-not-allowed disabled:opacity-60"
+                      className="h-14 w-full rounded-[18px] border border-[#E8E3F7] bg-[#FAF9FD] pl-12 pr-12 text-sm font-medium text-[#2F2A45] outline-none transition placeholder:font-normal placeholder:text-[#77718C] hover:border-[#CFC6EF] focus:border-[#7C6EE6] focus:bg-white focus:ring-4 focus:ring-[#7C6EE6]/10 disabled:cursor-not-allowed disabled:opacity-60"
                       required
                     />
                     <button
                       type="button"
                       onClick={() => setShowConfirmPassword((current) => !current)}
                       disabled={isLoading}
-                      className="absolute right-3 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-lg text-[#666666] transition hover:bg-[#262626] hover:text-[#BFBFBF] focus:outline-none focus:ring-2 focus:ring-[#E50000] disabled:cursor-not-allowed"
+                      className="absolute right-3 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-xl text-[#77718C] transition hover:bg-[#EEEAF9] hover:text-[#675BAF] focus:outline-none focus:ring-2 focus:ring-[#7C6EE6]/40 disabled:cursor-not-allowed"
                       aria-label={
                         showConfirmPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"
                       }
@@ -289,14 +301,14 @@ export default function RegisterPage() {
 
                 <div>
                   <label
-                    className="mb-2.5 block text-sm font-semibold text-[#E4E4E7]"
+                    className="mb-2 block text-sm font-bold text-[#4B4562]"
                     htmlFor="fullName"
                   >
                     Tên đầy đủ
                   </label>
                   <div className="relative">
                     <svg
-                      className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#666666]"
+                      className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#8B82B7]"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
@@ -306,7 +318,7 @@ export default function RegisterPage() {
                       <path
                         strokeLinecap="round"
                         strokeLinejoin="round"
-                        d="M3.75 6.75 12 12l8.25-5.25M5.25 19.5h13.5A2.25 2.25 0 0 0 21 17.25V6.75a2.25 2.25 0 0 0-2.25-2.25H5.25A2.25 2.25 0 0 0 3 6.75v10.5a2.25 2.25 0 0 0 2.25 2.25Z"
+                        d="M15.75 6.75a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.5 20.25a7.5 7.5 0 0 1 15 0"
                       />
                     </svg>
                     <input
@@ -320,7 +332,7 @@ export default function RegisterPage() {
                       disabled={isLoading}
                       aria-invalid={Boolean(serverError)}
                       aria-describedby={serverError ? "register-error" : undefined}
-                      className="h-14 w-full rounded-lg border border-[#262626] bg-[#141414] pl-12 pr-4 text-sm text-white outline-none transition placeholder:text-[#666666] hover:border-[#333333] focus:border-[#E50000] focus:ring-4 focus:ring-[#E50000]/10 disabled:cursor-not-allowed disabled:opacity-60"
+                      className="h-14 w-full rounded-[18px] border border-[#E8E3F7] bg-[#FAF9FD] pl-12 pr-4 text-sm font-medium text-[#2F2A45] outline-none transition placeholder:font-normal placeholder:text-[#77718C] hover:border-[#CFC6EF] focus:border-[#7C6EE6] focus:bg-white focus:ring-4 focus:ring-[#7C6EE6]/10 disabled:cursor-not-allowed disabled:opacity-60"
                       required
                     />
                   </div>
@@ -329,11 +341,11 @@ export default function RegisterPage() {
                 {serverError && (
                   <div
                     id="register-error"
-                    className="flex gap-3 rounded-lg border border-[#E50000]/35 bg-[#E50000]/10 px-4 py-3 text-sm leading-5 text-[#FF9999]"
+                    className="flex gap-3 rounded-[18px] border border-[#FF8FB3]/40 bg-[#FFF0F5] px-4 py-3 text-sm leading-5 text-[#A94464]"
                     role="alert"
                   >
                     <svg
-                      className="mt-0.5 h-5 w-5 shrink-0 text-[#FF3333]"
+                      className="mt-0.5 h-5 w-5 shrink-0 text-[#D86489]"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
@@ -353,7 +365,7 @@ export default function RegisterPage() {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="group flex h-14 w-full items-center justify-center gap-2 rounded-lg bg-[#E50000] px-5 text-sm font-semibold text-white shadow-[0_12px_32px_rgba(229,0,0,0.2)] transition hover:bg-[#FF1919] focus:outline-none focus:ring-4 focus:ring-[#E50000]/25 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="group flex h-14 w-full items-center justify-center gap-2 rounded-[18px] bg-gradient-to-r from-[#7C6EE6] to-[#9385EC] px-5 text-sm font-bold text-white shadow-[0_14px_30px_rgba(124,110,230,0.28)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_36px_rgba(124,110,230,0.34)] focus:outline-none focus:ring-4 focus:ring-[#7C6EE6]/25 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
                 >
                   {isLoading ? (
                     <>
@@ -398,13 +410,16 @@ export default function RegisterPage() {
                     </>
                   )}
                 </button>
-              </form>
-                <Link
-                  to="/login"
-                  className="mt-4 ml-auto flex min-h-7 w-fit items-center rounded-md border border-transparent px-2 text-sm font-medium text-[#B3B3B3] transition-all duration-200 hover:border-[#E50000]/30 hover:bg-[#E50000]/10 hover:text-[#FF3333] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E50000]/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0F0F0F]"
-                >
-                  Đã có tài khoản? Đăng nhập
-                </Link>
+      </form>
+      <p className="mt-5 text-center text-sm text-[#6F6880]">
+        Đã có tài khoản?{" "}
+        <Link
+          to="/login"
+          className="rounded-md font-bold text-[#675BAF] transition hover:text-[#FF6F9E] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#7C6EE6]/20"
+        >
+          Đăng nhập
+        </Link>
+      </p>
     </>
   );
 }

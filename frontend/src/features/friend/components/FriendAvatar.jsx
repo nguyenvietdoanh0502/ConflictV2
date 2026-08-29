@@ -1,6 +1,6 @@
 const avatarSizes = {
-  sm: "h-11 w-11 rounded-xl text-sm",
-  md: "h-14 w-14 rounded-2xl text-base",
+  sm: "h-11 w-11 rounded-2xl text-sm",
+  md: "h-14 w-14 rounded-[20px] text-base",
 };
 
 export default function FriendAvatar({
@@ -18,7 +18,7 @@ export default function FriendAvatar({
         src={avatarUrl}
         alt=""
         aria-hidden="true"
-        className={`${sizeClass} shrink-0 border border-[#3A3A3A] object-cover`}
+        className={`${sizeClass} shrink-0 border-2 border-white object-cover shadow-[0_8px_22px_rgba(124,110,230,0.18)] ring-1 ring-[#E8E2FF]`}
         loading="lazy"
       />
     );
@@ -27,7 +27,7 @@ export default function FriendAvatar({
   return (
     <span
       aria-hidden="true"
-      className={`${sizeClass} grid shrink-0 place-items-center border border-[#E50000]/35 bg-gradient-to-br from-[#E50000] to-[#8A0000] font-bold text-white`}
+      className={`${sizeClass} grid shrink-0 place-items-center border-2 border-white bg-gradient-to-br from-[#9B8FF0] via-[#7C6EE6] to-[#FF8FB3] font-bold text-white shadow-[0_8px_22px_rgba(124,110,230,0.22)] ring-1 ring-[#E8E2FF]`}
     >
       {firstLetter}
     </span>

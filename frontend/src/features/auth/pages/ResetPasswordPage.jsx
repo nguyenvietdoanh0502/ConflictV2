@@ -1,8 +1,6 @@
 import { useState } from "react";
-import { useDispatch } from "react-redux";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useResetPasswordMutation } from "../authApi";
-import { setCredentials } from "../authSlice";
 
 const initialForm = {
   email: "",
@@ -30,10 +28,9 @@ function getResetPasswordErrorMessage(error) {
 export default function ResetPasswordPage() {
   const [form, setForm] = useState(initialForm);
   const [showNewPassword, setShowNewPassword] = useState(false);
-  const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false)
+  const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false);
   const [serverError, setServerError] = useState("");
 
-  const dispatch = useDispatch();
   const navigate = useNavigate();
   const [resetPassword, { isLoading }] = useResetPasswordMutation();
   const location = useLocation();
@@ -58,7 +55,7 @@ export default function ResetPasswordPage() {
     setServerError("");
 
     try {
-      const apiResponse = await resetPassword({
+      await resetPassword({
         email: locationEmail,
         resetToken: locationResetToken,
         newPassword: form.newPassword,
@@ -72,27 +69,42 @@ export default function ResetPasswordPage() {
 
   return (
     <>
-              <div className="mb-8">
+      <div className="mb-7">
+        <span className="grid h-12 w-12 place-items-center rounded-[18px] bg-[#FFF3E9] text-[#AD7049]">
+          <svg
+            className="h-6 w-6"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            aria-hidden="true"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M16.5 9.75 18 11.25l3-3m-5.25 3.75a6 6 0 1 1-1.76-4.24M6.75 10.5V8.25a5.25 5.25 0 0 1 7.64-4.67"
+            />
+          </svg>
+        </span>
+        <h2 className="mt-5 text-3xl font-extrabold tracking-[-0.035em] text-[#2F2A45] sm:text-[34px]">
+          Tạo mật khẩu mới
+        </h2>
+        <p className="mt-2.5 text-sm leading-6 text-[#777087]">
+          Chọn một mật khẩu mới, an toàn và dễ nhớ với riêng bạn.
+        </p>
+      </div>
 
-                <h2 className="mt-5 text-3xl font-bold tracking-tight text-white">
-                  Đặt lại mật khẩu
-                </h2>
-                <p className="mt-3 text-sm leading-6 text-[#999999]">
-                  Đặt lại mật khẩu của bạn
-                </p>
-              </div>
-
-              <form className="space-y-5" onSubmit={handleSubmit}>
+      <form className="space-y-5" onSubmit={handleSubmit}>
                 <div>
                   <label
-                    className="mb-2.5 block text-sm font-semibold text-[#E4E4E7]"
+                    className="mb-2.5 block text-sm font-bold text-[#4B4562]"
                     htmlFor="newPassword"
                   >
                     Mật khẩu mới
                   </label>
                   <div className="relative">
                     <svg
-                      className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#666666]"
+                      className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#8B82B7]"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
@@ -116,14 +128,14 @@ export default function ResetPasswordPage() {
                       disabled={isLoading}
                       aria-invalid={Boolean(serverError)}
                       aria-describedby={serverError ? "reset-password-error" : undefined}
-                      className="h-14 w-full rounded-lg border border-[#262626] bg-[#141414] pl-12 pr-12 text-sm text-white outline-none transition placeholder:text-[#666666] hover:border-[#333333] focus:border-[#E50000] focus:ring-4 focus:ring-[#E50000]/10 disabled:cursor-not-allowed disabled:opacity-60"
+                      className="h-14 w-full rounded-[18px] border border-[#E8E3F7] bg-[#FAF9FD] pl-12 pr-12 text-sm font-medium text-[#2F2A45] outline-none transition placeholder:font-normal placeholder:text-[#77718C] hover:border-[#CFC6EF] focus:border-[#7C6EE6] focus:bg-white focus:ring-4 focus:ring-[#7C6EE6]/10 disabled:cursor-not-allowed disabled:opacity-60"
                       required
                     />
                     <button
                       type="button"
                       onClick={() => setShowNewPassword((current) => !current)}
                       disabled={isLoading}
-                      className="absolute right-3 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-lg text-[#666666] transition hover:bg-[#262626] hover:text-[#BFBFBF] focus:outline-none focus:ring-2 focus:ring-[#E50000] disabled:cursor-not-allowed"
+                      className="absolute right-3 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-xl text-[#77718C] transition hover:bg-[#EEEAF9] hover:text-[#675BAF] focus:outline-none focus:ring-2 focus:ring-[#7C6EE6]/40 disabled:cursor-not-allowed"
                       aria-label={
                         showNewPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"
                       }
@@ -167,14 +179,14 @@ export default function ResetPasswordPage() {
 
                 <div>
                   <label
-                    className="mb-2.5 block text-sm font-semibold text-[#E4E4E7]"
+                    className="mb-2.5 block text-sm font-bold text-[#4B4562]"
                     htmlFor="confirmNewPassword"
                   >
                     Nhập lại mật khẩu mới
                   </label>
                   <div className="relative">
                     <svg
-                      className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#666666]"
+                      className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#8B82B7]"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
@@ -198,14 +210,14 @@ export default function ResetPasswordPage() {
                       disabled={isLoading}
                       aria-invalid={Boolean(serverError)}
                       aria-describedby={serverError ? "reset-password-error" : undefined}
-                      className="h-14 w-full rounded-lg border border-[#262626] bg-[#141414] pl-12 pr-12 text-sm text-white outline-none transition placeholder:text-[#666666] hover:border-[#333333] focus:border-[#E50000] focus:ring-4 focus:ring-[#E50000]/10 disabled:cursor-not-allowed disabled:opacity-60"
+                      className="h-14 w-full rounded-[18px] border border-[#E8E3F7] bg-[#FAF9FD] pl-12 pr-12 text-sm font-medium text-[#2F2A45] outline-none transition placeholder:font-normal placeholder:text-[#77718C] hover:border-[#CFC6EF] focus:border-[#7C6EE6] focus:bg-white focus:ring-4 focus:ring-[#7C6EE6]/10 disabled:cursor-not-allowed disabled:opacity-60"
                       required
                     />
                     <button
                       type="button"
                       onClick={() => setShowConfirmNewPassword((current) => !current)}
                       disabled={isLoading}
-                      className="absolute right-3 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-lg text-[#666666] transition hover:bg-[#262626] hover:text-[#BFBFBF] focus:outline-none focus:ring-2 focus:ring-[#E50000] disabled:cursor-not-allowed"
+                      className="absolute right-3 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-xl text-[#77718C] transition hover:bg-[#EEEAF9] hover:text-[#675BAF] focus:outline-none focus:ring-2 focus:ring-[#7C6EE6]/40 disabled:cursor-not-allowed"
                       aria-label={
                         showConfirmNewPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"
                       }
@@ -250,11 +262,11 @@ export default function ResetPasswordPage() {
                 {serverError && (
                   <div
                     id="reset-password-error"
-                    className="flex gap-3 rounded-lg border border-[#E50000]/35 bg-[#E50000]/10 px-4 py-3 text-sm leading-5 text-[#FF9999]"
+                    className="flex gap-3 rounded-[18px] border border-[#FF8FB3]/40 bg-[#FFF0F5] px-4 py-3 text-sm leading-5 text-[#A94464]"
                     role="alert"
                   >
                     <svg
-                      className="mt-0.5 h-5 w-5 shrink-0 text-[#FF3333]"
+                      className="mt-0.5 h-5 w-5 shrink-0 text-[#D86489]"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
@@ -274,7 +286,7 @@ export default function ResetPasswordPage() {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="group flex h-14 w-full items-center justify-center gap-2 rounded-lg bg-[#E50000] px-5 text-sm font-semibold text-white shadow-[0_12px_32px_rgba(229,0,0,0.2)] transition hover:bg-[#FF1919] focus:outline-none focus:ring-4 focus:ring-[#E50000]/25 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="group flex h-14 w-full items-center justify-center gap-2 rounded-[18px] bg-gradient-to-r from-[#7C6EE6] to-[#9385EC] px-5 text-sm font-bold text-white shadow-[0_14px_30px_rgba(124,110,230,0.28)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_36px_rgba(124,110,230,0.34)] focus:outline-none focus:ring-4 focus:ring-[#7C6EE6]/25 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
                 >
                   {isLoading ? (
                     <>
@@ -319,8 +331,7 @@ export default function ResetPasswordPage() {
                     </>
                   )}
                 </button>
-              </form>
-
+      </form>
     </>
   );
 }
