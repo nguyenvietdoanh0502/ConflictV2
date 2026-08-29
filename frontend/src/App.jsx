@@ -26,9 +26,12 @@ function App() {
       <Route element={<MainLayout/>}>
         <Route path="/" element={<HomePage/>} />
         <Route element = {<ProtectedRoute/>}>
+          <Route path="/friends" element={<FriendsPage />} />
+          <Route path="/profile/friends" element={<Navigate to="/friends" replace />} />
           <Route path="/profile" element={<ProfilePage/>}>
-            <Route path="friends" element={<FriendsPage />} />
-            <Route path="*" element={null} />
+            <Route path="favorites" element={null} />
+            <Route path="history" element={null} />
+            <Route path="*" element={<Navigate to="/profile" replace />} />
           </Route>
         </Route>
       </Route>

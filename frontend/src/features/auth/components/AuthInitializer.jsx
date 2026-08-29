@@ -58,14 +58,22 @@ export default function AuthInitializer({children}){
     },[dispatch,refreshToken,getCurrentUser]);
     if(!isInitialized){
         return (
-      <div className="grid min-h-screen place-items-center bg-[#141414] text-white">
-        <div className="flex flex-col items-center gap-4">
+      <div className="relative grid min-h-screen place-items-center overflow-hidden bg-[#F7F5FF] px-5 text-[#2F2A45]">
+        <span
+          className="pointer-events-none absolute -left-20 top-20 h-64 w-64 rounded-full bg-[#FFD8BE]/[.55] blur-3xl"
+          aria-hidden="true"
+        />
+        <span
+          className="pointer-events-none absolute -right-20 bottom-16 h-72 w-72 rounded-full bg-[#B8EADD]/50 blur-3xl"
+          aria-hidden="true"
+        />
+        <div className="relative flex flex-col items-center gap-4 rounded-[28px] border border-white/90 bg-white/80 px-8 py-7 shadow-[0_24px_60px_rgba(73,58,128,0.14)] backdrop-blur-xl">
           <span
-            className="h-10 w-10 animate-spin rounded-full border-2 border-[#333333] border-t-[#E50000]"
+            className="h-10 w-10 animate-spin rounded-full border-[3px] border-[#E6E0F6] border-t-[#7C6EE6] motion-reduce:animate-none"
             aria-hidden="true"
           />
 
-          <p className="text-sm text-[#999999]">
+          <p className="text-sm font-semibold text-[#777087]">
             Đang khôi phục phiên đăng nhập...
           </p>
         </div>

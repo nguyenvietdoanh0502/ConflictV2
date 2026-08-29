@@ -457,7 +457,7 @@ npm.cmd run dev
 
 Ma trận kiểm thử thủ công:
 
-1. Mở `/profile/friends` khi chưa đăng nhập: phải chuyển tới `/login`.
+1. Mở `/friends` khi chưa đăng nhập: phải chuyển tới `/login`.
 2. Không có dữ liệu: cả ba khối hiện đúng empty state.
 3. Backend tắt: từng khối hiện error và nút “Thử lại”.
 4. PIN rỗng/sai dạng: không gọi API, hiện lỗi client.

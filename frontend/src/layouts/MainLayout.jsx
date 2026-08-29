@@ -1,15 +1,14 @@
 import { Outlet } from "react-router-dom";
 import Header from "./Header";
-import Footer from "./Footer";
 
 export default function MainLayout() {
   return (
-    <div className="min-h-screen bg-[#141414] text-white">
+    <div className="min-h-screen overflow-x-hidden bg-[#F3F2F7] text-social-ink">
       <Header />
 
-      <Outlet />
-
-      <Footer />
+      <div id="main-content" tabIndex={-1} className="min-h-[calc(100vh-4rem)] outline-none">
+        <Outlet />
+      </div>
     </div>
   );
 }

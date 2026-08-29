@@ -162,19 +162,37 @@ export default function VerifyOtpPage() {
 
   return (
     <>
-              <div className="mb-8">
+      <div className="mb-7">
+        <span className="grid h-12 w-12 place-items-center rounded-[18px] bg-[#EAF8F4] text-[#438675]">
+          <svg
+            className="h-6 w-6"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            aria-hidden="true"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M3.75 7.5 12 12.75 20.25 7.5M5.25 19.5h13.5A2.25 2.25 0 0 0 21 17.25V6.75a2.25 2.25 0 0 0-2.25-2.25H5.25A2.25 2.25 0 0 0 3 6.75v10.5a2.25 2.25 0 0 0 2.25 2.25Z"
+            />
+          </svg>
+        </span>
+        <h2 className="mt-5 text-3xl font-extrabold tracking-[-0.035em] text-[#2F2A45] sm:text-[34px]">
+          Kiểm tra hộp thư
+        </h2>
+        <p className="mt-2.5 text-sm leading-6 text-[#777087]">
+          Nhập mã 6 số vừa được gửi đến
+        </p>
+        <p className="mt-2 inline-flex max-w-full rounded-full bg-[#F1EEFB] px-3 py-1.5 text-xs font-bold text-[#675BAF]">
+          <span className="truncate">{locationEmail}</span>
+        </p>
+      </div>
 
-                <h2 className="mt-5 text-3xl font-bold tracking-tight text-white">
-                  Nhập OTP
-                </h2>
-                <p className="mt-3 text-sm leading-6 text-[#999999]">
-                  Mã OTP đã được gửi về email {locationEmail}
-                </p>
-              </div>
-
-              <form className="space-y-5" onSubmit={handleSubmit}>
+      <form className="space-y-5" onSubmit={handleSubmit}>
                 <fieldset>
-                  <legend className="mb-3 block text-sm font-semibold text-[#E4E4E7]">
+                  <legend className="mb-3 block text-sm font-bold text-[#4B4562]">
                     Mã OTP gồm 6 chữ số
                   </legend>
 
@@ -209,7 +227,7 @@ export default function VerifyOtpPage() {
                         aria-describedby={
                           serverError ? "verify-error" : undefined
                         }
-                        className="aspect-square w-full min-w-0 rounded-xl border border-[#333333] bg-[#141414] text-center text-xl font-bold text-white caret-[#E50000] outline-none transition hover:border-[#4A4A4A] focus:border-[#E50000] focus:bg-[#1A1A1A] focus:ring-4 focus:ring-[#E50000]/15 disabled:cursor-not-allowed disabled:opacity-60 sm:text-2xl"
+                        className="aspect-square w-full min-w-0 rounded-[16px] border border-[#E4DFF4] bg-[#FAF9FD] text-center text-xl font-extrabold text-[#2F2A45] caret-[#7C6EE6] outline-none transition hover:border-[#CFC6EF] focus:-translate-y-0.5 focus:border-[#7C6EE6] focus:bg-white focus:ring-4 focus:ring-[#7C6EE6]/10 disabled:cursor-not-allowed disabled:opacity-60 sm:rounded-[18px] sm:text-2xl"
                         required
                       />
                     ))}
@@ -221,11 +239,11 @@ export default function VerifyOtpPage() {
                 {serverError && (
                   <div
                     id="verify-error"
-                    className="flex gap-3 rounded-lg border border-[#E50000]/35 bg-[#E50000]/10 px-4 py-3 text-sm leading-5 text-[#FF9999]"
+                    className="flex gap-3 rounded-[18px] border border-[#FF8FB3]/40 bg-[#FFF0F5] px-4 py-3 text-sm leading-5 text-[#A94464]"
                     role="alert"
                   >
                     <svg
-                      className="mt-0.5 h-5 w-5 shrink-0 text-[#FF3333]"
+                      className="mt-0.5 h-5 w-5 shrink-0 text-[#D86489]"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
@@ -245,7 +263,7 @@ export default function VerifyOtpPage() {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="group flex h-14 w-full items-center justify-center gap-2 rounded-lg bg-[#E50000] px-5 text-sm font-semibold text-white shadow-[0_12px_32px_rgba(229,0,0,0.2)] transition hover:bg-[#FF1919] focus:outline-none focus:ring-4 focus:ring-[#E50000]/25 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="group flex h-14 w-full items-center justify-center gap-2 rounded-[18px] bg-gradient-to-r from-[#7C6EE6] to-[#9385EC] px-5 text-sm font-bold text-white shadow-[0_14px_30px_rgba(124,110,230,0.28)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_36px_rgba(124,110,230,0.34)] focus:outline-none focus:ring-4 focus:ring-[#7C6EE6]/25 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
                 >
                   {isLoading ? (
                     <>
@@ -290,9 +308,7 @@ export default function VerifyOtpPage() {
                     </>
                   )}
                 </button>
-              </form>
-
-
+      </form>
     </>
   );
 }
