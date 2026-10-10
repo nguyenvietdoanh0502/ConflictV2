@@ -122,4 +122,14 @@ public class JwtProvider {
         byte[] keyBytes = Decoders.BASE64.decode(secretKey);
         return Keys.hmacShaKeyFor(keyBytes);
     }
+    public boolean isAccessTokenValid(
+            String token,
+            UserDetails userDetails
+    ){
+        String tokenType = extractClaim(
+                token,
+                claims -> claims.get("tokenType",String.class)
+        );
+        return "access".equals(tokenType) && isTokenValid(token,userDetails);
+    }
 }

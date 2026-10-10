@@ -167,7 +167,43 @@ public enum ErrorCode {
             "FRIENDSHIP_FORBIDDEN",
             "You are not a member of this friendship",
             403
+    ),
+    MISSING_RECIPIENT_ID(
+            "MISSING_RECIPIENT_ID",
+            "Recipient is required",
+            400
+    ),
+    MISSING_MESSAGE_CONTENT(
+            "MISSING_MESSAGE_CONTENT",
+            "Message content is required",
+            400
+    ),
+    MESSAGE_TOO_LONG(
+            "MESSAGE_TOO_LONG",
+            "Message must not exceed 2000 characters",
+            400
+    ),
+    CHAT_RECIPIENT_NOT_FOUND(
+            "CHAT_RECIPIENT_NOT_FOUND",
+            "Recipient was not found",
+            404
+    ),
+    CANNOT_MESSAGE_SELF(
+            "CANNOT_MESSAGE_SELF",
+            "You cannot message yourself",
+            400
+    ),
+    NOT_FRIENDS(
+            "NOT_FRIENDS",
+            "Users are not friends",
+            403
+    ),
+    INVALID_PAGINATION(
+            "INVALID_PAGINATION",
+            "Invalid pagination parameters",
+            400
     );
+
     private final String code;
     private final String message;
     private final int httpStatus;

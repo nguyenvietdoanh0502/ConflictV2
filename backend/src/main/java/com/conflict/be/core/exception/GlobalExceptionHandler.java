@@ -3,6 +3,8 @@ package com.conflict.be.core.exception;
 import com.conflict.be.core.common.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.handler.annotation.MessageExceptionHandler;
+import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -110,5 +112,16 @@ public class GlobalExceptionHandler {
         );
         return ResponseEntity.status(errorCode.getHttpStatus()).body(response);
     }
-
+    @MessageExceptionHandler(AppException.class)
+    @SendToUser(destinations = "/queue/errors",broadcast = false)
+    public ApiResponse<Void> handleAppException(
+            AppException exception
+    ){
+        ErrorCode errorCode = exception.getErrorCode();
+        return ApiResponse.error(
+                errorCode.getHttpStatus(),
+                errorCode.getMessage(),
+                errorCode.getCode()
+        );
+    }
 }

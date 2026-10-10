@@ -25,5 +25,8 @@ public class UrlConstant {
         public static final String INCOMING = "/friends/requests/incoming";
         public static final String OUTGOING = "/friends/requests/outgoing";
     }
+    public static class Chat{
+        public static final String HISTORY = "/chat/{friendUserId}/messages";
+    }
 
 }

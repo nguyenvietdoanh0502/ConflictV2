@@ -92,4 +92,37 @@ public interface FriendshipRepository
             @Param("currentUserId") UUID currentUserId,
             @Param("status") FriendshipStatus status
     );
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+            select f
+            from Friendship f
+            where f.status = :status
+                and (
+                    (f.lowUser.id = :firstUserId and f.highUser.id = :secondUserId)
+                    or 
+                    (f.lowUser.id = :secondUserId and f.highUser.id = :firstUserId)
+                   )
+            """)
+    Optional<Friendship> findByUsersAndStatusForUpdate(
+            UUID firstUserId,
+            UUID secondUserId,
+            FriendshipStatus status
+    );
+
+    @Query("""
+            select (count(f)>0)
+            from Friendship f
+            where f.status = :status
+                and (
+                    (f.lowUser.id = :firstUserId and f.highUser.id = :secondUserId)
+                    or
+                    (f.lowUser.id = :secondUserId and f.highUser.id = :firstUserId)
+                    )
+            """)
+    boolean existsByUsersAndStatus(
+            UUID firstUserId,
+            UUID secondUserId,
+            FriendshipStatus status
+    );
 }
