@@ -4,6 +4,7 @@ import {
   selectCurrentUser,
   selectIsAuthenticated,
 } from "../features/auth/authSelectors";
+import ContactsSidebar from "../features/chat/components/ContactsSidebar";
 
 function FeatureCard({ icon, title, description, badge, to, accent }) {
   const content = (
@@ -48,12 +49,14 @@ export default function HomePage() {
   const avatarLetter = displayName.charAt(0).toUpperCase();
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] bg-[#F8F7FC] px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-6xl">
+    <div className="min-h-[calc(100vh-4rem)] bg-[#F8F7FC] px-4 py-6 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl">
         {isAuthenticated ? (
-          <div className="space-y-8">
-            {/* Logged in Hero Banner */}
-            <div className="relative overflow-hidden rounded-[32px] bg-gradient-to-br from-[#7C6EE6] via-[#8C7FE9] to-[#FF8FB3] p-7 text-white shadow-soft sm:p-10">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_300px] xl:grid-cols-[minmax(0,1fr)_330px]">
+            {/* Left Column: Dashboard & Features */}
+            <div className="min-w-0 space-y-8">
+              {/* Logged in Hero Banner */}
+              <div className="relative overflow-hidden rounded-[32px] bg-gradient-to-br from-[#7C6EE6] via-[#8C7FE9] to-[#FF8FB3] p-7 text-white shadow-soft sm:p-10">
               <span className="absolute -right-12 -top-12 h-56 w-56 rounded-full border-[28px] border-white/10" aria-hidden="true" />
               <span className="absolute -bottom-16 right-1/4 h-48 w-48 rounded-full bg-white/10 blur-2xl" aria-hidden="true" />
 
@@ -158,6 +161,14 @@ export default function HomePage() {
               </div>
             </div>
           </div>
+
+          {/* Right Column: Facebook-style Contacts Sidebar */}
+          <div className="hidden lg:block">
+            <div className="sticky top-20">
+              <ContactsSidebar />
+            </div>
+          </div>
+        </div>
         ) : (
           /* Public Landing Page */
           <div className="space-y-12 py-6">

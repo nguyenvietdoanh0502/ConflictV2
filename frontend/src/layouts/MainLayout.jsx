@@ -1,5 +1,6 @@
 import { Outlet } from "react-router-dom";
 import Header from "./Header";
+import RealtimeChatManager from "../features/chat/components/RealtimeChatManager";
 
 export default function MainLayout() {
   return (
@@ -9,6 +10,8 @@ export default function MainLayout() {
       <div id="main-content" tabIndex={-1} className="min-h-[calc(100vh-4rem)] outline-none">
         <Outlet />
       </div>
+
+      <RealtimeChatManager />
     </div>
   );
 }

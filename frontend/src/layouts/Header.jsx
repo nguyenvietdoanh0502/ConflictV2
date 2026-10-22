@@ -1,9 +1,13 @@
 import { Link, NavLink } from "react-router-dom";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import {
   selectCurrentUser,
   selectIsAuthenticated,
 } from "../features/auth/authSelectors";
+import {
+  toggleMobileContacts,
+  selectTotalUnreadCount,
+} from "../features/chat/chatSlice";
 
 function HomeIcon() {
   return (
@@ -82,6 +86,21 @@ function BellIcon() {
   );
 }
 
+function MessengerIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden="true">
+      <path
+        d="M12 2C6.477 2 2 6.145 2 11.258c0 2.912 1.455 5.512 3.727 7.159V21.5a.75.75 0 0 0 1.157.633l2.844-1.748c.725.2 1.488.307 2.272.307 5.523 0 10-4.145 10-9.258C22 6.145 17.523 2 12 2Z"
+        fill="currentColor"
+      />
+      <path
+        d="m8.5 13.5 2.5-3 2.5 3 4-4.5-5 5.5-2.5-3-4 4.5 2.5-2.5Z"
+        fill="white"
+      />
+    </svg>
+  );
+}
+
 function BrandMark() {
   return (
     <span className="grid h-10 w-10 place-items-center rounded-full bg-social-violet text-white shadow-[0_5px_14px_rgba(124,110,230,0.30)]">
@@ -106,8 +125,10 @@ const roundButtonClass =
   "grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#F0EEF8] text-[#4F4965] hover:bg-[#E8E4F7] hover:text-social-violet focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-social-violet/20 disabled:cursor-default disabled:hover:bg-[#F0EEF8] disabled:hover:text-[#4F4965]";
 
 export default function Header() {
+  const dispatch = useDispatch();
   const user = useSelector(selectCurrentUser);
   const isAuthenticated = useSelector(selectIsAuthenticated);
+  const totalUnreadCount = useSelector(selectTotalUnreadCount);
   const displayName = user?.fullName?.trim() || user?.email || "Người dùng";
   const avatarUrl = user?.avatarUrl?.trim();
   const avatarLetter = displayName.charAt(0).toUpperCase();
@@ -192,6 +213,21 @@ export default function Header() {
                 title="Tính năng tạo nội dung đang được hoàn thiện"
               >
                 <PlusIcon />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => dispatch(toggleMobileContacts())}
+                className={`${roundButtonClass} relative`}
+                aria-label="Trò chuyện tin nhắn"
+                title="Trò chuyện cùng bạn bè"
+              >
+                <MessengerIcon />
+                {totalUnreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 grid h-5 min-w-[20px] place-items-center rounded-full bg-[#E41E3F] px-1 text-[10px] font-extrabold text-white ring-2 ring-white animate-pulse">
+                    {totalUnreadCount > 9 ? "9+" : totalUnreadCount}
+                  </span>
+                )}
               </button>
 
               <button
