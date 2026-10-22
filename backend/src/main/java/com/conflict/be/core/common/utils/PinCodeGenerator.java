@@ -3,7 +3,7 @@ package com.conflict.be.core.common.utils;
 import java.security.SecureRandom;
 
 public class PinCodeGenerator {
-    private static final String PREFIX = "RML-";
+    private static final String PREFIX = "UNI-";
     private static final int PIN_LENGTH = 6;
     private static final SecureRandom random = new SecureRandom();
 

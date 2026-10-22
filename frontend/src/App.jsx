@@ -29,8 +29,6 @@ function App() {
           <Route path="/friends" element={<FriendsPage />} />
           <Route path="/profile/friends" element={<Navigate to="/friends" replace />} />
           <Route path="/profile" element={<ProfilePage/>}>
-            <Route path="favorites" element={null} />
-            <Route path="history" element={null} />
             <Route path="*" element={<Navigate to="/profile" replace />} />
           </Route>
         </Route>

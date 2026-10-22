@@ -296,7 +296,7 @@ class UserServiceTest {
                 .id(UUID.randomUUID())
                 .email(EMAIL)
                 .fullName("Old User")
-                .pinCode("RML-123456")
+                .pinCode("UNI-123456")
                 .avatarUrl("https://cdn.example.com/old.jpg")
                 .avatarPublicId("old-public-id")
                 .build();

@@ -69,7 +69,7 @@ public class AuthControllerTest {
                     .id(UUID.randomUUID())
                     .email(request.getEmail())
                     .fullName(request.getFullName())
-                    .pinCode("RML-123456")
+                    .pinCode("UNI-123456")
                     .status(AccountStatus.PENDING)
                     .build();
 

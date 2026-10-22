@@ -42,7 +42,7 @@ class UserRegistrationServiceTest {
                 .id(UUID.randomUUID())
                 .email("profile@example.com")
                 .fullName("Profile User")
-                .pinCode("RML-123456")
+                .pinCode("UNI-123456")
                 .dateOfBirth(LocalDate.of(1995, 6, 15))
                 .address("Can Tho")
                 .gender(Gender.MALE)
@@ -84,7 +84,7 @@ class UserRegistrationServiceTest {
             assertThat(result).isNotNull();
             assertThat(result.getEmail()).isEqualTo(command.getEmail());
             assertThat(result.getFullName()).isEqualTo(command.getFullName());
-            assertThat(result.getPinCode()).startsWith("RML-");
+            assertThat(result.getPinCode()).startsWith("UNI-");
             verify(userRepository).save(any(User.class));
         }
 
@@ -122,7 +122,7 @@ class UserRegistrationServiceTest {
             User existingUser = User.builder()
                     .email(command.getEmail())
                     .status(AccountStatus.PENDING)
-                    .pinCode("RML-111111")
+                    .pinCode("UNI-111111")
                     .build();
 
             when(userRepository.findByEmail(command.getEmail())).thenReturn(Optional.of(existingUser));
@@ -133,7 +133,7 @@ class UserRegistrationServiceTest {
 
             // Assert
             assertThat(result.getFullName()).isEqualTo(command.getFullName());
-            assertThat(result.getPinCode()).isEqualTo("RML-111111");
+            assertThat(result.getPinCode()).isEqualTo("UNI-111111");
             verify(userRepository).save(any(User.class));
         }
 

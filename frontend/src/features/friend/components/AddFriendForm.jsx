@@ -5,7 +5,7 @@ const feedbackClasses = {
 };
 
 export default function AddFriendForm({
-  currentUserPinCode = "RML-••••••",
+  currentUserPinCode = "UNI-••••••",
   pinCode,
   onPinCodeChange,
   onSubmit,
@@ -51,7 +51,7 @@ export default function AddFriendForm({
             Gửi lời mời bằng mã người dùng
           </h3>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-[#746E88]">
-            Nhập mã theo định dạng RML-123456. Người nhận sẽ xuất hiện trong
+            Nhập mã theo định dạng UNI-123456. Người nhận sẽ xuất hiện trong
             danh sách lời mời đã gửi cho đến khi họ phản hồi.
           </p>
 
@@ -74,8 +74,8 @@ export default function AddFriendForm({
                 autoCapitalize="characters"
                 spellCheck={false}
                 maxLength={10}
-                pattern="[Rr][Mm][Ll]-[0-9]{6}"
-                placeholder="RML-123456"
+                pattern="[Uu][Nn][Ii]-[0-9]{6}"
+                placeholder="UNI-123456"
                 onChange={onPinCodeChange}
                 disabled={isSubmitting}
                 aria-describedby={
@@ -104,7 +104,7 @@ export default function AddFriendForm({
               id="friend-pin-code-hint"
               className="mt-2 text-xs leading-5 text-[#69627E]"
             >
-              Gồm tiền tố RML, dấu gạch ngang và 6 chữ số.
+              Gồm tiền tố UNI, dấu gạch ngang và 6 chữ số.
             </p>
 
             {feedback?.message ? (

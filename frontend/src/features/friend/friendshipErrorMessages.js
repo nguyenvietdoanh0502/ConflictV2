@@ -1,6 +1,6 @@
 const errorMessages = {
   MISSING_PIN_CODE: "Vui lòng nhập mã người dùng.",
-  INVALID_PIN_CODE: "Mã phải có dạng RML-123456.",
+  INVALID_PIN_CODE: "Mã phải có dạng UNI-123456.",
   PIN_CODE_NOT_FOUND: "Không tìm thấy người dùng với mã này.",
   CANNOT_FRIEND_SELF: "Bạn không thể tự gửi lời mời cho chính mình.",
   FRIEND_REQUEST_ALREADY_SENT: "Bạn đã gửi lời mời cho người này.",

@@ -97,10 +97,10 @@ export default function FriendsPage() {
     setFormFeedback(null);
     const normalizedPinCode = pinCode.trim().toUpperCase();
 
-    if (!/^RML-\d{6}$/.test(normalizedPinCode)) {
+    if (!/^UNI-\d{6}$/.test(normalizedPinCode)) {
       setFormFeedback({
         type: "error",
-        message: "Mã phải có dạng RML-123456.",
+        message: "Mã phải có dạng UNI-123456.",
       });
       return;
     }
@@ -430,7 +430,7 @@ export default function FriendsPage() {
                   isError={isOutgoingError}
                   onRetry={refetchOutgoing}
                   emptyTitle="Bạn chưa gửi lời mời nào"
-                  emptyDescription="Chọn Thêm bạn mới để gửi lời mời bằng mã RML."
+                  emptyDescription="Chọn Thêm bạn mới để gửi lời mời bằng mã UNI."
                 >
                   <ul className="space-y-3">
                     {outgoingRequests.map((request) => (

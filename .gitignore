@@ -1,0 +1,26 @@
+# OS & IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+.tmp/
+
+# Frontend & Node
+node_modules/
+dist/
+*.log
+.eslintcache
+
+# Backend & Java
+target/
+backend/target/
+*.class
+.mvn/wrapper/maven-wrapper.jar
+
+# Environment files
+.env
+.env.local
+*.env

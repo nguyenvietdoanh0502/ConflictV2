@@ -24,8 +24,8 @@ public class MailService {
             SimpleMailMessage message = new SimpleMailMessage();
             message.setFrom(fromEmail);
             message.setTo(toEmail);
-            message.setSubject("Conflict - Verify Your Registration");
-            message.setText("Welcome to Conflict! Your OTP code for registration is: " + otpCode + "\n\nThis code will expire in 5 minutes.");
+            message.setSubject("UniSync - Xác thực Đăng ký tài khoản");
+            message.setText("Chào mừng bạn đến với UniSync! Mã OTP xác thực đăng ký tài khoản của bạn là: " + otpCode + "\n\nMã này có hiệu lực trong 5 phút.");
 
             mailSender.send(message);
             log.info("OTP email sent successfully to {}", toEmail);
@@ -39,8 +39,8 @@ public class MailService {
             SimpleMailMessage message = new SimpleMailMessage();
             message.setFrom(fromEmail);
             message.setTo(toEmail);
-            message.setSubject("Roamly - Verify Your Reset Password");
-            message.setText("Welcome to Roamly! Your OTP code for reset password is: " + otpCode + "\n\nThis code will expire in 5 minutes.");
+            message.setSubject("UniSync - Đặt lại Mật khẩu");
+            message.setText("Mã OTP đặt lại mật khẩu UniSync của bạn là: " + otpCode + "\n\nMã này có hiệu lực trong 5 phút.");
 
             mailSender.send(message);
             log.info("OTP email sent successfully to {}", toEmail);

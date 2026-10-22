@@ -127,7 +127,7 @@ export default function Header() {
           <Link
             to="/"
             className="shrink-0 rounded-full focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-social-violet/20"
-            aria-label="Về trang chủ Conflict"
+            aria-label="Về trang chủ UniSync"
           >
             <BrandMark />
           </Link>
@@ -137,7 +137,7 @@ export default function Header() {
             disabled
             title="Tính năng tìm kiếm đang được hoàn thiện"
             className={`${roundButtonClass} lg:hidden`}
-            aria-label="Tìm kiếm trên Conflict"
+            aria-label="Tìm kiếm trên UniSync"
           >
             <SearchIcon />
           </button>
@@ -147,10 +147,10 @@ export default function Header() {
             disabled
             title="Tính năng tìm kiếm đang được hoàn thiện"
             className="hidden h-10 w-[220px] cursor-default items-center gap-2.5 rounded-full bg-[#F3F2F7] px-4 text-left text-sm font-medium text-[#77718C] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-social-violet/20 lg:flex xl:w-[250px]"
-            aria-label="Tìm kiếm trên Conflict"
+            aria-label="Tìm kiếm trên UniSync"
           >
             <SearchIcon />
-            <span className="truncate">Tìm kiếm trên Conflict</span>
+            <span className="truncate">Tìm kiếm trên UniSync</span>
           </button>
         </div>
 

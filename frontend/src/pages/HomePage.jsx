@@ -5,346 +5,219 @@ import {
   selectIsAuthenticated,
 } from "../features/auth/authSelectors";
 
-const stories = [
-  { name: "An Nhiên", initial: "A", gradient: "from-[#FF8FB3] to-[#FFD8BE]", theme: "from-[#ffd4e2] via-[#ffc7b8] to-[#b8eadd]", emoji: "🌷" },
-  { name: "Minh Khang", initial: "M", gradient: "from-[#7C6EE6] to-[#B7AEF7]", theme: "from-[#b6adf8] via-[#8b7fe5] to-[#554d88]", emoji: "🎧" },
-  { name: "Hà Linh", initial: "L", gradient: "from-[#54B99F] to-[#B8EADD]", theme: "from-[#b8eadd] via-[#8ed5c3] to-[#e7f8f3]", emoji: "🌿" },
-  { name: "Tuấn Anh", initial: "T", gradient: "from-[#F2B861] to-[#FFE9A9]", theme: "from-[#ffe9a9] via-[#ffd8be] to-[#f4a7bb]", emoji: "🌤️" },
-  { name: "Mai Chi", initial: "C", gradient: "from-[#A98FE8] to-[#FF8FB3]", theme: "from-[#eedcff] via-[#ffcadb] to-[#fff0d7]", emoji: "✨" },
-];
-
-const contacts = [
-  { name: "An Nhiên", initial: "A", gradient: "from-[#FF8FB3] to-[#FFD8BE]" },
-  { name: "Minh Khang", initial: "M", gradient: "from-[#7C6EE6] to-[#B7AEF7]" },
-  { name: "Hà Linh", initial: "L", gradient: "from-[#54B99F] to-[#B8EADD]" },
-  { name: "Tuấn Anh", initial: "T", gradient: "from-[#F2B861] to-[#FFE9A9]" },
-];
-
-const posts = [
-  {
-    id: 1,
-    author: "An Nhiên",
-    initial: "A",
-    gradient: "from-[#FF8FB3] to-[#FFD8BE]",
-    time: "18 phút",
-    content: "Một buổi chiều không có deadline, chỉ có nắng đẹp và hội bạn thân. Cuối tuần của mọi người thế nào rồi? 🌤️",
-    visual: "sunset",
-    reactions: "Minh Khang và 126 người khác",
-    comments: "24 bình luận",
-  },
-  {
-    id: 2,
-    author: "Minh Khang",
-    initial: "M",
-    gradient: "from-[#7C6EE6] to-[#B7AEF7]",
-    time: "1 giờ",
-    content: "Nhắc nhẹ bản thân và những ai đang cần nghe điều này hôm nay:",
-    visual: "quote",
-    reactions: "Hà Linh và 89 người khác",
-    comments: "16 bình luận",
-  },
-];
-
-function Avatar({ initial, gradient, imageUrl, size = "md" }) {
-  const sizeClass = size === "sm" ? "h-9 w-9 text-xs" : "h-11 w-11 text-sm";
-
-  if (imageUrl) {
-    return <img src={imageUrl} alt="" className={`${sizeClass} shrink-0 rounded-full object-cover ring-2 ring-white`} />;
-  }
-
-  return (
-    <span className={`grid ${sizeClass} shrink-0 place-items-center rounded-full bg-gradient-to-br ${gradient} font-extrabold text-white ring-2 ring-white`} aria-hidden="true">
-      {initial}
-    </span>
-  );
-}
-
-function MoreIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor" aria-hidden="true">
-      <circle cx="5" cy="12" r="1.8" />
-      <circle cx="12" cy="12" r="1.8" />
-      <circle cx="19" cy="12" r="1.8" />
-    </svg>
-  );
-}
-
-function SearchIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" aria-hidden="true">
-      <path d="m20 20-4.4-4.4m2.4-5.1a7.5 7.5 0 1 1-15 0 7.5 7.5 0 0 1 15 0Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function LeftSidebar({ isAuthenticated, displayName, avatarUrl, avatarLetter }) {
-  const profileTarget = isAuthenticated ? "/profile" : "/login";
-  const friendTarget = isAuthenticated ? "/friends" : "/login";
-  const items = [
-    { label: "Bạn bè", icon: "👥", to: friendTarget, color: "bg-[#E8E4FB]" },
-    { label: "Kỷ niệm", icon: "🕘", color: "bg-[#E6F6F1]" },
-    { label: "Đã lưu", icon: "🔖", color: "bg-[#FFE9F0]" },
-    { label: "Nhóm", icon: "🫶", color: "bg-[#FFF0DE]" },
-  ];
-
-  return (
-    <aside className="sticky top-20 hidden max-h-[calc(100vh-5.5rem)] overflow-y-auto px-2 pb-6 lg:block" aria-label="Lối tắt">
-      <nav className="space-y-1">
-        <Link to={profileTarget} className="flex items-center gap-3 rounded-xl px-2 py-2.5 font-bold text-[#383247] hover:bg-white/80">
-          <Avatar initial={avatarLetter} gradient="from-social-violet to-social-pink" imageUrl={avatarUrl} size="sm" />
-          <span className="truncate text-sm">{isAuthenticated ? displayName : "Đăng nhập tài khoản"}</span>
-        </Link>
-
-        {items.map((item) => {
-          const content = (
-            <>
-              <span className={`grid h-9 w-9 place-items-center rounded-xl text-base ${item.color}`} aria-hidden="true">{item.icon}</span>
-              <span className="text-sm font-bold text-[#4A4459]">{item.label}</span>
-            </>
-          );
-
-          return item.to ? (
-            <Link key={item.label} to={item.to} className="flex items-center gap-3 rounded-xl px-2 py-2 hover:bg-white/80">{content}</Link>
-          ) : (
-            <div key={item.label} className="flex items-center gap-3 rounded-xl px-2 py-2 text-[#4A4459]">{content}</div>
-          );
-        })}
-      </nav>
-
-      <div className="mt-4 border-t border-[#DDD9E6] pt-4">
-        <p className="px-2 text-xs font-extrabold uppercase tracking-[0.12em] text-[#77718C]">Lối tắt của bạn</p>
-        <div className="mt-3 flex items-center gap-3 rounded-xl px-2 py-2">
-          <span className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-[#DCD6FF] to-[#FFD4E2] text-base" aria-hidden="true">☕</span>
-          <span className="text-sm font-bold text-[#4A4459]">Hội chill cuối tuần</span>
+function FeatureCard({ icon, title, description, badge, to, accent }) {
+  const content = (
+    <div className="group relative flex flex-col justify-between overflow-hidden rounded-[24px] border border-white/80 bg-white/85 p-6 shadow-card backdrop-blur-xl transition duration-200 hover:-translate-y-1 hover:bg-white hover:shadow-soft">
+      <div>
+        <div className="flex items-center justify-between">
+          <span className={`grid h-12 w-12 place-items-center rounded-2xl ${accent} text-2xl shadow-sm`}>
+            {icon}
+          </span>
+          {badge && (
+            <span className="rounded-full bg-[#EAE6FF] px-3 py-1 text-[11px] font-extrabold uppercase tracking-wider text-social-violet">
+              {badge}
+            </span>
+          )}
         </div>
+        <h3 className="mt-4 text-lg font-extrabold text-social-ink group-hover:text-social-violet transition-colors">
+          {title}
+        </h3>
+        <p className="mt-2 text-sm leading-6 text-social-muted">
+          {description}
+        </p>
       </div>
-
-      <p className="mt-5 px-2 text-[11px] leading-5 text-[#77718C]">Quyền riêng tư · Điều khoản · Trợ giúp · Conflict © 2026</p>
-    </aside>
-  );
-}
-
-function Stories({ avatarUrl, avatarLetter }) {
-  return (
-    <section aria-labelledby="stories-title" className="overflow-hidden">
-      <div className="mb-3 flex items-center justify-between px-1">
-        <h1 id="stories-title" className="text-lg font-extrabold text-[#332D42]">Tin</h1>
-        <button type="button" disabled title="Tính năng đang được hoàn thiện" className="cursor-default rounded-lg px-3 py-1.5 text-sm font-bold text-social-violet">Xem tất cả</button>
-      </div>
-
-      <div className="feed-scroll flex snap-x gap-2.5 overflow-x-auto pb-2 outline-none focus-visible:ring-4 focus-visible:ring-social-violet/20" tabIndex={0} aria-label="Danh sách tin, dùng phím mũi tên để xem thêm">
-        <article className="relative h-[188px] w-[112px] shrink-0 snap-start overflow-hidden rounded-2xl border border-[#DFDCE6] bg-white shadow-[0_1px_3px_rgba(47,42,69,0.10)] sm:w-[120px]">
-          <div className="h-[132px] bg-gradient-to-br from-[#DCD6FF] via-[#C9C1F7] to-[#FFB9D0] p-3">
-            <Avatar initial={avatarLetter} gradient="from-social-violet to-social-pink" imageUrl={avatarUrl} size="sm" />
-          </div>
-          <span className="absolute bottom-9 left-1/2 grid h-9 w-9 -translate-x-1/2 place-items-center rounded-full border-4 border-white bg-social-violet text-xl font-bold text-white" aria-hidden="true">+</span>
-          <p className="absolute inset-x-1 bottom-2 text-center text-xs font-extrabold text-[#3D374B]">Tạo tin</p>
-        </article>
-
-        {stories.map((story) => (
-          <article key={story.name} className={`relative h-[188px] w-[112px] shrink-0 snap-start overflow-hidden rounded-2xl bg-gradient-to-b ${story.theme} shadow-[0_1px_4px_rgba(47,42,69,0.14)] sm:w-[120px]`}>
-            <div className="absolute inset-0 bg-gradient-to-t from-black/[.55] via-transparent to-white/10" />
-            <div className="absolute left-3 top-3">
-              <Avatar initial={story.initial} gradient={story.gradient} size="sm" />
-            </div>
-            <span className="absolute inset-0 grid place-items-center pt-4 text-4xl drop-shadow-md" aria-hidden="true">{story.emoji}</span>
-            <p className="absolute inset-x-3 bottom-3 text-xs font-extrabold leading-4 text-white">{story.name}</p>
-          </article>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function Composer({ isAuthenticated, displayName, avatarUrl, avatarLetter }) {
-  return (
-    <section className="rounded-none border-y border-[#E1DEE8] bg-white px-4 py-3 shadow-[0_1px_2px_rgba(47,42,69,0.08)] sm:rounded-2xl sm:border" aria-label="Tạo bài viết">
-      <div className="flex items-center gap-3">
-        <Avatar initial={avatarLetter} gradient="from-social-violet to-social-pink" imageUrl={avatarUrl} />
-        {isAuthenticated ? (
-          <button type="button" disabled title="Tính năng đăng bài đang được hoàn thiện" className="min-h-11 flex-1 cursor-default rounded-full bg-[#F1F0F4] px-4 text-left text-sm font-medium text-[#716A80]">
-            {displayName}, bạn đang nghĩ gì?
-          </button>
-        ) : (
-          <Link to="/login" className="flex min-h-11 flex-1 items-center rounded-full bg-[#F1F0F4] px-4 text-sm font-medium text-[#716A80] hover:bg-[#EAE8EF]">
-            Đăng nhập để chia sẻ khoảnh khắc của bạn
-          </Link>
-        )}
-      </div>
-
-      <div className="mt-3 grid grid-cols-3 border-t border-[#ECE9F0] pt-2">
-        {[
-          ["🎥", "Video trực tiếp"],
-          ["🖼️", "Ảnh / video"],
-          ["😊", "Cảm xúc"],
-        ].map(([icon, label]) => (
-          <button key={label} type="button" disabled aria-label={label} title="Tính năng đang được hoàn thiện" className="flex min-h-10 cursor-default items-center justify-center gap-2 rounded-lg px-2 text-xs font-bold text-[#645D73] sm:text-sm">
-            <span className="text-lg" aria-hidden="true">{icon}</span>
-            <span className="hidden truncate sm:block">{label}</span>
-          </button>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function PostVisual({ type }) {
-  if (type === "quote") {
-    return (
-      <div className="relative grid aspect-[1.25] overflow-hidden bg-gradient-to-br from-[#B8EADD] via-[#E3F5EF] to-[#FFD8BE] p-8 text-center sm:aspect-[1.55]">
-        <span className="absolute -left-12 -top-12 h-40 w-40 rounded-full bg-white/[.35]" />
-        <span className="absolute -bottom-16 -right-12 h-52 w-52 rounded-full bg-[#7C6EE6]/[.15]" />
-        <div className="relative m-auto max-w-md rounded-[24px] border border-white/80 bg-white/75 px-6 py-8 shadow-sm backdrop-blur-sm">
-          <p className="text-xl font-black leading-snug tracking-[-0.03em] text-[#332D42] sm:text-2xl">“Bạn không cần hoàn hảo<br />để có một ngày thật vui.”</p>
-          <p className="mt-3 text-xs font-extrabold uppercase tracking-[0.15em] text-social-violet">tiny reminder ✦</p>
+      {to && (
+        <div className="mt-5 flex items-center gap-1.5 text-xs font-bold text-social-violet">
+          <span>Khám phá ngay</span>
+          <svg className="h-4 w-4 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7" />
+          </svg>
         </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="relative aspect-[1.25] overflow-hidden bg-gradient-to-b from-[#B9C9F2] via-[#F8C7C2] to-[#F6C88E] sm:aspect-[1.55]">
-      <div className="absolute left-[10%] top-[12%] h-16 w-16 rounded-full bg-[#FFF2C6] shadow-[0_0_45px_rgba(255,242,198,0.9)]" />
-      <div className="absolute inset-x-0 bottom-0 h-[46%] bg-[#7C6EE6]/30 [clip-path:polygon(0_48%,22%_14%,42%_45%,63%_3%,82%_36%,100%_12%,100%_100%,0_100%)]" />
-      <div className="absolute inset-x-0 bottom-0 h-[28%] bg-[#5A8D7D]/[.65] [clip-path:polygon(0_35%,18%_2%,39%_30%,61%_7%,81%_32%,100%_5%,100%_100%,0_100%)]" />
-      <div className="absolute bottom-5 left-5 rounded-full bg-white/80 px-3 py-1.5 text-xs font-extrabold text-[#5B5474] shadow-sm backdrop-blur">cuối tuần thật dịu 🌤️</div>
+      )}
     </div>
   );
-}
 
-function PostCard({ post }) {
-  return (
-    <article className="overflow-hidden rounded-none border-y border-[#E1DEE8] bg-white shadow-[0_1px_2px_rgba(47,42,69,0.08)] sm:rounded-2xl sm:border">
-      <header className="flex items-center gap-3 px-4 py-3">
-        <Avatar initial={post.initial} gradient={post.gradient} />
-        <div className="min-w-0 flex-1">
-          <h2 className="truncate text-sm font-extrabold text-[#332D42]">{post.author}</h2>
-          <p className="mt-0.5 flex items-center gap-1 text-xs font-medium text-[#77718C]">
-            {post.time} · <span role="img" aria-label="Công khai">🌐</span>
-          </p>
-        </div>
-        <button type="button" disabled title="Tính năng đang được hoàn thiện" className="grid h-9 w-9 cursor-default place-items-center rounded-full text-[#77718C]" aria-label={`Tùy chọn bài viết của ${post.author}`}>
-          <MoreIcon />
-        </button>
-      </header>
-
-      <p className="px-4 pb-3 text-[15px] leading-6 text-[#3F394C]">{post.content}</p>
-      <PostVisual type={post.visual} />
-
-      <div className="px-4">
-        <div className="flex items-center justify-between gap-3 border-b border-[#E9E6ED] py-3 text-xs font-medium text-[#77718C] sm:text-sm">
-          <span className="flex min-w-0 items-center gap-2 truncate">
-            <span className="inline-flex -space-x-1" aria-hidden="true">
-              <span className="grid h-5 w-5 place-items-center rounded-full bg-social-violet text-[10px] text-white ring-1 ring-white">♡</span>
-              <span className="grid h-5 w-5 place-items-center rounded-full bg-social-pink text-[10px] text-white ring-1 ring-white">♥</span>
-            </span>
-            <span className="truncate">{post.reactions}</span>
-          </span>
-          <span className="shrink-0">{post.comments}</span>
-        </div>
-
-        <div className="grid grid-cols-3 py-1">
-          {[
-            ["♡", "Thích"],
-            ["◌", "Bình luận"],
-            ["↗", "Chia sẻ"],
-          ].map(([icon, label]) => (
-            <button key={label} type="button" disabled title="Tính năng đang được hoàn thiện" className="flex min-h-10 cursor-default items-center justify-center gap-2 rounded-lg text-sm font-bold text-[#665F74]">
-              <span className="text-lg" aria-hidden="true">{icon}</span>
-              {label}
-            </button>
-          ))}
-        </div>
-      </div>
-    </article>
-  );
-}
-
-function RightSidebar({ isAuthenticated }) {
-  const friendTarget = isAuthenticated ? "/friends" : "/login";
-
-  return (
-    <aside className="sticky top-20 hidden max-h-[calc(100vh-5.5rem)] overflow-y-auto px-2 pb-6 xl:block" aria-label="Kết nối và liên hệ">
-      <section className="rounded-2xl border border-[#E3E0E9] bg-white p-4 shadow-[0_1px_2px_rgba(47,42,69,0.06)]">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-extrabold text-[#4A4459]">Gợi ý kết nối</h2>
-          <Link to={friendTarget} className="rounded-lg px-2 py-1 text-xs font-bold text-social-violet hover:bg-[#EFECF9]">Xem tất cả</Link>
-        </div>
-
-        <div className="mt-3 space-y-3">
-          {contacts.slice(0, 2).map((contact) => (
-            <div key={contact.name} className="flex items-center gap-3">
-              <Avatar initial={contact.initial} gradient={contact.gradient} size="sm" />
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-bold text-[#3F394C]">{contact.name}</p>
-                <p className="mt-0.5 text-[11px] text-[#77718C]">3 bạn chung</p>
-              </div>
-              <Link to={friendTarget} className="rounded-lg bg-[#ECE8FB] px-3 py-2 text-xs font-extrabold text-social-violet hover:bg-[#E2DCF8]">Kết nối</Link>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="mt-4 border-t border-[#DDD9E6] pt-4">
-        <div className="flex items-center justify-between px-2">
-          <h2 className="text-sm font-extrabold text-[#625B70]">Người liên hệ</h2>
-          <div className="flex items-center gap-1">
-            <button type="button" disabled title="Tính năng đang được hoàn thiện" className="grid h-8 w-8 cursor-default place-items-center rounded-full text-[#77718C]" aria-label="Tìm người liên hệ"><SearchIcon /></button>
-            <button type="button" disabled title="Tính năng đang được hoàn thiện" className="grid h-8 w-8 cursor-default place-items-center rounded-full text-[#77718C]" aria-label="Tùy chọn người liên hệ"><MoreIcon /></button>
-          </div>
-        </div>
-
-        <ul className="mt-2 space-y-1">
-          {contacts.map((contact) => (
-            <li key={contact.name} className="flex items-center gap-3 rounded-xl px-2 py-2 hover:bg-white/80">
-              <span className="relative">
-                <Avatar initial={contact.initial} gradient={contact.gradient} size="sm" />
-                <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-[#F3F2F7] bg-[#55B99E]" aria-hidden="true" />
-              </span>
-              <span className="truncate text-sm font-bold text-[#4A4459]">{contact.name}</span>
-              <span className="sr-only">Đang hoạt động</span>
-            </li>
-          ))}
-        </ul>
-      </section>
-    </aside>
-  );
+  return to ? <Link to={to} className="block focus:outline-none">{content}</Link> : content;
 }
 
 export default function HomePage() {
   const user = useSelector(selectCurrentUser);
   const isAuthenticated = useSelector(selectIsAuthenticated);
-  const displayName = user?.fullName?.trim() || user?.email || "bạn";
+  const displayName = user?.fullName?.trim() || user?.email || "Sinh viên";
   const avatarUrl = user?.avatarUrl?.trim();
   const avatarLetter = displayName.charAt(0).toUpperCase();
 
   return (
-    <main className="mx-auto w-full max-w-[1460px] px-0 py-4 sm:px-4 lg:px-5">
-      <div className="grid items-start justify-center gap-5 lg:grid-cols-[240px_minmax(0,680px)] xl:grid-cols-[240px_minmax(0,680px)_300px]">
-        <LeftSidebar
-          isAuthenticated={isAuthenticated}
-          displayName={displayName}
-          avatarUrl={avatarUrl}
-          avatarLetter={avatarLetter}
-        />
+    <div className="min-h-[calc(100vh-4rem)] bg-[#F8F7FC] px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-6xl">
+        {isAuthenticated ? (
+          <div className="space-y-8">
+            {/* Logged in Hero Banner */}
+            <div className="relative overflow-hidden rounded-[32px] bg-gradient-to-br from-[#7C6EE6] via-[#8C7FE9] to-[#FF8FB3] p-7 text-white shadow-soft sm:p-10">
+              <span className="absolute -right-12 -top-12 h-56 w-56 rounded-full border-[28px] border-white/10" aria-hidden="true" />
+              <span className="absolute -bottom-16 right-1/4 h-48 w-48 rounded-full bg-white/10 blur-2xl" aria-hidden="true" />
 
-        <div className="min-w-0 space-y-4">
-          <div className="px-3 sm:px-0">
-            <Stories avatarUrl={avatarUrl} avatarLetter={avatarLetter} />
+              <div className="relative flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-5">
+                  {avatarUrl ? (
+                    <img
+                      src={avatarUrl}
+                      alt={displayName}
+                      className="h-20 w-20 shrink-0 rounded-full border-4 border-white/90 object-cover shadow-card sm:h-24 sm:w-24"
+                    />
+                  ) : (
+                    <span className="grid h-20 w-20 shrink-0 place-items-center rounded-full border-4 border-white/90 bg-white/20 text-3xl font-extrabold text-white shadow-card sm:h-24 sm:w-24">
+                      {avatarLetter}
+                    </span>
+                  )}
+                  <div>
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3.5 py-1 text-xs font-bold tracking-wide backdrop-blur">
+                      <span className="h-2 w-2 rounded-full bg-[#B8EADD]" />
+                      Trợ lý học vụ UniSync
+                    </span>
+                    <h1 className="mt-2 text-2xl font-extrabold tracking-tight sm:text-3xl">
+                      Chào mừng trở lại, {displayName}! 👋
+                    </h1>
+                    <p className="mt-1 text-sm font-medium text-white/85">
+                      Hôm nay bạn muốn quản lý lịch học hay cùng bạn bè ôn tập?
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-3">
+                  <Link
+                    to="/friends"
+                    className="inline-flex items-center justify-center rounded-2xl bg-white px-5 py-3 text-sm font-extrabold text-social-violet shadow-card transition hover:-translate-y-0.5 hover:bg-[#FFF9FC]"
+                  >
+                    Mạng lưới bạn bè
+                  </Link>
+                  <Link
+                    to="/profile"
+                    className="inline-flex items-center justify-center rounded-2xl bg-white/15 px-5 py-3 text-sm font-extrabold text-white backdrop-blur transition hover:bg-white/25"
+                  >
+                    Hồ sơ cá nhân
+                  </Link>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Access Grid */}
+            <div>
+              <div className="mb-4 flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-extrabold text-social-ink">Trung tâm Học vụ & Tính năng</h2>
+                  <p className="text-xs text-social-muted">Các module trong lộ trình phát triển UniSync</p>
+                </div>
+              </div>
+
+              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                <FeatureCard
+                  icon="📅"
+                  title="Thời khóa biểu Thông minh"
+                  description="Xem lịch học theo ngày, tuần, tháng với phân loại màu trực quan: học bù, thi cử, deadline."
+                  badge="Giai đoạn 1"
+                  accent="bg-[#EAE6FF] text-[#7C6EE6]"
+                />
+                <FeatureCard
+                  icon="✨"
+                  title="Đồng bộ Zalo AI"
+                  description="Ghép nhóm chat lớp học, AI tự động phát hiện thông báo nghỉ học, học bù và ghim vào lịch."
+                  badge="Giai đoạn 3"
+                  accent="bg-[#FFE5EE] text-[#FF8FB3]"
+                />
+                <FeatureCard
+                  icon="🎮"
+                  title="Đề cương & Minigame"
+                  description="Tải lên PDF/Word đề cương, AI sinh bản tóm tắt và minigame trắc nghiệm, lật thẻ khái niệm."
+                  badge="Giai đoạn 2"
+                  accent="bg-[#E5F7F1] text-[#41957F]"
+                />
+                <FeatureCard
+                  icon="👥"
+                  title="Kết nối Bạn bè"
+                  description="Tìm bạn học, kết nối bằng mã cá nhân, quản lý danh sách bạn bè và cùng nhau thi đua."
+                  badge="Sẵn sàng"
+                  to="/friends"
+                  accent="bg-[#FFF0E5] text-[#D47C4D]"
+                />
+                <FeatureCard
+                  icon="🔔"
+                  title="Nhắc nhở Đa kênh"
+                  description="Tự động quét lịch thi, học bù và thông báo kịp thời qua Toast, Web Push và Email."
+                  badge="Giai đoạn 4"
+                  accent="bg-[#FFF9DB] text-[#A68A00]"
+                />
+                <FeatureCard
+                  icon="💬"
+                  title="Thách đấu & Trò chuyện"
+                  description="Nhắn tin trực tiếp thời gian thực, gửi thẻ đề cương ôn tập và thách đấu minigame."
+                  badge="Giai đoạn 4"
+                  to="/friends"
+                  accent="bg-[#F1EAFE] text-[#7C6EE6]"
+                />
+              </div>
+            </div>
           </div>
-          <Composer
-            isAuthenticated={isAuthenticated}
-            displayName={displayName}
-            avatarUrl={avatarUrl}
-            avatarLetter={avatarLetter}
-          />
-          {posts.map((post) => <PostCard key={post.id} post={post} />)}
-        </div>
+        ) : (
+          /* Public Landing Page */
+          <div className="space-y-12 py-6">
+            <div className="text-center">
+              <span className="inline-flex items-center gap-2 rounded-full border border-social-violet/20 bg-social-violet/10 px-4 py-1.5 text-xs font-bold text-social-violet">
+                <span>✦</span> SICT WEB/APP CHALLENGE – CLB Tin học HIT
+              </span>
+              <h1 className="mt-6 text-4xl font-black tracking-tight text-social-ink sm:text-5xl lg:text-6xl">
+                Đồng bộ Học vụ & Ôn thi <br className="hidden sm:inline" />
+                <span className="bg-gradient-to-r from-social-violet via-[#8F82ED] to-social-pink bg-clip-text text-transparent">
+                  Thông minh cùng AI
+                </span>
+              </h1>
+              <p className="mx-auto mt-5 max-w-2xl text-base leading-7 text-social-muted sm:text-lg">
+                <strong>UniSync</strong> giải quyết triệt để tình trạng trôi thông báo lịch học trên Zalo,
+                tự động cập nhật thời khóa biểu và biến đề cương dài hàng chục trang thành minigame ôn tập hấp dẫn.
+              </p>
+              <div className="mt-8 flex flex-wrap justify-center gap-4">
+                <Link
+                  to="/register"
+                  className="rounded-full bg-social-violet px-8 py-3.5 text-sm font-extrabold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-[#6E60DC]"
+                >
+                  Bắt đầu ngay miễn phí
+                </Link>
+                <Link
+                  to="/login"
+                  className="rounded-full border border-[#DCD6F6] bg-white px-8 py-3.5 text-sm font-extrabold text-social-ink shadow-sm transition hover:bg-[#FAF9FF]"
+                >
+                  Đăng nhập
+                </Link>
+              </div>
+            </div>
 
-        <RightSidebar isAuthenticated={isAuthenticated} />
+            {/* Core Values */}
+            <div className="grid gap-6 sm:grid-cols-3">
+              <div className="rounded-[28px] border border-white/80 bg-white/70 p-6 shadow-card backdrop-blur">
+                <div className="grid h-12 w-12 place-items-center rounded-2xl bg-[#EAE6FF] text-2xl">⚡</div>
+                <h3 className="mt-4 text-lg font-extrabold text-social-ink">AI Zalo-to-Calendar</h3>
+                <p className="mt-2 text-sm leading-6 text-social-muted">
+                  Kết nối nhóm Zalo môn học với cơ chế Whitelist bảo mật. AI nhận diện lịch nghỉ, học bù và ghim vào lịch chuẩn xác.
+                </p>
+              </div>
+              <div className="rounded-[28px] border border-white/80 bg-white/70 p-6 shadow-card backdrop-blur">
+                <div className="grid h-12 w-12 place-items-center rounded-2xl bg-[#FFE5EE] text-2xl">🎯</div>
+                <h3 className="mt-4 text-lg font-extrabold text-social-ink">Syllabus-to-Minigame</h3>
+                <p className="mt-2 text-sm leading-6 text-social-muted">
+                  Bóc tách đề cương PDF/Word thành tóm tắt Markdown và bộ câu hỏi trắc nghiệm tốc độ, lật thẻ ghép cặp khái niệm.
+                </p>
+              </div>
+              <div className="rounded-[28px] border border-white/80 bg-white/70 p-6 shadow-card backdrop-blur">
+                <div className="grid h-12 w-12 place-items-center rounded-2xl bg-[#E5F7F1] text-2xl">🤝</div>
+                <h3 className="mt-4 text-lg font-extrabold text-social-ink">Social Learning</h3>
+                <p className="mt-2 text-sm leading-6 text-social-muted">
+                  Kết nối bạn cùng lớp, chat thời gian thực và thách đấu điểm minigame ôn thi để tạo động lực học tập mỗi ngày.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
-
-      <style>{`.feed-scroll { scrollbar-width: none; } .feed-scroll::-webkit-scrollbar { display: none; }`}</style>
-    </main>
+    </div>
   );
 }

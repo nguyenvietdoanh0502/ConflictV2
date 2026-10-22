@@ -20,20 +20,6 @@ const profileNavigation = [
     icon: "profile",
     accent: "bg-[#EAE6FF] text-[#7C6EE6]",
   },
-  {
-    label: "Nội dung yêu thích",
-    description: "Những điều bạn đã lưu",
-    to: "/profile/favorites",
-    icon: "heart",
-    accent: "bg-[#FFE4ED] text-[#E66F98]",
-  },
-  {
-    label: "Hoạt động gần đây",
-    description: "Hành trình của bạn",
-    to: "/profile/history",
-    icon: "history",
-    accent: "bg-[#FFE9D9] text-[#D47C4D]",
-  },
 ];
 
 function getCurrentSection(pathname) {
@@ -71,23 +57,6 @@ function NavigationIcon({ name }) {
         <path d="M16 20v-1.5a3.5 3.5 0 0 0-3.5-3.5h-5A3.5 3.5 0 0 0 4 18.5V20" />
         <circle cx="10" cy="7.5" r="3.5" />
         <path d="M16 4.5a3.5 3.5 0 0 1 0 6.8M20 20v-1.5a3.5 3.5 0 0 0-2.7-3.4" />
-      </svg>
-    );
-  }
-
-  if (name === "heart") {
-    return (
-      <svg {...sharedProps}>
-        <path d="M20.8 4.8a5.5 5.5 0 0 0-7.8 0L12 5.9l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.4a5.5 5.5 0 0 0 0-7.8Z" />
-      </svg>
-    );
-  }
-
-  if (name === "history") {
-    return (
-      <svg {...sharedProps}>
-        <path d="M3.5 12a8.5 8.5 0 1 0 2.1-5.6L3.5 8.5" />
-        <path d="M3.5 4v4.5H8M12 7.5V12l3 2" />
       </svg>
     );
   }
@@ -176,27 +145,6 @@ function ProfileDetail({ accent, icon, label, value, wide = false }) {
   );
 }
 
-function PlannedSection({ section }) {
-  return (
-    <section className="grid min-h-[460px] place-items-center rounded-[26px] border border-dashed border-[#dcd5f1] bg-gradient-to-br from-white to-[#f6f3ff] px-6 py-12 text-center">
-      <div className="max-w-md">
-        <span className="mx-auto grid h-16 w-16 place-items-center rounded-[22px] bg-gradient-to-br from-[#e7e2ff] to-[#ffe5ee] text-2xl text-social-violet shadow-card" aria-hidden="true">
-          ✦
-        </span>
-        <span className="mt-5 inline-flex rounded-full bg-[#e5f7f1] px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#398f7c]">
-          Sắp ra mắt
-        </span>
-        <h3 className="mt-4 text-2xl font-extrabold tracking-[-0.03em] text-social-ink">
-          {section.label} đang được hoàn thiện
-        </h3>
-        <p className="mt-3 text-sm leading-6 text-social-muted">
-          Tụi mình đang chuẩn bị một trải nghiệm thật chỉn chu cho góc này. Các tính năng hiện có vẫn hoạt động bình thường.
-        </p>
-      </div>
-    </section>
-  );
-}
-
 export default function ProfilePage() {
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isUpdateProfileModalOpen, setIsUpdateProfileModalOpen] =
@@ -205,7 +153,7 @@ export default function ProfilePage() {
   const location = useLocation();
 
   const displayName =
-    user?.fullName?.trim() || user?.email || "Người dùng Conflict";
+    user?.fullName?.trim() || user?.email || "Người dùng UniSync";
   const email = user?.email || "Chưa cập nhật email";
   const avatarUrl = user?.avatarUrl?.trim();
   const avatarLetter = displayName.charAt(0).toUpperCase();
@@ -213,10 +161,6 @@ export default function ProfilePage() {
   const currentSection = getCurrentSection(normalizedPathname);
   const isProfileInfoSection =
     normalizedPathname === "/profile";
-  const isPlannedSection = [
-    "/profile/favorites",
-    "/profile/history",
-  ].includes(normalizedPathname);
 
   const openUpdateProfileModal = useCallback(() => {
     setIsUpdateProfileModalOpen(true);
@@ -422,7 +366,7 @@ export default function ProfilePage() {
                   className="h-2 w-2 rounded-full bg-[#7C6EE6]"
                   aria-hidden="true"
                 />
-                Conflict Member
+                UniSync Member
               </span>
             </div>
           </header>
@@ -560,8 +504,6 @@ export default function ProfilePage() {
                   </dl>
                 </section>
               </div>
-            ) : isPlannedSection ? (
-              <PlannedSection section={currentSection} />
             ) : (
               <Outlet />
             )}
