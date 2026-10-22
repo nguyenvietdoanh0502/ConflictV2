@@ -67,13 +67,16 @@ public class UserRegistrationService {
         return mapToDTO(savedUser);
     }
 
-    private UserDTO mapToDTO(User savedUser) {
+    public UserDTO mapToDTO(User savedUser) {
         return UserDTO.builder()
                 .id(savedUser.getId())
                 .email(savedUser.getEmail())
                 .fullName(savedUser.getFullName())
                 .pinCode(savedUser.getPinCode())
                 .avatarUrl(savedUser.getAvatarUrl())
+                .dateOfBirth(savedUser.getDateOfBirth())
+                .address(savedUser.getAddress())
+                .gender(savedUser.getGender())
                 .build();
     }
 
@@ -90,4 +93,5 @@ public class UserRegistrationService {
         User savedUser = userRepository.save(user);
         return mapToDTO(savedUser);
     }
+
 }

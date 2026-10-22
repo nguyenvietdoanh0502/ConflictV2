@@ -6,6 +6,7 @@ import com.conflict.be.modules.user.dto.UserDTO;
 import com.conflict.be.modules.user.dto.UserRegistrationCommand;
 import com.conflict.be.modules.user.entity.User;
 import com.conflict.be.modules.user.enums.AccountStatus;
+import com.conflict.be.modules.user.enums.Gender;
 import com.conflict.be.modules.user.repository.UserRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -15,6 +16,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDate;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -32,6 +34,26 @@ class UserRegistrationServiceTest {
 
     @InjectMocks
     private UserRegistrationService userRegistrationService;
+
+    @Test
+    @DisplayName("Should include optional profile fields when mapping a user")
+    void mapToDTO_IncludesOptionalProfileFields() {
+        User user = User.builder()
+                .id(UUID.randomUUID())
+                .email("profile@example.com")
+                .fullName("Profile User")
+                .pinCode("UNI-123456")
+                .dateOfBirth(LocalDate.of(1995, 6, 15))
+                .address("Can Tho")
+                .gender(Gender.MALE)
+                .build();
+
+        UserDTO result = userRegistrationService.mapToDTO(user);
+
+        assertThat(result.getDateOfBirth()).isEqualTo(LocalDate.of(1995, 6, 15));
+        assertThat(result.getAddress()).isEqualTo("Can Tho");
+        assertThat(result.getGender()).isEqualTo(Gender.MALE);
+    }
 
     @Nested
     @DisplayName("registerNewUser Tests")
@@ -62,7 +84,7 @@ class UserRegistrationServiceTest {
             assertThat(result).isNotNull();
             assertThat(result.getEmail()).isEqualTo(command.getEmail());
             assertThat(result.getFullName()).isEqualTo(command.getFullName());
-            assertThat(result.getPinCode()).startsWith("RML-");
+            assertThat(result.getPinCode()).startsWith("UNI-");
             verify(userRepository).save(any(User.class));
         }
 
@@ -100,7 +122,7 @@ class UserRegistrationServiceTest {
             User existingUser = User.builder()
                     .email(command.getEmail())
                     .status(AccountStatus.PENDING)
-                    .pinCode("RML-111111")
+                    .pinCode("UNI-111111")
                     .build();
 
             when(userRepository.findByEmail(command.getEmail())).thenReturn(Optional.of(existingUser));
@@ -111,7 +133,7 @@ class UserRegistrationServiceTest {
 
             // Assert
             assertThat(result.getFullName()).isEqualTo(command.getFullName());
-            assertThat(result.getPinCode()).isEqualTo("RML-111111");
+            assertThat(result.getPinCode()).isEqualTo("UNI-111111");
             verify(userRepository).save(any(User.class));
         }
 

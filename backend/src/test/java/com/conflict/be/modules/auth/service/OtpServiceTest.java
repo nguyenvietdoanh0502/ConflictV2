@@ -16,6 +16,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
+import com.conflict.be.modules.auth.service.OtpService.OtpType;
+
 @ExtendWith(MockitoExtension.class)
 @DisplayName("Unit Tests for OtpService")
 class OtpServiceTest {
@@ -37,7 +39,7 @@ class OtpServiceTest {
         when(redisTemplate.opsForValue()).thenReturn(valueOperations);
 
         // Act
-        String otpCode = otpService.generateAndSaveOtp(email);
+        String otpCode = otpService.generateAndSaveOtp(email, OtpType.REGISTER);
 
         // Assert
         assertThat(otpCode).hasSize(6).containsOnlyDigits();
@@ -54,7 +56,7 @@ class OtpServiceTest {
         when(valueOperations.get("otp:register:" + email)).thenReturn(otpCode);
 
         // Act
-        boolean result = otpService.verifyOtp(email, otpCode);
+        boolean result = otpService.verifyOtp(email, otpCode, OtpType.REGISTER);
 
         // Assert
         assertThat(result).isTrue();
@@ -71,7 +73,7 @@ class OtpServiceTest {
         when(valueOperations.get("otp:register:" + email)).thenReturn("different");
 
         // Act
-        boolean result = otpService.verifyOtp(email, otpCode);
+        boolean result = otpService.verifyOtp(email, otpCode, OtpType.REGISTER);
 
         // Assert
         assertThat(result).isFalse();
@@ -87,7 +89,7 @@ class OtpServiceTest {
         when(valueOperations.get("otp:register:" + email)).thenReturn(null);
 
         // Act
-        boolean result = otpService.verifyOtp(email, "123456");
+        boolean result = otpService.verifyOtp(email, "123456", OtpType.REGISTER);
 
         // Assert
         assertThat(result).isFalse();
