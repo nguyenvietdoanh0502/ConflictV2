@@ -42,7 +42,7 @@ public class ZaloGroupMapping {
 
     @Builder.Default
     @Column(name = "is_active", nullable = false)
-    private boolean active = true;
+    private boolean active = false;
 
     @Column(name = "last_synced_at")
     private Instant lastSyncedAt;

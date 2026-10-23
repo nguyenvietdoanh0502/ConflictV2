@@ -72,7 +72,9 @@ public class WebSocketAuthChannelInterceptor
 
             if (!Set.of(
                     "/user/queue/messages",
-                    "/user/queue/errors"
+                    "/user/queue/errors",
+                    "/user/queue/schedule",
+                    "/user/queue/schedule-events"
             ).contains(destination)) {
                 throw new AccessDeniedException(
                         "Unsupported subscription"

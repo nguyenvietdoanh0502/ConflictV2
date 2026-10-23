@@ -220,5 +220,39 @@ class ScheduleModuleRepositoryTest {
         // Check pending count
         long pendingCount = scheduleEventRepository.countByUserIdAndStatus(testUser.getId(), EventStatus.PENDING_REVIEW);
         assertThat(pendingCount).isEqualTo(1);
+
+        // Event 4: Regular class and Cancelled class linked to it
+        ScheduleEvent regularClass = scheduleEventRepository.save(
+                ScheduleEvent.builder()
+                        .user(testUser)
+                        .subject(webDevSubject)
+                        .title("Lập trình Web")
+                        .eventType(EventType.REGULAR_CLASS)
+                        .startDatetime(event1Start)
+                        .endDatetime(event1End)
+                        .room("401-A1")
+                        .source(EventSource.MANUAL)
+                        .status(EventStatus.CONFIRMED)
+                        .build()
+        );
+
+        ScheduleEvent cancelledClass = scheduleEventRepository.save(
+                ScheduleEvent.builder()
+                        .user(testUser)
+                        .subject(webDevSubject)
+                        .title("Nghỉ học: Lập trình Web")
+                        .eventType(EventType.CANCELLED_CLASS)
+                        .startDatetime(event1Start)
+                        .endDatetime(event1End)
+                        .source(EventSource.ZALO_AI)
+                        .status(EventStatus.PENDING_REVIEW)
+                        .relatedEvent(regularClass)
+                        .build()
+        );
+
+        Optional<ScheduleEvent> foundCancel = scheduleEventRepository.findByIdAndUserId(cancelledClass.getId(), testUser.getId());
+        assertThat(foundCancel).isPresent();
+        assertThat(foundCancel.get().getRelatedEvent()).isNotNull();
+        assertThat(foundCancel.get().getRelatedEvent().getId()).isEqualTo(regularClass.getId());
     }
 }

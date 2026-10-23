@@ -32,6 +32,10 @@ public class ScheduleEvent {
     @JoinColumn(name = "subject_id")
     private Subject subject;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "related_event_id")
+    private ScheduleEvent relatedEvent;
+
     @Column(nullable = false)
     private String title;
 

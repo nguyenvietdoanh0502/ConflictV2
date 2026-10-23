@@ -21,8 +21,6 @@ public interface ZaloGroupMappingRepository extends JpaRepository<ZaloGroupMappi
     @Query("SELECT m FROM ZaloGroupMapping m JOIN FETCH m.subject JOIN FETCH m.user WHERE m.zaloGroupId = :zaloGroupId AND m.active = true")
     List<ZaloGroupMapping> findAllActiveByZaloGroupIdWithSubjectAndUser(@Param("zaloGroupId") String zaloGroupId);
 
-    Optional<ZaloGroupMapping> findFirstByZaloGroupIdAndActiveTrue(String zaloGroupId);
-
     Optional<ZaloGroupMapping> findByUserIdAndZaloGroupId(UUID userId, String zaloGroupId);
 
     boolean existsByUserIdAndZaloGroupId(UUID userId, String zaloGroupId);

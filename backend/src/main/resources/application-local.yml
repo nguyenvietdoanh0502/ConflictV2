@@ -67,4 +67,10 @@ logging:
     org.hibernate.SQL: DEBUG
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
 
+unisync:
+  ai:
+    service-url: ${AI_SERVICE_URL:http://localhost:8000}
+    internal-api-key: ${INTERNAL_API_KEY:unisync_internal_secret_key_2026}
+    timeout-seconds: ${AI_TIMEOUT_SECONDS:15}
+
 

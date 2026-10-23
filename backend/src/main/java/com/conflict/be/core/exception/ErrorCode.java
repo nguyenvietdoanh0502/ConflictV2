@@ -202,7 +202,29 @@ public enum ErrorCode {
             "INVALID_PAGINATION",
             "Invalid pagination parameters",
             400
-    );
+    ),
+
+    // ==========================================
+    // SUBJECT & TIMETABLE ERRORS
+    // ==========================================
+    SUBJECT_NOT_FOUND("SUBJECT_NOT_FOUND", "Subject was not found", 404),
+    SUBJECT_FORBIDDEN("SUBJECT_FORBIDDEN", "You do not have permission to access this subject", 403),
+    SUBJECT_ALREADY_EXISTS("SUBJECT_ALREADY_EXISTS", "Subject already exists with this name or code", 409),
+
+    // ==========================================
+    // ZALO GROUP MAPPING ERRORS
+    // ==========================================
+    ZALO_MAPPING_NOT_FOUND("ZALO_MAPPING_NOT_FOUND", "Zalo group mapping was not found", 404),
+    ZALO_MAPPING_FORBIDDEN("ZALO_MAPPING_FORBIDDEN", "You do not have permission to access this mapping", 403),
+    ZALO_MAPPING_ALREADY_EXISTS("ZALO_MAPPING_ALREADY_EXISTS", "Group mapping already exists for this group", 409),
+
+    // ==========================================
+    // SCHEDULE EVENT ERRORS
+    // ==========================================
+    SCHEDULE_EVENT_NOT_FOUND("SCHEDULE_EVENT_NOT_FOUND", "Schedule event was not found", 404),
+    SCHEDULE_EVENT_FORBIDDEN("SCHEDULE_EVENT_FORBIDDEN", "You do not have permission to access this schedule event", 403),
+    INVALID_SCHEDULE_TIME("INVALID_SCHEDULE_TIME", "End time must be after or equal to start time", 400),
+    AI_SERVICE_UNAVAILABLE("AI_SERVICE_UNAVAILABLE", "AI processing service is temporarily unavailable", 503);
 
     private final String code;
     private final String message;

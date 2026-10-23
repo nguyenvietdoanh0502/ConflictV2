@@ -37,7 +37,7 @@ public class SecurityConfig {
                 List.of("GET","POST","PUT","PATCH","DELETE","OPTIONS")
         );
         config.setAllowedHeaders(
-                List.of("Authorization", "Content-Type", "X-XSRF-TOKEN")
+                List.of("Authorization", "Content-Type", "X-XSRF-TOKEN", "X-Internal-Api-Key")
         );
         config.setAllowCredentials(true);
 
@@ -60,10 +60,11 @@ public class SecurityConfig {
                                         "/api/v1/auth/verify-otp",
                                         "/api/v1/auth/refresh-token",
                                         "/api/v1/auth/forgot-password",
-                                        "/api/v1/auth/reset-password",
-                                        "/api/v1/auth/forgot-password",
                                         "/api/v1/auth/verify-otp-forgot-password",
                                         "/api/v1/auth/reset-password",
+                                        "/api/v1/internal/zalo/**",
+                                        "/api/v1/zalo/simulate",
+                                        "/api/v1/webhook/**",
                                         "/v3/api-docs/**",
                                         "/swagger-ui/**"
                                 ).permitAll()
