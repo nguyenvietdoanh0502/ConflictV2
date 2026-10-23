@@ -36,9 +36,7 @@ UniSync. Tên thư mục/package cũ (`ConflictV2`, `com.conflict.be`, `conflict
 | Profile + avatar Cloudinary | ✅ Xong | `modules/user`, `features/profile` |
 | Kết bạn (PIN), danh sách/lời mời | ✅ Xong (cần thêm tìm theo tên/email) | `modules/friendship`, `features/friend` |
 | Chat 1-1 STOMP (backend) | ✅ Backend xong, ❌ chưa có UI | `modules/chat` |
-| Online/Offline presence | ❌ Chưa | — |
-| Môn học / Thời khóa biểu / FullCalendar | ❌ Chưa | — |
-| AI Engine (Python FastAPI) | ❌ Chưa (thư mục `ai/` rỗng) | `ai/` |
+| Môn học / Thời khóa biểu / FullCalendar | 🔄 Đang triển khai (DB Migration V8, Entity, Repository xong) | `modules/subject`, `modules/schedule`, `modules/zalo` |
 | Zalo Bridge (Node + zca-js) + Demo Simulator | ❌ Chưa | `zalo-bridge/` (sẽ tạo) |
 | Đề cương + Minigame + điểm | ❌ Chưa | — |
 | Reminder engine (`@Scheduled` + mail + WS) | ❌ Chưa | — |
@@ -110,7 +108,7 @@ ConflictV2/
 |  |  |- core/              ApiResponse, config, security, exception, utils (dùng chung)
 |  |  |- integration/       client tới dịch vụ ngoài (aiengine, zalobridge, cloudinary...)
 |  |  `- modules/<feature>/ controller / dto / entity / enums / repository / service
-|  |- src/main/resources/   application*.yml, db/migration (Flyway V1..V7 hiện có)
+|  |- src/main/resources/   application*.yml, db/migration (Flyway V1..V8 hiện có)
 |  |- src/test/             JUnit5 + Mockito + MockMvc, profile `test` (H2)
 |  |- docker-compose.yml    Postgres 15 (5433) + Redis 7 (6380); sẽ chuyển ra root
 |  `- AGENTS.MD             quy ước chi tiết backend (code cũ)

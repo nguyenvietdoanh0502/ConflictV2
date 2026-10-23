@@ -70,6 +70,10 @@ public class User implements UserDetails {
     @Column(name = "status", nullable = false)
     private AccountStatus status;
 
+    @Builder.Default
+    @Column(name = "zalo_connected", nullable = false)
+    private boolean zaloConnected = false;
+
     @PrePersist
     protected void onCreate() {
         createdAt = Instant.now();
