@@ -1,3 +1,8 @@
+/* FullCalendar v7 Core & Theme Styles */
+@import "@fullcalendar/react/skeleton.css";
+@import "@fullcalendar/react/themes/classic/theme.css";
+@import "@fullcalendar/react/themes/classic/palette.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -80,4 +85,53 @@ code {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* FullCalendar Timetable Event Box Customization:
+   - Fill box width close to vertical column lines (1px margin)
+   - Remove default FullCalendar borders, ring box-shadows, and internal paddings
+*/
+.fc .fc-timegrid-col div[role="list"],
+.fc div[role="list"] {
+  margin-inline-start: 1px !important;
+  margin-inline-end: 1px !important;
+}
+
+.fc div[role="listitem"],
+.fc-timegrid-event-harness {
+  margin-inline-end: 0 !important;
+}
+
+.fc div[role="listitem"] > *,
+.fc-timegrid-event,
+.fc-v-event,
+.fc-event {
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+  padding: 0 !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  height: 100% !important;
+}
+
+.fc div[role="listitem"] > * > div {
+  padding: 0 !important;
+  height: 100% !important;
+  width: 100% !important;
+}
+
+/* Interactive Timetable Slots for Quick Event Creation */
+.fc .fc-timegrid-slot {
+  cursor: pointer !important;
+  transition: background-color 0.15s ease;
+}
+
+.fc .fc-timegrid-slot:hover {
+  background-color: rgba(99, 102, 241, 0.05) !important;
+}
+
+.fc-highlight {
+  background: rgba(99, 102, 241, 0.2) !important;
+  border-radius: 8px !important;
 }

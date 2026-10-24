@@ -115,8 +115,24 @@ function BrandMark() {
   );
 }
 
+function TimetableIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" aria-hidden="true">
+      <path
+        d="M19 4H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2ZM16 2v4M8 2v4M3 10h18"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle cx="12" cy="15" r="1.5" fill="currentColor" />
+    </svg>
+  );
+}
+
 const navItems = [
   { label: "Trang chủ", to: "/", end: true, icon: HomeIcon },
+  { label: "Thời khóa biểu AI", to: "/timetable", protected: true, icon: TimetableIcon },
   { label: "Bạn bè", to: "/friends", protected: true, icon: FriendsIcon },
   { label: "Hồ sơ", to: "/profile", end: true, protected: true, icon: ProfileIcon },
 ];

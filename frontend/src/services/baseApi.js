@@ -91,7 +91,7 @@ const baseQueryWithReauth = async(
 export const baseApi = createApi({
     reducerPath: "baseApi",
     baseQuery: baseQueryWithReauth,
-    tagTypes: ["CurrentUser", "Friend", "FriendRequest", "ChatHistory"],
+    tagTypes: ["CurrentUser", "Friend", "FriendRequest", "ChatHistory", "Subject", "ZaloMapping", "ScheduleEvent"],
     endpoints: ()=>({}),
 })
 

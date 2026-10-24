@@ -55,6 +55,7 @@ public class ScheduleEventService {
 
         return scheduleEventRepository.findByUserIdAndDateRange(user.getId(), searchFrom, searchTo)
                 .stream()
+                .filter(event -> event.getStatus() != EventStatus.REJECTED)
                 .map(ScheduleEventResponse::fromEntity)
                 .toList();
     }

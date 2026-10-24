@@ -2,6 +2,8 @@ package com.conflict.be.modules.subject.service;
 
 import com.conflict.be.core.exception.AppException;
 import com.conflict.be.core.exception.ErrorCode;
+import com.conflict.be.modules.schedule.entity.ScheduleEvent;
+import com.conflict.be.modules.schedule.repository.ScheduleEventRepository;
 import com.conflict.be.modules.subject.dto.SubjectRequest;
 import com.conflict.be.modules.subject.dto.SubjectResponse;
 import com.conflict.be.modules.subject.entity.Subject;
@@ -13,10 +15,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
@@ -31,6 +35,9 @@ class SubjectServiceTest {
 
     @Mock
     private SubjectRepository subjectRepository;
+
+    @Mock
+    private ScheduleEventRepository scheduleEventRepository;
 
     @Mock
     private UserRepository userRepository;
@@ -106,6 +113,46 @@ class SubjectServiceTest {
         assertEquals("Cơ sở dữ liệu", response.getName());
         assertEquals("IT102", response.getCode());
         verify(subjectRepository, times(1)).save(any(Subject.class));
+    }
+
+    @Test
+    @DisplayName("Nên tự động sinh các sự kiện thời khóa biểu định kỳ khi tạo môn học có đủ thứ, tiết và ngày học")
+    void shouldCreateSubjectAndGenerateRecurringEventsSuccessfully() {
+        when(userRepository.findByEmail(testUser.getEmail())).thenReturn(Optional.of(testUser));
+        when(subjectRepository.existsByUserIdAndNameIgnoreCase(userId, "Mạng máy tính")).thenReturn(false);
+        when(subjectRepository.save(any(Subject.class))).thenAnswer(invocation -> {
+            Subject s = invocation.getArgument(0);
+            s.setId(UUID.randomUUID());
+            return s;
+        });
+
+        // 3 tuần từ thứ 2 ngày 2026-10-26 đến 2026-11-09, thứ 3 (dayOfWeek = 2)
+        SubjectRequest request = SubjectRequest.builder()
+                .name("Mạng máy tính")
+                .code("IT103")
+                .defaultRoom("302-A1")
+                .dayOfWeek(2)
+                .startTime(LocalTime.of(7, 0))
+                .endTime(LocalTime.of(9, 35))
+                .semesterStartDate(LocalDate.of(2026, 10, 26))
+                .semesterEndDate(LocalDate.of(2026, 11, 9))
+                .build();
+
+        SubjectResponse response = subjectService.createSubject(testUser.getEmail(), request);
+
+        assertNotNull(response);
+        assertEquals("Mạng máy tính", response.getName());
+        verify(subjectRepository, times(1)).save(any(Subject.class));
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<ScheduleEvent>> captor = ArgumentCaptor.forClass(List.class);
+        verify(scheduleEventRepository, times(1)).saveAll(captor.capture());
+
+        List<ScheduleEvent> events = captor.getValue();
+        // 3 tuần: 2026-10-27 (Thứ 3), 2026-11-03 (Thứ 3), 2026-11-10 (Thứ 3)
+        assertEquals(3, events.size());
+        assertEquals("Mạng máy tính", events.get(0).getTitle());
+        assertEquals("302-A1", events.get(0).getRoom());
     }
 
     @Test
