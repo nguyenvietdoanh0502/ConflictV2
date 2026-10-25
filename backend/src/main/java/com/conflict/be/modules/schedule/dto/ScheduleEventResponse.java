@@ -30,6 +30,8 @@ public class ScheduleEventResponse {
     private Instant startDatetime;
     private Instant endDatetime;
     private String room;
+    private EventType originalEventType;
+    private String originalRoom;
     private EventSource source;
     private EventStatus status;
     private Double aiConfidence;
@@ -54,9 +56,11 @@ public class ScheduleEventResponse {
                 .relatedEventId(event.getRelatedEvent() != null ? event.getRelatedEvent().getId() : null)
                 .title(event.getTitle())
                 .eventType(event.getEventType())
+                .originalEventType(event.getOriginalEventType())
                 .startDatetime(event.getStartDatetime())
                 .endDatetime(event.getEndDatetime())
                 .room(event.getRoom())
+                .originalRoom(event.getOriginalRoom())
                 .source(event.getSource())
                 .status(event.getStatus())
                 .aiConfidence(event.getAiConfidence())

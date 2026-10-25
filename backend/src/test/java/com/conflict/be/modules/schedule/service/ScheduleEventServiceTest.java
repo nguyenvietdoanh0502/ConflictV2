@@ -177,4 +177,57 @@ class ScheduleEventServiceTest {
 
         assertEquals(EventStatus.REJECTED, response.getStatus());
     }
+
+    @Test
+    @DisplayName("Nên khôi phục sự kiện về loại cũ và CONFIRMED khi từ chối thông báo nghỉ học")
+    void shouldRevertCancelledEventToOriginalTypeWhenRejected() {
+        when(userRepository.findByEmail(testUser.getEmail())).thenReturn(Optional.of(testUser));
+
+        ScheduleEvent cancelPendingEvent = ScheduleEvent.builder()
+                .id(eventId)
+                .user(testUser)
+                .subject(testSubject)
+                .title("Lập trình Web")
+                .originalEventType(EventType.REGULAR_CLASS)
+                .eventType(EventType.CANCELLED_CLASS)
+                .status(EventStatus.PENDING_REVIEW)
+                .source(EventSource.ZALO_AI)
+                .build();
+
+        when(scheduleEventRepository.findByIdAndUserId(eventId, userId)).thenReturn(Optional.of(cancelPendingEvent));
+        when(scheduleEventRepository.save(any(ScheduleEvent.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        ScheduleEventResponse response = scheduleEventService.rejectEvent(testUser.getEmail(), eventId);
+
+        assertEquals(EventType.REGULAR_CLASS, response.getEventType());
+        assertEquals(EventStatus.CONFIRMED, response.getStatus());
+        assertNull(cancelPendingEvent.getOriginalEventType());
+    }
+
+    @Test
+    @DisplayName("Nên khôi phục phòng học cũ và CONFIRMED khi từ chối thông báo đổi phòng")
+    void shouldRevertRoomChangeToOriginalRoomWhenRejected() {
+        when(userRepository.findByEmail(testUser.getEmail())).thenReturn(Optional.of(testUser));
+
+        ScheduleEvent roomPendingEvent = ScheduleEvent.builder()
+                .id(eventId)
+                .user(testUser)
+                .subject(testSubject)
+                .title("Lập trình Web")
+                .room("502-A2")
+                .originalRoom("401-A1")
+                .eventType(EventType.REGULAR_CLASS)
+                .status(EventStatus.PENDING_REVIEW)
+                .source(EventSource.ZALO_AI)
+                .build();
+
+        when(scheduleEventRepository.findByIdAndUserId(eventId, userId)).thenReturn(Optional.of(roomPendingEvent));
+        when(scheduleEventRepository.save(any(ScheduleEvent.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        ScheduleEventResponse response = scheduleEventService.rejectEvent(testUser.getEmail(), eventId);
+
+        assertEquals("401-A1", response.getRoom());
+        assertEquals(EventStatus.CONFIRMED, response.getStatus());
+        assertNull(roomPendingEvent.getOriginalRoom());
+    }
 }

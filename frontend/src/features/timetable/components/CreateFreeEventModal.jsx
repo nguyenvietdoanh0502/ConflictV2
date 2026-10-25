@@ -11,7 +11,9 @@ import {
   Check,
   Sparkles,
   Calendar as CalendarIcon,
-  AlertCircle
+  AlertCircle,
+  Layers,
+  ArrowRight
 } from "lucide-react";
 import { RAW_PERIODS, calculatePeriodRange, buildEventIsoStrings } from "../constants/periods";
 import { useCreateScheduleEventMutation } from "../services/timetableApi";
@@ -34,10 +36,10 @@ const QUICK_ROOM_SUGGESTIONS = [
 ];
 
 const EVENT_TYPES = [
-  { value: "REGULAR_CLASS", label: "Lịch tự do", color: "bg-purple-50 text-purple-700 border-purple-200" },
-  { value: "MAKEUP_CLASS", label: "Học bù", color: "bg-amber-50 text-amber-700 border-amber-200" },
-  { value: "EXAM", label: "Kiểm tra / Thi", color: "bg-rose-50 text-rose-700 border-rose-200" },
-  { value: "DEADLINE", label: "Hạn nộp bài", color: "bg-red-50 text-red-700 border-red-200" },
+  { value: "REGULAR_CLASS", label: "Lịch tự do", desc: "Học tập, sinh hoạt cá nhân", color: "bg-purple-50 text-purple-700 border-purple-200 hover:border-purple-300" },
+  { value: "MAKEUP_CLASS", label: "Học bù", desc: "Buổi học bù tự bổ sung", color: "bg-amber-50 text-amber-700 border-amber-200 hover:border-amber-300" },
+  { value: "EXAM", label: "Kiểm tra / Thi", desc: "Lịch thi, kiểm tra giữa/cuối kỳ", color: "bg-rose-50 text-rose-700 border-rose-200 hover:border-rose-300" },
+  { value: "DEADLINE", label: "Hạn nộp bài", desc: "Deadline bài tập lớn, đồ án", color: "bg-red-50 text-red-700 border-red-200 hover:border-red-300" },
 ];
 
 export default function CreateFreeEventModal({
@@ -175,302 +177,339 @@ export default function CreateFreeEventModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 w-full max-w-lg overflow-hidden flex flex-col max-h-[92vh] animate-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-900/65 backdrop-blur-sm animate-in fade-in duration-200 overflow-y-auto">
+      {/* Modal Card - Dạng chữ nhật ngang, diện tích rộng rãi (max-w-4xl hoặc max-w-5xl) */}
+      <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 w-full max-w-4xl lg:max-w-5xl overflow-hidden flex flex-col max-h-[92vh] animate-in zoom-in-95 duration-200 my-auto">
         
-        {/* Header */}
-        <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-indigo-50/70 via-purple-50/40 to-white">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-2xl bg-indigo-600 text-white shadow-md shadow-indigo-200">
-              <CalendarPlus className="w-5 h-5" />
+        {/* Header Bar */}
+        <div className="px-6 py-4 sm:px-8 sm:py-5 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-indigo-50/80 via-purple-50/50 to-white">
+          <div className="flex items-center gap-3.5">
+            <div className="p-3 rounded-2xl bg-indigo-600 text-white shadow-lg shadow-indigo-500/25">
+              <CalendarPlus className="w-6 h-6" />
             </div>
             <div>
-              <h3 className="text-lg font-black text-slate-900 leading-snug">
-                Thêm lịch tự do
-              </h3>
-              <p className="text-xs text-slate-500 font-medium">
-                Lịch cá nhân trên thời khóa biểu (không tuân theo môn học)
+              <div className="flex items-center gap-2">
+                <h3 className="text-lg sm:text-xl font-black text-slate-900 leading-snug">
+                  Thêm lịch tự do
+                </h3>
+              </div>
+              <p className="text-xs sm:text-sm text-slate-500 font-medium mt-0.5">
+                Tạo lịch biểu cá nhân linh hoạt trên thời khóa biểu (không ràng buộc môn học)
               </p>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-200/50 rounded-full transition"
-            title="Đóng"
+            className="p-2.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-2xl transition cursor-pointer"
+            title="Đóng cửa sổ"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Form Body */}
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-5">
+        {/* Form Body - Bố cục ngang 2 cột (Left: Nội dung & Phân loại, Right: Thời gian & Xem trước) */}
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 sm:p-8">
           {errorMsg && (
-            <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 flex items-start gap-2.5 text-xs text-rose-700">
-              <AlertCircle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
-              <span className="font-semibold">{errorMsg}</span>
+            <div className="mb-6 p-4 rounded-2xl bg-rose-50 border border-rose-200 flex items-start gap-3 text-xs sm:text-sm text-rose-800">
+              <AlertCircle className="w-5 h-5 text-rose-500 shrink-0 mt-0.5" />
+              <span className="font-bold">{errorMsg}</span>
             </div>
           )}
 
-          {/* Time & Slot Overview Card */}
-          <div className="p-4 rounded-2xl bg-gradient-to-br from-indigo-50/60 via-slate-50 to-purple-50/30 border border-indigo-100/80 space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-indigo-950 flex items-center gap-1.5">
-                <Clock className="w-4 h-4 text-indigo-600" />
-                Khung thời gian đã chọn
-              </span>
-              <span className="px-2.5 py-1 text-xs font-black rounded-lg bg-indigo-600 text-white shadow-sm">
-                {periodRange.periodLabel}
-              </span>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
+            
+            {/* CỘT TRÁI (Lg: 7 cột): Thông tin sự kiện, địa điểm, phân loại, ghi chú */}
+            <div className="lg:col-span-7 space-y-5">
+              
+              {/* Field 1: Tên lịch / Sự kiện */}
+              <div className="space-y-2">
+                <label className="block text-xs sm:text-sm font-black text-slate-900 tracking-wide">
+                  Tên lịch / Sự kiện <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="Ví dụ: Tự học nhóm Đồ án, Hội thảo AI, Ôn thi cuối kỳ..."
+                  required
+                  autoFocus
+                  className="w-full text-xs sm:text-sm font-semibold px-4 py-3 rounded-2xl bg-slate-50/90 border border-slate-200 focus:bg-white focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition shadow-inner placeholder:font-normal placeholder:text-slate-400"
+                />
+                
+                {/* Quick title suggestions */}
+                <div className="space-y-1 pt-1">
+                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                    Gợi ý nhanh:
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {QUICK_TITLE_SUGGESTIONS.map((tag) => (
+                      <button
+                        type="button"
+                        key={tag}
+                        onClick={() => setTitle(tag)}
+                        className={`px-3 py-1 rounded-xl text-xs font-bold transition border cursor-pointer ${
+                          title === tag
+                            ? "bg-indigo-600 text-white border-indigo-600 shadow-sm shadow-indigo-200"
+                            : "bg-slate-100/80 text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-200 border-slate-200"
+                        }`}
+                      >
+                        {tag}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Field 2: Vị trí / Địa điểm */}
+              <div className="space-y-2">
+                <label className="block text-xs sm:text-sm font-black text-slate-900 tracking-wide flex items-center gap-1.5">
+                  <MapPin className="w-4 h-4 text-emerald-600" />
+                  Vị trí / Địa điểm
+                </label>
+                <input
+                  type="text"
+                  value={room}
+                  onChange={(e) => setRoom(e.target.value)}
+                  placeholder="Ví dụ: Phòng 302-A1, Thư viện T2, Lab 5, Quán café, Online Zoom..."
+                  className="w-full text-xs sm:text-sm font-semibold px-4 py-3 rounded-2xl bg-slate-50/90 border border-slate-200 focus:bg-white focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition shadow-inner placeholder:font-normal placeholder:text-slate-400"
+                />
+
+                {/* Quick room suggestions */}
+                <div className="space-y-1 pt-1">
+                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                    Địa điểm gợi ý:
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {QUICK_ROOM_SUGGESTIONS.map((r) => (
+                      <button
+                        type="button"
+                        key={r}
+                        onClick={() => setRoom(r)}
+                        className={`px-3 py-1 rounded-xl text-xs font-bold transition border cursor-pointer ${
+                          room === r
+                            ? "bg-emerald-600 text-white border-emerald-600 shadow-sm shadow-emerald-200"
+                            : "bg-slate-100/80 text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200 border-slate-200"
+                        }`}
+                      >
+                        {r}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Field 3: Phân loại sự kiện */}
+              <div className="space-y-2 pt-1">
+                <label className="block text-xs sm:text-sm font-black text-slate-900 tracking-wide flex items-center gap-1.5">
+                  <Layers className="w-4 h-4 text-indigo-600" />
+                  Phân loại sự kiện
+                </label>
+                <div className="grid grid-cols-2 gap-2.5">
+                  {EVENT_TYPES.map((t) => {
+                    const isSelected = eventType === t.value;
+                    return (
+                      <button
+                        type="button"
+                        key={t.value}
+                        onClick={() => setEventType(t.value)}
+                        className={`p-3 rounded-2xl text-left border transition cursor-pointer flex flex-col justify-between ${
+                          isSelected
+                            ? `${t.color} ring-2 ring-indigo-500 shadow-sm font-black`
+                            : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100/80"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs sm:text-sm font-extrabold">{t.label}</span>
+                          {isSelected && <Check className="w-4 h-4 text-indigo-600" />}
+                        </div>
+                        <span className="text-[10px] text-slate-500 font-medium mt-1">
+                          {t.desc}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Field 4: Ghi chú */}
+              <div className="space-y-1.5">
+                <label className="block text-xs sm:text-sm font-black text-slate-900 tracking-wide flex items-center gap-1.5">
+                  <AlignLeft className="w-4 h-4 text-slate-400" />
+                  Ghi chú bổ sung (Tùy chọn)
+                </label>
+                <textarea
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  placeholder="Nội dung cần chuẩn bị, tài liệu ôn tập, link nhóm..."
+                  rows={2}
+                  className="w-full text-xs sm:text-sm font-medium p-3.5 rounded-2xl bg-slate-50/90 border border-slate-200 focus:bg-white focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition shadow-inner resize-none placeholder:font-normal placeholder:text-slate-400"
+                />
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-              {/* Date Input */}
-              <div>
-                <label className="block text-[11px] font-bold text-slate-600 mb-1">
-                  Ngày diễn ra:
-                </label>
-                <div className="relative">
+            {/* CỘT PHẢI (Lg: 5 cột): Cài đặt Thời gian, Tiết học & Thẻ xem trước trực quan */}
+            <div className="lg:col-span-5 space-y-5">
+              
+              {/* Card Thời gian & Tiết học */}
+              <div className="p-5 rounded-3xl bg-gradient-to-br from-indigo-50/80 via-slate-50/90 to-purple-50/50 border border-indigo-100/90 shadow-sm space-y-4">
+                
+                <div className="flex items-center justify-between pb-3 border-b border-indigo-100">
+                  <span className="text-xs sm:text-sm font-extrabold text-indigo-950 flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-indigo-600" />
+                    Thiết lập thời gian
+                  </span>
+                  <span className="px-3 py-1 text-xs font-black rounded-xl bg-indigo-600 text-white shadow-sm shadow-indigo-200">
+                    {periodRange.periodLabel}
+                  </span>
+                </div>
+
+                {/* Ngày diễn ra */}
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-extrabold text-slate-700">
+                    Ngày diễn ra:
+                  </label>
                   <input
                     type="date"
                     value={date}
                     onChange={(e) => setDate(e.target.value)}
                     required
-                    className="w-full text-xs font-semibold px-3 py-2 rounded-xl bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 shadow-sm transition"
+                    className="w-full text-xs sm:text-sm font-bold px-3.5 py-2.5 rounded-xl bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 shadow-sm transition"
                   />
+                  <div className="p-2 rounded-xl bg-indigo-100/60 border border-indigo-200/60 text-xs font-extrabold text-indigo-900 flex items-center gap-1.5">
+                    <CalendarIcon className="w-3.5 h-3.5 text-indigo-600" />
+                    <span>{formattedDateVietnamese || "Chưa chọn ngày"}</span>
+                  </div>
                 </div>
-                <p className="text-[10px] text-indigo-600 font-bold mt-1">
-                  📅 {formattedDateVietnamese}
-                </p>
-              </div>
 
-              {/* Start Period Selector */}
-              <div>
-                <label className="block text-[11px] font-bold text-slate-600 mb-1">
-                  Bắt đầu từ tiết:
-                </label>
-                <select
-                  value={startPeriod}
-                  onChange={(e) => handleStartPeriodChange(e.target.value)}
-                  className="w-full text-xs font-semibold px-3 py-2 rounded-xl bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 shadow-sm transition"
-                >
-                  {RAW_PERIODS.map((p) => (
-                    <option key={p.period} value={p.period}>
-                      Tiết {p.period} ({p.start} - {p.end}) [{p.shift}]
-                    </option>
-                  ))}
-                </select>
-                <p className="text-[10px] text-slate-500 font-medium mt-1">
-                  ⏰ {periodRange.timeRangeText}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Field 1: Tên: (Bắt buộc) */}
-          <div className="space-y-1.5">
-            <label className="block text-xs font-black text-slate-800 tracking-wide">
-              Tên lịch / Sự kiện <span className="text-rose-500">*</span>
-            </label>
-            <div className="relative">
-              <input
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Ví dụ: Tự học nhóm, Tham gia hội thảo, Học bù..."
-                required
-                autoFocus
-                className="w-full text-xs font-medium px-3.5 py-2.5 rounded-xl bg-slate-50/80 border border-slate-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition shadow-inner"
-              />
-            </div>
-            
-            {/* Quick title suggestions */}
-            <div className="flex flex-wrap gap-1.5 pt-1">
-              {QUICK_TITLE_SUGGESTIONS.map((tag) => (
-                <button
-                  type="button"
-                  key={tag}
-                  onClick={() => setTitle(tag)}
-                  className={`px-2 py-0.5 rounded-lg text-[10px] font-semibold transition border ${
-                    title === tag
-                      ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
-                      : "bg-slate-100/80 text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 border-slate-200"
-                  }`}
-                >
-                  {tag}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Field 2: Vị trí: (Phòng học, địa điểm) */}
-          <div className="space-y-1.5">
-            <label className="block text-xs font-black text-slate-800 tracking-wide flex items-center gap-1.5">
-              <MapPin className="w-3.5 h-3.5 text-emerald-600" />
-              Vị trí / Địa điểm
-            </label>
-            <div className="relative">
-              <input
-                type="text"
-                value={room}
-                onChange={(e) => setRoom(e.target.value)}
-                placeholder="Ví dụ: Phòng 302-A1, Thư viện T2, Lab 5, Online Zoom..."
-                className="w-full text-xs font-medium px-3.5 py-2.5 rounded-xl bg-slate-50/80 border border-slate-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition shadow-inner"
-              />
-            </div>
-
-            {/* Quick room suggestions */}
-            <div className="flex flex-wrap gap-1.5 pt-1">
-              {QUICK_ROOM_SUGGESTIONS.map((r) => (
-                <button
-                  type="button"
-                  key={r}
-                  onClick={() => setRoom(r)}
-                  className={`px-2 py-0.5 rounded-lg text-[10px] font-semibold transition border ${
-                    room === r
-                      ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
-                      : "bg-slate-100/80 text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 border-slate-200"
-                  }`}
-                >
-                  {r}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Field 3: Số tiết: (Thời lượng) */}
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <label className="block text-xs font-black text-slate-800 tracking-wide flex items-center gap-1.5">
-                <Tag className="w-3.5 h-3.5 text-purple-600" />
-                Số tiết <span className="text-rose-500">*</span>
-              </label>
-              <span className="text-[11px] text-slate-500 font-medium">
-                (Tối đa {maxAllowedDuration} tiết từ Tiết {startPeriod})
-              </span>
-            </div>
-
-            <div className="flex items-center gap-3">
-              {/* Stepper */}
-              <div className="flex items-center rounded-xl border border-slate-200 bg-slate-50/80 p-1 shadow-inner">
-                <button
-                  type="button"
-                  onClick={handleDecreaseDuration}
-                  disabled={duration <= 1}
-                  className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-600 hover:bg-white hover:text-indigo-600 disabled:opacity-40 disabled:hover:bg-transparent transition shadow-sm"
-                  title="Giảm 1 tiết"
-                >
-                  <Minus className="w-4 h-4" />
-                </button>
-                <div className="w-14 text-center font-black text-sm text-slate-900">
-                  {duration} <span className="text-[10px] font-bold text-slate-500">tiết</span>
+                {/* Bắt đầu từ tiết */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-extrabold text-slate-700">
+                      Bắt đầu từ tiết:
+                    </label>
+                    <span className="text-[11px] font-bold text-slate-500">
+                      Khung giờ: {RAW_PERIODS[startPeriod - 1]?.start} - {RAW_PERIODS[startPeriod - 1]?.end}
+                    </span>
+                  </div>
+                  <select
+                    value={startPeriod}
+                    onChange={(e) => handleStartPeriodChange(e.target.value)}
+                    className="w-full text-xs sm:text-sm font-bold px-3.5 py-2.5 rounded-xl bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 shadow-sm transition"
+                  >
+                    {RAW_PERIODS.map((p) => (
+                      <option key={p.period} value={p.period}>
+                        Tiết {p.period} ({p.start} - {p.end}) • Ca {p.shift}
+                      </option>
+                    ))}
+                  </select>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleIncreaseDuration}
-                  disabled={duration >= maxAllowedDuration}
-                  className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-600 hover:bg-white hover:text-indigo-600 disabled:opacity-40 disabled:hover:bg-transparent transition shadow-sm"
-                  title="Tăng 1 tiết"
-                >
-                  <Plus className="w-4 h-4" />
-                </button>
+
+                {/* Số tiết (Thời lượng) */}
+                <div className="space-y-2 pt-1">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-extrabold text-slate-700 flex items-center gap-1.5">
+                      <Tag className="w-3.5 h-3.5 text-purple-600" />
+                      Số tiết (Thời lượng):
+                    </label>
+                    <span className="text-[11px] text-slate-500 font-bold">
+                      Tối đa {maxAllowedDuration} tiết
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    {/* Stepper to rõ */}
+                    <div className="flex items-center rounded-2xl border border-slate-200 bg-white p-1 shadow-sm">
+                      <button
+                        type="button"
+                        onClick={handleDecreaseDuration}
+                        disabled={duration <= 1}
+                        className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 disabled:opacity-30 disabled:hover:bg-transparent transition cursor-pointer"
+                        title="Giảm 1 tiết"
+                      >
+                        <Minus className="w-5 h-5" />
+                      </button>
+                      <div className="w-16 text-center font-black text-lg text-slate-900">
+                        {duration} <span className="text-xs font-bold text-slate-500">tiết</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleIncreaseDuration}
+                        disabled={duration >= maxAllowedDuration}
+                        className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 disabled:opacity-30 disabled:hover:bg-transparent transition cursor-pointer"
+                        title="Tăng 1 tiết"
+                      >
+                        <Plus className="w-5 h-5" />
+                      </button>
+                    </div>
+
+                  </div>
+                </div>
               </div>
 
-              {/* Quick duration buttons */}
-              <div className="flex flex-wrap items-center gap-1.5">
-                {[1, 2, 3, 4, 5].map((d) => {
-                  const isDisabled = d > maxAllowedDuration;
-                  return (
-                    <button
-                      type="button"
-                      key={d}
-                      disabled={isDisabled}
-                      onClick={() => setDuration(d)}
-                      className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition border ${
-                        duration === d
-                          ? "bg-purple-600 text-white border-purple-600 shadow-sm"
-                          : "bg-white text-slate-700 hover:bg-purple-50 hover:text-purple-700 border-slate-200 disabled:opacity-30 disabled:hover:bg-white"
-                      }`}
-                    >
-                      {d} tiết
-                    </button>
-                  );
-                })}
+              {/* Thẻ xem trước trực quan (Live Timetable Event Preview Card) */}
+              <div className="p-4 rounded-3xl bg-white border border-slate-200/90 shadow-sm space-y-2.5">
+                <div className="flex items-center justify-between text-xs font-extrabold text-slate-700">
+                  <span className="flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                    Xem trước trên Thời khóa biểu
+                  </span>
+                </div>
+
+                <div className="p-3.5 rounded-2xl bg-gradient-to-r from-purple-500/10 via-indigo-500/10 to-blue-500/10 border-2 border-indigo-300/80 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs sm:text-sm font-black text-slate-900 truncate">
+                      {title.trim() || "Chưa đặt tên lịch"}
+                    </span>
+                    <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-white border border-slate-200 text-slate-700 shrink-0">
+                      {EVENT_TYPES.find((t) => t.value === eventType)?.label || "Lịch tự do"}
+                    </span>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-semibold text-slate-600">
+                    <span className="flex items-center gap-1 text-indigo-700">
+                      <Clock className="w-3.5 h-3.5" />
+                      {periodRange.periodLabel} ({periodRange.timeRangeText})
+                    </span>
+                    {room.trim() && (
+                      <span className="flex items-center gap-1 text-emerald-700">
+                        <MapPin className="w-3.5 h-3.5" />
+                        {room.trim()}
+                      </span>
+                    )}
+                  </div>
+                </div>
               </div>
+
             </div>
 
-            {/* Calculated span preview */}
-            <div className="p-2.5 rounded-xl bg-purple-50/50 border border-purple-100 flex items-center justify-between text-xs font-semibold text-purple-900 mt-2">
-              <span>Độ dài trên TKB:</span>
-              <span className="font-bold">
-                {periodRange.periodLabel} ({periodRange.timeRangeText})
-              </span>
-            </div>
-          </div>
-
-          {/* Optional: Event Type */}
-          <div className="space-y-1.5 pt-1">
-            <label className="block text-xs font-bold text-slate-700">
-              Phân loại sự kiện (Tùy chọn)
-            </label>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {EVENT_TYPES.map((t) => (
-                <button
-                  type="button"
-                  key={t.value}
-                  onClick={() => setEventType(t.value)}
-                  className={`px-2.5 py-2 rounded-xl text-xs font-bold transition border text-center ${
-                    eventType === t.value
-                      ? `${t.color} ring-2 ring-indigo-500/30 font-black shadow-sm`
-                      : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
-                  }`}
-                >
-                  {t.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Optional: Ghi chú */}
-          <div className="space-y-1.5">
-            <label className="block text-xs font-bold text-slate-700 flex items-center gap-1.5">
-              <AlignLeft className="w-3.5 h-3.5 text-slate-400" />
-              Ghi chú (Tùy chọn)
-            </label>
-            <textarea
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder="Nội dung cần chuẩn bị, tài liệu, link nhóm..."
-              rows={2}
-              className="w-full text-xs font-medium p-3 rounded-xl bg-slate-50/80 border border-slate-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition shadow-inner resize-none"
-            />
           </div>
         </form>
 
         {/* Modal Footer Actions */}
-        <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/80 flex items-center justify-between gap-3">
+        <div className="px-6 py-4 sm:px-8 sm:py-4 border-t border-slate-100 bg-slate-50/90 flex items-center justify-between gap-4">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-200/70 rounded-xl transition"
+            className="px-5 py-2.5 text-xs sm:text-sm font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-200/70 rounded-2xl transition cursor-pointer"
           >
-            Hủy
+            Hủy bỏ
           </button>
 
           <button
             type="button"
             onClick={handleSubmit}
             disabled={isLoading || !title.trim() || !date}
-            className="inline-flex items-center gap-2 px-5 py-2.5 text-xs font-black text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl shadow-md shadow-indigo-200 transition cursor-pointer"
+            className="inline-flex items-center gap-2.5 px-6 py-3 text-xs sm:text-sm font-black text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-2xl shadow-lg shadow-indigo-500/25 transition cursor-pointer"
           >
             {isLoading ? (
               <>
-                <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                <span>Đang thêm...</span>
+                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <span>Đang thêm vào TKB...</span>
               </>
             ) : (
               <>
-                <CalendarPlus className="w-4 h-4" />
+                <CalendarPlus className="w-5 h-5" />
                 <span>Thêm vào thời khóa biểu</span>
               </>
             )}

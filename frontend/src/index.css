@@ -135,3 +135,10 @@ code {
   background: rgba(99, 102, 241, 0.2) !important;
   border-radius: 8px !important;
 }
+
+/* Capitalize the month title on the timetable: 'tháng 10 năm 2026' -> 'Tháng 10 năm 2026' */
+.fc .fc-toolbar-title {
+  text-transform: capitalize !important;
+  font-weight: 800 !important;
+}
+

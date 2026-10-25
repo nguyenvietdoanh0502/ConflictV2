@@ -79,25 +79,38 @@ export default function EventDetailModal({ event, onClose }) {
     });
   };
 
-  const getEventBadge = (type, subjectId) => {
-    switch (type) {
+  const isCancelled = event.eventType === "CANCELLED_CLASS";
+  const isPending = event.status === "PENDING_REVIEW";
+  const isPendingCancellation = isCancelled && isPending;
+  const isConfirmedCancelled = isCancelled && !isPending;
+  const hasPendingRoomChange = Boolean(event.originalRoom && isPending);
+
+  const getEventBadge = () => {
+    if (isPendingCancellation) {
+      return { label: "Báo nghỉ (Chờ duyệt)", bg: "bg-slate-200 text-slate-800 border-slate-400" };
+    }
+    if (isConfirmedCancelled) {
+      return { label: "Đã nghỉ học", bg: "bg-slate-700 text-white border-slate-800" };
+    }
+    if (hasPendingRoomChange) {
+      return { label: "Đổi phòng (Chờ duyệt)", bg: "bg-indigo-100 text-indigo-800 border-indigo-300" };
+    }
+    switch (event.eventType) {
       case "MAKEUP_CLASS":
         return { label: "Học bù", bg: "bg-amber-100 text-amber-800 border-amber-200" };
-      case "CANCELLED_CLASS":
-        return { label: "Báo nghỉ", bg: "bg-slate-100 text-slate-700 border-slate-300 line-through" };
       case "EXAM":
         return { label: "Kiểm tra / Thi", bg: "bg-rose-100 text-rose-800 border-rose-200" };
       case "DEADLINE":
         return { label: "Hạn nộp bài", bg: "bg-red-100 text-red-800 border-red-200" };
       default:
-        if (!subjectId) {
+        if (!event.subjectId) {
           return { label: "Lịch tự do", bg: "bg-purple-100 text-purple-800 border-purple-200" };
         }
         return { label: "Lịch thường", bg: "bg-indigo-100 text-indigo-800 border-indigo-200" };
     }
   };
 
-  const badge = getEventBadge(event.eventType, event.subjectId);
+  const badge = getEventBadge();
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
@@ -116,7 +129,7 @@ export default function EventDetailModal({ event, onClose }) {
             ) : (
               <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200">
                 <CheckCircle className="w-3.5 h-3.5" />
-                Đã xác nhận
+                {isConfirmedCancelled ? "Đã xác nhận nghỉ" : "Đã xác nhận"}
               </span>
             )}
           </div>
@@ -130,9 +143,35 @@ export default function EventDetailModal({ event, onClose }) {
 
         {/* Modal Content */}
         <div className="p-6 overflow-y-auto space-y-5">
+          {/* Notification Alert for Cancellation */}
+          {isPendingCancellation && (
+            <div className="p-4 rounded-2xl bg-slate-100 border border-slate-300 text-slate-800 text-xs space-y-1">
+              <p className="font-extrabold text-sm text-slate-900 flex items-center gap-1.5">
+                <span>⚠️ Thông báo nghỉ học</span>
+              </p>
+              <p className="text-slate-600 leading-relaxed">
+                Buổi học này có thông báo nghỉ học từ Zalo. Nếu duyệt, sự kiện sẽ chuyển thành màu xám đậm (đã nghỉ). Nếu từ chối, sự kiện sẽ trở lại trạng thái lịch học bình thường.
+              </p>
+            </div>
+          )}
+
+          {/* Notification Alert for Room Change */}
+          {hasPendingRoomChange && (
+            <div className="p-4 rounded-2xl bg-indigo-50/80 border border-indigo-200 text-indigo-900 text-xs space-y-1">
+              <p className="font-extrabold text-sm text-indigo-950 flex items-center gap-1.5">
+                <span>🔄 Thông báo đổi phòng học</span>
+              </p>
+              <p className="text-indigo-800 leading-relaxed">
+                Có thông báo đổi phòng học từ <strong>{event.originalRoom}</strong> sang <strong>{event.room}</strong>. Bạn có thể duyệt để cập nhật phòng mới hoặc từ chối để giữ phòng cũ.
+              </p>
+            </div>
+          )}
+
           {/* Title & Subject */}
           <div>
-            <h3 className="text-xl font-extrabold text-slate-900 leading-snug">{event.title}</h3>
+            <h3 className={`text-xl font-extrabold text-slate-900 leading-snug ${isConfirmedCancelled ? "line-through text-slate-500" : ""}`}>
+              {event.title}
+            </h3>
             {event.subjectName && (
               <div className="flex items-center gap-2 mt-2">
                 <span
@@ -163,7 +202,12 @@ export default function EventDetailModal({ event, onClose }) {
               <MapPin className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
               <div>
                 <p className="text-xs font-medium text-slate-500">Phòng học</p>
-                <p className="text-sm font-bold text-slate-800 mt-0.5">{event.room || "Chưa xác định"}</p>
+                <p className="text-sm font-bold text-slate-800 mt-0.5">
+                  {event.room || "Chưa xác định"}
+                </p>
+                {hasPendingRoomChange && event.originalRoom && (
+                  <p className="text-xs text-amber-700 font-medium mt-0.5">Phòng cũ: {event.originalRoom}</p>
+                )}
                 <p className="text-xs text-slate-500 mt-0.5">Địa điểm học tập</p>
               </div>
             </div>
@@ -229,19 +273,37 @@ export default function EventDetailModal({ event, onClose }) {
                   type="button"
                   onClick={handleReject}
                   disabled={isRejecting}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-slate-600 hover:bg-slate-200 rounded-xl transition border border-slate-200"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-slate-700 hover:bg-slate-200 rounded-xl transition border border-slate-200"
+                  title={
+                    isPendingCancellation
+                      ? "Từ chối thông báo nghỉ học (Giữ lại lịch học bình thường)"
+                      : hasPendingRoomChange
+                      ? "Từ chối đổi phòng (Giữ lại phòng học cũ)"
+                      : "Từ chối sự kiện này"
+                  }
                 >
                   <XCircle className="w-3.5 h-3.5" />
-                  {isRejecting ? "Đang xử lý..." : "Từ chối"}
+                  {isRejecting ? "Đang xử lý..." : isPendingCancellation ? "Từ chối (Giữ lịch)" : hasPendingRoomChange ? "Từ chối (Giữ phòng cũ)" : "Từ chối"}
                 </button>
                 <button
                   type="button"
                   onClick={handleConfirm}
                   disabled={isConfirming}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-md shadow-indigo-200 transition"
+                  className={`inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white rounded-xl shadow-md transition ${
+                    isPendingCancellation
+                      ? "bg-slate-800 hover:bg-slate-900 shadow-slate-300"
+                      : "bg-indigo-600 hover:bg-indigo-700 shadow-indigo-200"
+                  }`}
+                  title={
+                    isPendingCancellation
+                      ? "Duyệt nghỉ học (Chuyển sự kiện sang màu xám đậm)"
+                      : hasPendingRoomChange
+                      ? "Duyệt đổi sang phòng học mới"
+                      : "Duyệt sự kiện này lên thời khóa biểu"
+                  }
                 >
                   <CheckCircle className="w-3.5 h-3.5" />
-                  {isConfirming ? "Đang duyệt..." : "Duyệt lên lịch"}
+                  {isConfirming ? "Đang duyệt..." : isPendingCancellation ? "Duyệt nghỉ học" : hasPendingRoomChange ? "Duyệt đổi phòng" : "Duyệt lên lịch"}
                 </button>
               </>
             )}

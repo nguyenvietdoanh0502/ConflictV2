@@ -5,5 +5,6 @@ public enum EventType {
     MAKEUP_CLASS,
     CANCELLED_CLASS,
     EXAM,
-    DEADLINE
+    DEADLINE,
+    ROOM_CHANGE
 }

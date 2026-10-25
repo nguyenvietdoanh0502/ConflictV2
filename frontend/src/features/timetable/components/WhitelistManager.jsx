@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   ShieldCheck,
   BookOpen,
@@ -7,7 +7,11 @@ import {
   X,
   Sparkles,
   Calendar,
-  Clock
+  Clock,
+  QrCode,
+  Plus,
+  CheckCircle2,
+  AlertCircle
 } from "lucide-react";
 import {
   useGetSubjectsQuery,
@@ -18,6 +22,7 @@ import {
   useToggleZaloMappingMutation,
   useDeleteZaloMappingMutation,
 } from "../services/timetableApi";
+import { fetchBridgeGroups, fetchBridgeStatus } from "../services/zaloBridgeApi";
 import ConfirmDeleteModal from "./ConfirmDeleteModal";
 
 const DAYS_OF_WEEK = [
@@ -66,7 +71,7 @@ const getFutureDateString = (weeksAhead = 15) => {
   return `${year}-${month}-${day}`;
 };
 
-export default function WhitelistManager({ onSelectGroupForSimulator }) {
+export default function WhitelistManager({ onSelectGroupForSimulator, onNavigateToConnect }) {
   const { data: subjects = [] } = useGetSubjectsQuery();
   const { data: mappings = [], isLoading: isLoadingMappings } = useGetZaloMappingsQuery();
 
@@ -81,6 +86,18 @@ export default function WhitelistManager({ onSelectGroupForSimulator }) {
   const [showAddMapping, setShowAddMapping] = useState(false);
   const [deleteConfirmState, setDeleteConfirmState] = useState(null);
   const [deleteError, setDeleteError] = useState("");
+
+  const [bridgeGroups, setBridgeGroups] = useState([]);
+  const [bridgeStatus, setBridgeStatus] = useState(null);
+
+  useEffect(() => {
+    fetchBridgeGroups().then((groups) => {
+      if (groups && groups.length > 0) setBridgeGroups(groups);
+    });
+    fetchBridgeStatus().then((st) => {
+      if (st) setBridgeStatus(st);
+    });
+  }, []);
 
   // Form states for Subject
   const [subjectForm, setSubjectForm] = useState({
@@ -245,64 +262,6 @@ export default function WhitelistManager({ onSelectGroupForSimulator }) {
     }
   };
 
-  // Quick Seed helper: 1-click test data creation
-  const handleQuickSeed = async () => {
-    try {
-      const today = getTodayDateString();
-      const future = getFutureDateString(15);
-
-      // 1. Tạo môn Lập trình Web (Thứ 3, Tiết 1-3)
-      const s1 = await createSubject({
-        name: "Lập trình Web",
-        code: "IT101",
-        defaultRoom: "401-A1",
-        colorHex: "#6366F1",
-        dayOfWeek: 2,
-        startTime: "07:00:00",
-        endTime: "09:35:00",
-        semesterStartDate: today,
-        semesterEndDate: future,
-      }).unwrap();
-
-      // 2. Tạo môn Cơ sở dữ liệu (Thứ 5, Tiết 7-9)
-      const s2 = await createSubject({
-        name: "Cơ sở dữ liệu",
-        code: "IT102",
-        defaultRoom: "203-A2",
-        colorHex: "#10B981",
-        dayOfWeek: 4,
-        startTime: "12:30:00",
-        endTime: "15:05:00",
-        semesterStartDate: today,
-        semesterEndDate: future,
-      }).unwrap();
-
-      const sub1Id = s1.data?.id || s1.id;
-      const sub2Id = s2.data?.id || s2.id;
-
-      // 3. Ghép nhóm Zalo
-      if (sub1Id) {
-        await createMapping({
-          subjectId: sub1Id,
-          zaloGroupId: "zalo-web-k64",
-          zaloGroupName: "Lập trình Web - K64",
-          active: true,
-        }).unwrap();
-      }
-
-      if (sub2Id) {
-        await createMapping({
-          subjectId: sub2Id,
-          zaloGroupId: "zalo-csdl-l02",
-          zaloGroupName: "Cơ sở dữ liệu - Lớp 2",
-          active: true,
-        }).unwrap();
-      }
-    } catch (err) {
-      alert("Tạo dữ liệu mẫu: " + (err.data?.message || err.message));
-    }
-  };
-
   const handleOpenAddMappingForSubject = (subjectId, subjectName) => {
     setMappingForm({
       subjectId: subjectId,
@@ -320,550 +279,612 @@ export default function WhitelistManager({ onSelectGroupForSimulator }) {
   ).length;
 
   return (
-    <div className="bg-white rounded-3xl p-5 shadow-sm border border-slate-200/80 flex flex-col h-full space-y-4">
-      {/* Header */}
-      <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-        <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-2xl bg-indigo-50 text-indigo-600">
-            <ShieldCheck className="w-5 h-5" />
+    <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200/90 flex flex-col space-y-6">
+      
+      {/* Header & Status Banner */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-5 border-b border-slate-100">
+        <div className="flex items-center gap-3.5">
+          <div className="p-3 rounded-2xl bg-indigo-50 text-indigo-600 shadow-sm">
+            <ShieldCheck className="w-6 h-6" />
           </div>
           <div>
-            <h2 className="text-base font-extrabold text-slate-900">Quản lý Whitelist</h2>
-            <p className="text-xs text-slate-500">
-              <strong>{subjects.length}</strong> môn học • Đã ghép Zalo: <strong>{connectedSubjectsCount}/{subjects.length}</strong> ({activeCount} nhóm đang bật)
+            <div className="flex items-center gap-2 flex-wrap">
+              <h2 className="text-lg sm:text-xl font-black text-slate-900">
+                Quản lý Whitelist Môn học & Nhóm Zalo
+              </h2>
+            </div>
+            <p className="text-xs sm:text-sm text-slate-500 font-medium mt-0.5">
+              Tổng số <strong>{subjects.length}</strong> môn học • Đã ghép Zalo: <strong>{connectedSubjectsCount}/{subjects.length}</strong> ({activeCount} nhóm đang bật theo dõi)
             </p>
           </div>
         </div>
 
-        {mappings.length === 0 && subjects.length === 0 && (
+        {/* Action Buttons: Add Subject / Add Mapping */}
+        <div className="flex items-center gap-3">
           <button
-            onClick={handleQuickSeed}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-xl transition border border-indigo-200"
-            title="Tạo nhanh 2 môn học và 2 nhóm Zalo để test ngay"
+            onClick={() => {
+              setShowAddSubject(!showAddSubject);
+              setShowAddMapping(false);
+            }}
+            className={`flex items-center gap-2 px-4 py-2.5 text-xs sm:text-sm font-extrabold rounded-2xl border transition cursor-pointer ${
+              showAddSubject
+                ? "bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-200"
+                : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100 hover:text-indigo-600"
+            }`}
           >
-            <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
-            Tạo mẫu test
+            <BookOpen className="w-4 h-4" />
+            <span>{showAddSubject ? "Đóng Form Môn" : "+ Thêm Môn học"}</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setShowAddMapping(!showAddMapping);
+              setShowAddSubject(false);
+            }}
+            disabled={subjects.length === 0}
+            className={`flex items-center gap-2 px-4 py-2.5 text-xs sm:text-sm font-extrabold rounded-2xl border transition cursor-pointer ${
+              showAddMapping
+                ? "bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-200"
+                : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100 hover:text-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed"
+            }`}
+            title={subjects.length === 0 ? "Vui lòng tạo môn học trước khi ghép nhóm" : ""}
+          >
+            <Link2 className="w-4 h-4" />
+            <span>{showAddMapping ? "Đóng Form Ghép" : "+ Ghép nhóm Zalo"}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Zalo Account Status Card */}
+      <div className="p-4 rounded-2xl bg-gradient-to-r from-slate-50 via-indigo-50/30 to-purple-50/20 border border-slate-200/90 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className={`w-3 h-3 rounded-full shrink-0 ${bridgeStatus?.connected && bridgeStatus?.mode === "real" ? "bg-emerald-500 animate-pulse shadow-sm shadow-emerald-300" : "bg-amber-400"}`} />
+          <div className="min-w-0">
+            <div className="text-xs sm:text-sm font-black text-slate-800 flex items-center gap-2 flex-wrap">
+              <span>Trạng thái kết nối Zalo:</span>
+              <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider ${
+                bridgeStatus?.connected && bridgeStatus?.mode === "real"
+                  ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
+                  : "bg-amber-100 text-amber-800 border border-amber-200"
+              }`}>
+                {bridgeStatus?.connected && bridgeStatus?.mode === "real"
+                  ? `Đã kết nối: ${bridgeStatus?.user?.displayName || bridgeStatus?.user?.name || "Tài khoản Zalo"}`
+                  : "Chưa kết nối (Cần quét QR)"}
+              </span>
+            </div>
+            <p className="text-xs text-slate-500 truncate mt-0.5 font-medium">
+              {bridgeStatus?.connected && bridgeStatus?.mode === "real"
+                ? `${bridgeGroups.length} nhóm Zalo khả dụng để liên kết trực tiếp với môn học`
+                : "Vui lòng quét mã QR ở mục Kết nối Zalo để lấy danh sách nhóm thực tế"}
+            </p>
+          </div>
+        </div>
+
+        {onNavigateToConnect && (
+          <button
+            type="button"
+            onClick={onNavigateToConnect}
+            className="shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-black text-indigo-700 bg-white hover:bg-indigo-50 border border-indigo-200 rounded-xl transition shadow-sm cursor-pointer self-start sm:self-auto"
+          >
+            <QrCode className="w-4 h-4 text-indigo-600" />
+            <span>{bridgeStatus?.connected && bridgeStatus?.mode === "real" ? "Quản lý Zalo" : "Quét mã QR"}</span>
           </button>
         )}
       </div>
 
-      {/* Action Buttons: Add Subject / Add Mapping */}
-      <div className="grid grid-cols-2 gap-2">
-        <button
-          onClick={() => {
-            setShowAddSubject(!showAddSubject);
-            setShowAddMapping(false);
-          }}
-          className={`flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold rounded-xl border transition ${
-            showAddSubject
-              ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
-              : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
-          }`}
-        >
-          <BookOpen className="w-3.5 h-3.5" />
-          + Môn học
-        </button>
-
-        <button
-          onClick={() => {
-            setShowAddMapping(!showAddMapping);
-            setShowAddSubject(false);
-          }}
-          disabled={subjects.length === 0}
-          className={`flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold rounded-xl border transition ${
-            showAddMapping
-              ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
-              : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100 disabled:opacity-50"
-          }`}
-          title={subjects.length === 0 ? "Vui lòng tạo môn học trước khi ghép nhóm" : ""}
-        >
-          <Link2 className="w-3.5 h-3.5" />
-          + Ghép Zalo
-        </button>
-      </div>
-
-      {/* Form Add Subject Modal/Accordion */}
+      {/* Form Add Subject Modal - BỐ CỤC NGANG RỘNG RÃI */}
       {showAddSubject && (
-        <form onSubmit={handleCreateSubject} className="p-4 rounded-2xl bg-indigo-50/50 border border-indigo-100 space-y-3.5">
-          <div className="flex items-center justify-between">
-            <h4 className="text-xs font-extrabold uppercase tracking-wider text-indigo-900">Thêm Môn học mới</h4>
-            <button type="button" onClick={() => setShowAddSubject(false)} className="text-slate-400 hover:text-slate-600">
-              <X className="w-4 h-4" />
+        <form onSubmit={handleCreateSubject} className="p-6 rounded-3xl bg-gradient-to-br from-indigo-50/90 via-slate-50 to-purple-50/40 border border-indigo-200/90 shadow-md space-y-5 animate-in fade-in duration-200">
+          <div className="flex items-center justify-between pb-3 border-b border-indigo-100">
+            <div className="flex items-center gap-2">
+              <BookOpen className="w-5 h-5 text-indigo-600" />
+              <h4 className="text-sm sm:text-base font-black text-indigo-950">
+                Thêm Môn học mới & Tự động xếp Thời khóa biểu
+              </h4>
+            </div>
+            <button type="button" onClick={() => setShowAddSubject(false)} className="p-1.5 text-slate-400 hover:text-slate-600 rounded-xl transition">
+              <X className="w-5 h-5" />
             </button>
           </div>
 
-          <div>
-            <label className="text-[11px] font-bold text-slate-700">Tên môn học *</label>
-            <input
-              type="text"
-              required
-              value={subjectForm.name}
-              onChange={(e) => setSubjectForm({ ...subjectForm, name: e.target.value })}
-              placeholder="VD: Lập trình Web"
-              className="mt-1 w-full text-xs px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="text-[11px] font-bold text-slate-700">Mã môn</label>
-              <input
-                type="text"
-                value={subjectForm.code}
-                onChange={(e) => setSubjectForm({ ...subjectForm, code: e.target.value })}
-                placeholder="VD: IT101"
-                className="mt-1 w-full text-xs px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
-              />
-            </div>
-            <div>
-              <label className="text-[11px] font-bold text-slate-700">Phòng mặc định</label>
-              <input
-                type="text"
-                value={subjectForm.defaultRoom}
-                onChange={(e) => setSubjectForm({ ...subjectForm, defaultRoom: e.target.value })}
-                placeholder="VD: 401-A1"
-                className="mt-1 w-full text-xs px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
-              />
-            </div>
-          </div>
-
-          {/* 1. Thứ học mặc định */}
-          <div>
-            <label className="text-[11px] font-bold text-slate-700 mb-1.5 block">
-              Thứ học mặc định *
-            </label>
-            <div className="grid grid-cols-7 gap-1">
-              {DAYS_OF_WEEK.map((day) => {
-                const isSelected = subjectForm.dayOfWeek === day.value;
-                return (
-                  <button
-                    key={day.value}
-                    type="button"
-                    onClick={() => setSubjectForm({ ...subjectForm, dayOfWeek: day.value })}
-                    className={`py-1.5 rounded-xl text-center text-xs font-bold transition ${
-                      isSelected
-                        ? "bg-indigo-600 text-white shadow-sm ring-2 ring-indigo-300"
-                        : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 hover:border-indigo-200"
-                    }`}
-                  >
-                    {day.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* 2. Tiết học mặc định (16 tiết) */}
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <label className="text-[11px] font-bold text-slate-700 flex items-center gap-1">
-                <Clock className="w-3 h-3 text-indigo-500" />
-                Tiết học mặc định *
-              </label>
-              <span className="text-[11px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-200">
-                Tiết {minPeriod} - {maxPeriod} ({computedStartTime} - {computedEndTime})
-              </span>
-            </div>
-
-            {/* Shift Presets */}
-            <div className="flex flex-wrap gap-1">
-              <button
-                type="button"
-                onClick={() => setSubjectForm((prev) => ({ ...prev, selectedPeriods: [1, 2, 3] }))}
-                className="text-[10px] font-semibold px-2 py-0.5 rounded-lg bg-white hover:bg-indigo-50 text-slate-600 hover:text-indigo-600 border border-slate-200 transition"
-              >
-                Sáng 1-3
-              </button>
-              <button
-                type="button"
-                onClick={() => setSubjectForm((prev) => ({ ...prev, selectedPeriods: [4, 5, 6] }))}
-                className="text-[10px] font-semibold px-2 py-0.5 rounded-lg bg-white hover:bg-indigo-50 text-slate-600 hover:text-indigo-600 border border-slate-200 transition"
-              >
-                Sáng 4-6
-              </button>
-              <button
-                type="button"
-                onClick={() => setSubjectForm((prev) => ({ ...prev, selectedPeriods: [7, 8, 9] }))}
-                className="text-[10px] font-semibold px-2 py-0.5 rounded-lg bg-white hover:bg-indigo-50 text-slate-600 hover:text-indigo-600 border border-slate-200 transition"
-              >
-                Chiều 7-9
-              </button>
-              <button
-                type="button"
-                onClick={() => setSubjectForm((prev) => ({ ...prev, selectedPeriods: [10, 11, 12] }))}
-                className="text-[10px] font-semibold px-2 py-0.5 rounded-lg bg-white hover:bg-indigo-50 text-slate-600 hover:text-indigo-600 border border-slate-200 transition"
-              >
-                Chiều 10-12
-              </button>
-              <button
-                type="button"
-                onClick={() => setSubjectForm((prev) => ({ ...prev, selectedPeriods: [13, 14, 15] }))}
-                className="text-[10px] font-semibold px-2 py-0.5 rounded-lg bg-white hover:bg-indigo-50 text-slate-600 hover:text-indigo-600 border border-slate-200 transition"
-              >
-                Tối 13-15
-              </button>
-            </div>
-
-            {/* 16 Period Interactive Buttons */}
-            <div className="p-2 bg-white rounded-xl border border-slate-200 space-y-1.5">
-              <div className="text-[10px] font-semibold text-slate-400">Ấn vào các tiết để chọn / bỏ chọn:</div>
-              <div className="grid grid-cols-8 gap-1">
-                {RAW_PERIODS.map((p) => {
-                  const isSelected = subjectForm.selectedPeriods.includes(p.period);
-                  return (
-                    <button
-                      key={p.period}
-                      type="button"
-                      onClick={() => handleTogglePeriod(p.period)}
-                      title={`Tiết ${p.period}: ${p.start} - ${p.end} (${p.shift})`}
-                      className={`flex flex-col items-center justify-center py-1.5 px-0.5 rounded-lg transition-all ${
-                        isSelected
-                          ? "bg-indigo-600 text-white font-extrabold shadow-sm ring-2 ring-indigo-300 ring-offset-1 scale-[1.03]"
-                          : "bg-slate-50 hover:bg-indigo-50/70 text-slate-700 border border-slate-200/80 hover:border-indigo-300"
-                      }`}
-                    >
-                      <span className="text-[11px] leading-tight font-extrabold">{p.period}</span>
-                      <span className={`text-[8px] leading-tight truncate ${isSelected ? "text-indigo-100" : "text-slate-400"}`}>
-                        {p.start}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-
-          {/* 3. Thời gian bắt đầu môn và kết thúc môn (chọn ngày) */}
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="text-[11px] font-bold text-slate-700 flex items-center gap-1">
-                <Calendar className="w-3 h-3 text-indigo-500" />
-                Ngày bắt đầu môn *
-              </label>
-              <input
-                type="date"
-                required
-                value={subjectForm.semesterStartDate}
-                onChange={(e) => setSubjectForm({ ...subjectForm, semesterStartDate: e.target.value })}
-                className="mt-1 w-full text-xs px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
-              />
-            </div>
-            <div>
-              <label className="text-[11px] font-bold text-slate-700 flex items-center gap-1">
-                <Calendar className="w-3 h-3 text-indigo-500" />
-                Ngày kết thúc môn *
-              </label>
-              <input
-                type="date"
-                required
-                value={subjectForm.semesterEndDate}
-                min={subjectForm.semesterStartDate}
-                onChange={(e) => setSubjectForm({ ...subjectForm, semesterEndDate: e.target.value })}
-                className="mt-1 w-full text-xs px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
-              />
-            </div>
-          </div>
-
-          {/* Auto-schedule note */}
-          <div className="p-2.5 rounded-xl bg-indigo-100/60 border border-indigo-200/70 text-[11px] text-indigo-900 flex items-start gap-2">
-            <Sparkles className="w-3.5 h-3.5 text-indigo-600 mt-0.5 shrink-0" />
-            <div className="leading-tight">
-              Môn học sẽ được <strong>tự động xếp vào thời khóa biểu</strong> cho tất cả các ngày <strong>{DAYS_OF_WEEK.find((d) => d.value === subjectForm.dayOfWeek)?.label}</strong> trong các tuần từ ngày bắt đầu đến kết thúc.
-            </div>
-          </div>
-
-          {/* Color & Submit */}
-          <div className="flex items-center gap-3 pt-1">
-            <div className="flex-1">
-              <label className="text-[11px] font-bold text-slate-700">Màu sắc hiển thị</label>
-              <div className="flex items-center gap-2 mt-1">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            
+            {/* Cột 1: Thông tin cơ bản (4 cột) */}
+            <div className="lg:col-span-4 space-y-3.5">
+              <div>
+                <label className="text-xs font-extrabold text-slate-800 block">Tên môn học <span className="text-rose-500">*</span></label>
                 <input
-                  type="color"
-                  value={subjectForm.colorHex}
-                  onChange={(e) => setSubjectForm({ ...subjectForm, colorHex: e.target.value })}
-                  className="w-8 h-8 rounded-lg cursor-pointer border border-slate-200 p-0.5 bg-white"
+                  type="text"
+                  required
+                  value={subjectForm.name}
+                  onChange={(e) => setSubjectForm({ ...subjectForm, name: e.target.value })}
+                  placeholder="VD: Lập trình Web, CSDL, Học máy..."
+                  className="mt-1 w-full text-xs sm:text-sm font-semibold px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white shadow-sm"
                 />
-                <span className="text-xs font-mono text-slate-600">{subjectForm.colorHex}</span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2.5">
+                <div>
+                  <label className="text-xs font-extrabold text-slate-800 block">Mã môn</label>
+                  <input
+                    type="text"
+                    value={subjectForm.code}
+                    onChange={(e) => setSubjectForm({ ...subjectForm, code: e.target.value })}
+                    placeholder="VD: IT101"
+                    className="mt-1 w-full text-xs sm:text-sm font-semibold px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white shadow-sm"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-extrabold text-slate-800 block">Phòng học</label>
+                  <input
+                    type="text"
+                    value={subjectForm.defaultRoom}
+                    onChange={(e) => setSubjectForm({ ...subjectForm, defaultRoom: e.target.value })}
+                    placeholder="VD: 401-A1"
+                    className="mt-1 w-full text-xs sm:text-sm font-semibold px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white shadow-sm"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-extrabold text-slate-800 block">Màu sắc hiển thị trên TKB</label>
+                <div className="flex items-center gap-3 mt-1.5 p-2 rounded-xl bg-white border border-slate-200">
+                  <input
+                    type="color"
+                    value={subjectForm.colorHex}
+                    onChange={(e) => setSubjectForm({ ...subjectForm, colorHex: e.target.value })}
+                    className="w-9 h-9 rounded-lg cursor-pointer border border-slate-200 p-0.5 bg-white"
+                  />
+                  <span className="text-xs font-mono font-bold text-slate-700">{subjectForm.colorHex}</span>
+                </div>
               </div>
             </div>
-            <button
-              type="submit"
-              disabled={isCreatingSubject}
-              className="mt-4 px-5 py-2.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition shadow flex items-center gap-1.5"
-            >
-              {isCreatingSubject ? "Đang lưu & xếp lịch..." : "Lưu & Thêm TKB"}
-            </button>
+
+            {/* Cột 2: Thứ & Tiết học 1-16 (5 cột) */}
+            <div className="lg:col-span-5 space-y-3.5">
+              {/* Thứ học */}
+              <div>
+                <label className="text-xs font-extrabold text-slate-800 mb-1.5 block">
+                  Thứ học mặc định trong tuần <span className="text-rose-500">*</span>
+                </label>
+                <div className="grid grid-cols-7 gap-1">
+                  {DAYS_OF_WEEK.map((day) => {
+                    const isSelected = subjectForm.dayOfWeek === day.value;
+                    return (
+                      <button
+                        key={day.value}
+                        type="button"
+                        onClick={() => setSubjectForm({ ...subjectForm, dayOfWeek: day.value })}
+                        className={`py-2 rounded-xl text-center text-xs font-black transition cursor-pointer ${
+                          isSelected
+                            ? "bg-indigo-600 text-white shadow-md shadow-indigo-300 ring-2 ring-indigo-400"
+                            : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 hover:border-indigo-200"
+                        }`}
+                      >
+                        {day.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Tiết học mặc định */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-extrabold text-slate-800 flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-indigo-600" />
+                    Tiết học mặc định (16 tiết) <span className="text-rose-500">*</span>
+                  </label>
+                  <span className="text-[11px] font-black text-indigo-700 bg-indigo-100/80 px-2 py-0.5 rounded-md border border-indigo-200">
+                    Tiết {minPeriod} - {maxPeriod} ({computedStartTime} - {computedEndTime})
+                  </span>
+                </div>
+
+                {/* Shift Presets */}
+                <div className="flex flex-wrap gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setSubjectForm((prev) => ({ ...prev, selectedPeriods: [1, 2, 3] }))}
+                    className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-white hover:bg-indigo-50 text-slate-700 hover:text-indigo-600 border border-slate-200 transition cursor-pointer"
+                  >
+                    Sáng 1-3
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSubjectForm((prev) => ({ ...prev, selectedPeriods: [4, 5, 6] }))}
+                    className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-white hover:bg-indigo-50 text-slate-700 hover:text-indigo-600 border border-slate-200 transition cursor-pointer"
+                  >
+                    Sáng 4-6
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSubjectForm((prev) => ({ ...prev, selectedPeriods: [7, 8, 9] }))}
+                    className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-white hover:bg-indigo-50 text-slate-700 hover:text-indigo-600 border border-slate-200 transition cursor-pointer"
+                  >
+                    Chiều 7-9
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSubjectForm((prev) => ({ ...prev, selectedPeriods: [10, 11, 12] }))}
+                    className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-white hover:bg-indigo-50 text-slate-700 hover:text-indigo-600 border border-slate-200 transition cursor-pointer"
+                  >
+                    Chiều 10-12
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSubjectForm((prev) => ({ ...prev, selectedPeriods: [13, 14, 15] }))}
+                    className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-white hover:bg-indigo-50 text-slate-700 hover:text-indigo-600 border border-slate-200 transition cursor-pointer"
+                  >
+                    Tối 13-15
+                  </button>
+                </div>
+
+                {/* 16 Period Interactive Buttons */}
+                <div className="p-2.5 bg-white rounded-2xl border border-slate-200 space-y-1.5">
+                  <div className="grid grid-cols-8 gap-1">
+                    {RAW_PERIODS.map((p) => {
+                      const isSelected = subjectForm.selectedPeriods.includes(p.period);
+                      return (
+                        <button
+                          key={p.period}
+                          type="button"
+                          onClick={() => handleTogglePeriod(p.period)}
+                          title={`Tiết ${p.period}: ${p.start} - ${p.end} (${p.shift})`}
+                          className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl transition-all cursor-pointer ${
+                            isSelected
+                              ? "bg-indigo-600 text-white font-black shadow-md ring-2 ring-indigo-300 scale-[1.04]"
+                              : "bg-slate-50 hover:bg-indigo-50/70 text-slate-700 border border-slate-200 hover:border-indigo-300"
+                          }`}
+                        >
+                          <span className="text-xs font-black">{p.period}</span>
+                          <span className={`text-[8px] leading-tight truncate ${isSelected ? "text-indigo-100 font-bold" : "text-slate-400"}`}>
+                            {p.start}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Cột 3: Ngày bắt đầu - kết thúc & Nút Lưu (3 cột) */}
+            <div className="lg:col-span-3 space-y-3.5">
+              <div>
+                <label className="text-xs font-extrabold text-slate-800 flex items-center gap-1">
+                  <Calendar className="w-3.5 h-3.5 text-indigo-600" />
+                  Ngày bắt đầu môn <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  required
+                  value={subjectForm.semesterStartDate}
+                  onChange={(e) => setSubjectForm({ ...subjectForm, semesterStartDate: e.target.value })}
+                  className="mt-1 w-full text-xs sm:text-sm font-bold px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white shadow-sm"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-extrabold text-slate-800 flex items-center gap-1">
+                  <Calendar className="w-3.5 h-3.5 text-indigo-600" />
+                  Ngày kết thúc môn <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  required
+                  min={subjectForm.semesterStartDate}
+                  value={subjectForm.semesterEndDate}
+                  onChange={(e) => setSubjectForm({ ...subjectForm, semesterEndDate: e.target.value })}
+                  className="mt-1 w-full text-xs sm:text-sm font-bold px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white shadow-sm"
+                />
+              </div>
+
+              {/* Note */}
+              <div className="p-3 rounded-2xl bg-indigo-100/70 border border-indigo-200 text-xs text-indigo-950 flex items-start gap-2">
+                <Sparkles className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
+                <span className="leading-snug">
+                  Môn học sẽ được <strong>tự động xếp lịch</strong> vào các ngày <strong>{DAYS_OF_WEEK.find((d) => d.value === subjectForm.dayOfWeek)?.label}</strong> từ ngày bắt đầu đến kết thúc.
+                </span>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isCreatingSubject}
+                className="w-full px-5 py-3 text-xs sm:text-sm font-black text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 rounded-2xl shadow-lg shadow-indigo-500/25 transition flex items-center justify-center gap-2 cursor-pointer"
+              >
+                {isCreatingSubject ? "Đang lưu & xếp TKB..." : "Lưu & Thêm vào TKB"}
+              </button>
+            </div>
+
           </div>
         </form>
       )}
 
-      {/* Form Add Mapping Modal/Accordion */}
+      {/* Form Add Mapping Modal - BỐ CỤC NGANG RỘNG RÃI */}
       {showAddMapping && (
-        <form onSubmit={handleCreateMapping} className="p-4 rounded-2xl bg-emerald-50/50 border border-emerald-100 space-y-3">
-          <div className="flex items-center justify-between">
-            <h4 className="text-xs font-extrabold uppercase tracking-wider text-emerald-900">Ghép nhóm Zalo vào Môn học</h4>
-            <button type="button" onClick={() => setShowAddMapping(false)} className="text-slate-400 hover:text-slate-600">
-              <X className="w-4 h-4" />
+        <form onSubmit={handleCreateMapping} className="p-6 rounded-3xl bg-gradient-to-br from-emerald-50/90 via-slate-50 to-teal-50/40 border border-emerald-200/90 shadow-md space-y-4 animate-in fade-in duration-200">
+          <div className="flex items-center justify-between pb-3 border-b border-emerald-100">
+            <div className="flex items-center gap-2">
+              <Link2 className="w-5 h-5 text-emerald-600" />
+              <h4 className="text-sm sm:text-base font-black text-emerald-950">
+                Ghép nhóm Zalo vào Môn học theo dõi
+              </h4>
+            </div>
+            <button type="button" onClick={() => setShowAddMapping(false)} className="p-1.5 text-slate-400 hover:text-slate-600 rounded-xl transition">
+              <X className="w-5 h-5" />
             </button>
           </div>
-          <div>
-            <label className="text-[11px] font-bold text-slate-600">Chọn môn học *</label>
-            <select
-              required
-              value={mappingForm.subjectId}
-              onChange={(e) => setMappingForm({ ...mappingForm, subjectId: e.target.value })}
-              className="mt-1 w-full text-xs px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
-            >
-              <option value="">-- Chọn môn học --</option>
-              {subjects.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name} {s.code ? `(${s.code})` : ""}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="text-[11px] font-bold text-slate-600">Tên nhóm Zalo *</label>
-            <input
-              type="text"
-              required
-              value={mappingForm.zaloGroupName}
-              onChange={(e) => setMappingForm({ ...mappingForm, zaloGroupName: e.target.value })}
-              placeholder="VD: Lập trình Web - K64"
-              className="mt-1 w-full text-xs px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
-            />
-          </div>
-          <div>
-            <label className="text-[11px] font-bold text-slate-600">Mã nhóm Zalo (Zalo Group ID) *</label>
-            <input
-              type="text"
-              required
-              value={mappingForm.zaloGroupId}
-              onChange={(e) => setMappingForm({ ...mappingForm, zaloGroupId: e.target.value })}
-              placeholder="VD: zalo-group-101"
-              className="mt-1 w-full text-xs px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
-            />
-          </div>
-          <div className="flex items-center justify-between pt-1">
-            <label className="inline-flex items-center gap-2 cursor-pointer">
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-end">
+            <div>
+              <label className="text-xs font-extrabold text-slate-800 block">Chọn môn học <span className="text-rose-500">*</span></label>
+              <select
+                required
+                value={mappingForm.subjectId}
+                onChange={(e) => setMappingForm({ ...mappingForm, subjectId: e.target.value })}
+                className="mt-1 w-full text-xs sm:text-sm font-bold px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white shadow-sm"
+              >
+                <option value="">-- Chọn môn học --</option>
+                {subjects.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name} {s.code ? `(${s.code})` : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {bridgeGroups.length > 0 && (
+              <div>
+                <label className="text-xs font-extrabold text-slate-800 block">Chọn nhanh từ nhóm Zalo ({bridgeGroups.length} nhóm)</label>
+                <select
+                  onChange={(e) => {
+                    const selected = bridgeGroups.find((g) => g.id === e.target.value);
+                    if (selected) {
+                      setMappingForm((prev) => ({
+                        ...prev,
+                        zaloGroupId: selected.id,
+                        zaloGroupName: selected.name,
+                      }));
+                    }
+                  }}
+                  className="mt-1 w-full text-xs sm:text-sm font-semibold px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white shadow-sm"
+                >
+                  <option value="">-- Bấm vào đây để chọn nhóm Zalo --</option>
+                  {bridgeGroups.map((g) => (
+                    <option key={g.id} value={g.id}>
+                      {g.name} ({g.id}) {g.memberCount ? `[${g.memberCount} thành viên]` : ""}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            <div>
+              <label className="text-xs font-extrabold text-slate-800 block">Tên nhóm Zalo <span className="text-rose-500">*</span></label>
               <input
-                type="checkbox"
-                checked={mappingForm.active}
-                onChange={(e) => setMappingForm({ ...mappingForm, active: e.target.checked })}
-                className="w-4 h-4 text-emerald-600 rounded"
+                type="text"
+                required
+                value={mappingForm.zaloGroupName}
+                onChange={(e) => setMappingForm({ ...mappingForm, zaloGroupName: e.target.value })}
+                placeholder="VD: Lập trình Web - K64"
+                className="mt-1 w-full text-xs sm:text-sm font-semibold px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white shadow-sm"
               />
-              <span className="text-xs font-semibold text-slate-700">Kích hoạt theo dõi ngay</span>
-            </label>
+            </div>
+
+            <div>
+              <label className="text-xs font-extrabold text-slate-800 block">Mã nhóm Zalo (Group ID) <span className="text-rose-500">*</span></label>
+              <input
+                type="text"
+                required
+                value={mappingForm.zaloGroupId}
+                onChange={(e) => setMappingForm({ ...mappingForm, zaloGroupId: e.target.value })}
+                placeholder="VD: zalo-group-101"
+                className="mt-1 w-full text-xs sm:text-sm font-semibold px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white shadow-sm font-mono"
+              />
+            </div>
+
+            <div className="flex items-center justify-between p-2 rounded-xl bg-white border border-slate-200">
+              <label className="inline-flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={mappingForm.active}
+                  onChange={(e) => setMappingForm({ ...mappingForm, active: e.target.checked })}
+                  className="w-4 h-4 text-emerald-600 rounded"
+                />
+                <span className="text-xs font-bold text-slate-700">Bật theo dõi ngay</span>
+              </label>
+            </div>
+
             <button
               type="submit"
               disabled={isCreatingMapping}
-              className="px-4 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition shadow"
+              className="px-5 py-2.5 text-xs sm:text-sm font-black text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 rounded-2xl shadow-lg shadow-emerald-500/25 transition cursor-pointer"
             >
-              {isCreatingMapping ? "Đang ghép..." : "Ghép nhóm"}
+              {isCreatingMapping ? "Đang ghép..." : "Xác nhận Ghép nhóm"}
             </button>
           </div>
         </form>
       )}
 
-      {/* Whitelist Subjects & Zalo Groups List */}
-      <div className="flex-1 overflow-y-auto space-y-2.5 pr-1">
+      {/* DANH SÁCH WHITELIST - BỐ CỤC LƯỚI 2 CỘT RỘNG RÃI (Grid 2 cols) */}
+      <div className="flex-1 overflow-y-auto pr-1">
         {isLoadingMappings ? (
-          <div className="py-8 text-center text-xs text-slate-400 animate-pulse">
-            Đang tải danh sách whitelist...
+          <div className="py-12 text-center text-xs sm:text-sm text-slate-400 animate-pulse font-semibold">
+            Đang tải danh sách Whitelist môn học...
           </div>
-        ) : subjects.length === 0 && mappings.length === 0 ? (
-          <div className="p-6 text-center border-2 border-dashed border-slate-200 rounded-2xl">
-            <ShieldCheck className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-            <p className="text-xs font-bold text-slate-600">Chưa có môn học nào trong Whitelist</p>
-            <p className="text-[11px] text-slate-400 mt-1">
-              Bấm "+ Môn học" hoặc nút "Tạo mẫu test" ở trên để bắt đầu.
+        ) : subjects.length === 0 ? (
+          <div className="p-8 text-center border-2 border-dashed border-slate-200 rounded-3xl bg-slate-50/50">
+            <ShieldCheck className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+            <p className="text-sm font-bold text-slate-700">Chưa có môn học nào trong Whitelist</p>
+            <p className="text-xs text-slate-400 mt-1">
+              Bấm "+ Thêm Môn học" ở trên để bắt đầu thêm môn và xếp lịch lên thời khóa biểu.
             </p>
           </div>
         ) : (
-          subjects.map((subject) => {
-            const subjectMappings = mappings.filter((m) => m.subjectId === subject.id);
-            const isConnected = subjectMappings.length > 0;
-            const dayLabel =
-              DAYS_OF_WEEK.find((d) => d.value === subject.dayOfWeek)?.label ||
-              (subject.dayOfWeek ? `Thứ ${subject.dayOfWeek}` : null);
-            const timeLabel =
-              subject.startTime && subject.endTime
-                ? `${subject.startTime.slice(0, 5)} - ${subject.endTime.slice(0, 5)}`
-                : null;
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+            {subjects.map((subject) => {
+              const subjectMappings = mappings.filter((m) => m.subjectId === subject.id);
+              const isConnected = subjectMappings.length > 0;
+              const dayLabel =
+                DAYS_OF_WEEK.find((d) => d.value === subject.dayOfWeek)?.label ||
+                (subject.dayOfWeek ? `Thứ ${subject.dayOfWeek}` : null);
+              const timeLabel =
+                subject.startTime && subject.endTime
+                  ? `${subject.startTime.slice(0, 5)} - ${subject.endTime.slice(0, 5)}`
+                  : null;
 
-            return (
-              <div
-                key={subject.id}
-                className={`p-3.5 rounded-2xl border transition ${
-                  isConnected
-                    ? "bg-white border-slate-200/90 shadow-sm hover:border-indigo-300"
-                    : "bg-slate-50/70 border-slate-200/90 hover:bg-white hover:border-indigo-300"
-                }`}
-              >
-                {/* Subject Header */}
-                <div className="flex items-start justify-between gap-2.5">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span
-                        className="w-3 h-3 rounded-full shrink-0 shadow-sm ring-2 ring-white"
-                        style={{ backgroundColor: subject.colorHex || "#6366F1" }}
-                      />
-                      <h4 className="text-xs font-extrabold text-slate-900 truncate">
-                        {subject.name}
-                      </h4>
-                      {subject.code && (
-                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-semibold">
-                          {subject.code}
-                        </span>
-                      )}
-                      {isConnected ? (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                          Đã kết nối Zalo
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
-                          Chưa kết nối Zalo
-                        </span>
-                      )}
+              return (
+                <div
+                  key={subject.id}
+                  className={`p-5 rounded-3xl border transition shadow-sm hover:shadow-md ${
+                    isConnected
+                      ? "bg-white border-slate-200/90 hover:border-indigo-300"
+                      : "bg-slate-50/70 border-slate-200/90 hover:bg-white hover:border-indigo-300"
+                  }`}
+                >
+                  {/* Subject Header */}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2.5 flex-wrap">
+                        <span
+                          className="w-3.5 h-3.5 rounded-full shrink-0 shadow-sm ring-2 ring-white"
+                          style={{ backgroundColor: subject.colorHex || "#6366F1" }}
+                        />
+                        <h4 className="text-sm sm:text-base font-black text-slate-900 truncate">
+                          {subject.name}
+                        </h4>
+                        {subject.code && (
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-bold border border-slate-200">
+                            {subject.code}
+                          </span>
+                        )}
+                        {isConnected ? (
+                          <span className="inline-flex items-center gap-1.5 text-[10px] font-black px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                            Đã kết nối Zalo
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 text-[10px] font-black px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+                            Chưa kết nối Zalo
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Schedule & Room info */}
+                      <div className="text-xs text-slate-600 font-semibold mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1">
+                        {subject.defaultRoom && (
+                          <span className="flex items-center gap-1 text-slate-700">
+                            📍 Phòng: <strong className="text-slate-900">{subject.defaultRoom}</strong>
+                          </span>
+                        )}
+                        {dayLabel && (
+                          <span className="text-indigo-700 font-bold">
+                            • {dayLabel}
+                          </span>
+                        )}
+                        {timeLabel && <span className="text-slate-500 font-medium">({timeLabel})</span>}
+                      </div>
                     </div>
 
-                    {/* Schedule & Room info */}
-                    <div className="text-[11px] text-slate-500 font-medium mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                      {subject.defaultRoom && (
-                        <span>
-                          Phòng: <strong className="text-slate-700">{subject.defaultRoom}</strong>
-                        </span>
-                      )}
-                      {dayLabel && (
-                        <span>
-                          • <strong className="text-slate-700">{dayLabel}</strong>
-                        </span>
-                      )}
-                      {timeLabel && <span className="text-slate-400">({timeLabel})</span>}
-                    </div>
+                    {/* Action: Delete Subject */}
+                    <button
+                      type="button"
+                      onClick={() => requestDeleteSubject(subject.id, subject.name)}
+                      className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition shrink-0 cursor-pointer"
+                      title={`Xóa môn "${subject.name}"`}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
 
-                  {/* Action: Delete Subject */}
-                  <button
-                    type="button"
-                    onClick={() => requestDeleteSubject(subject.id, subject.name)}
-                    className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition shrink-0 cursor-pointer"
-                    title={`Xóa môn "${subject.name}"`}
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-
-                {/* Connected Zalo Groups Section */}
-                <div className="mt-2.5 pt-2 border-t border-slate-100 space-y-2">
-                  {isConnected ? (
-                    subjectMappings.map((mapping) => (
-                      <div
-                        key={mapping.id}
-                        className={`p-2.5 rounded-xl border flex items-center justify-between gap-2 transition ${
-                          mapping.active
-                            ? "bg-indigo-50/40 border-indigo-100"
-                            : "bg-slate-100/50 border-slate-200/80 opacity-60"
-                        }`}
-                      >
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-[10px] text-slate-400 font-semibold">Nhóm:</span>
-                            <span className="text-xs font-bold text-slate-800 truncate">
-                              {mapping.zaloGroupName}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2 mt-0.5">
-                            <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-white text-slate-600 border border-slate-200">
-                              ID: {mapping.zaloGroupId}
-                            </span>
-                            {mapping.lastSyncedAt && (
-                              <span className="text-[9px] text-slate-400">
-                                Đồng bộ:{" "}
-                                {new Date(mapping.lastSyncedAt).toLocaleTimeString("vi-VN", {
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                })}
+                  {/* Connected Zalo Groups Section */}
+                  <div className="mt-3.5 pt-3 border-t border-slate-100 space-y-2">
+                    {isConnected ? (
+                      subjectMappings.map((mapping) => (
+                        <div
+                          key={mapping.id}
+                          className={`p-3 rounded-2xl border flex items-center justify-between gap-3 transition ${
+                            mapping.active
+                              ? "bg-indigo-50/50 border-indigo-100"
+                              : "bg-slate-100/50 border-slate-200/80 opacity-60"
+                          }`}
+                        >
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] text-slate-400 font-bold uppercase">Nhóm:</span>
+                              <span className="text-xs sm:text-sm font-extrabold text-slate-900 truncate">
+                                {mapping.zaloGroupName}
                               </span>
-                            )}
+                            </div>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-white text-slate-600 border border-slate-200">
+                                ID: {mapping.zaloGroupId}
+                              </span>
+                              {mapping.lastSyncedAt && (
+                                <span className="text-[10px] text-slate-400 font-medium">
+                                  Đồng bộ:{" "}
+                                  {new Date(mapping.lastSyncedAt).toLocaleTimeString("vi-VN", {
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  })}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Controls for this Zalo group */}
+                          <div className="flex items-center gap-3 shrink-0">
+                            {/* Active switch */}
+                            <button
+                              onClick={() => handleToggle(mapping.id)}
+                              className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                                mapping.active ? "bg-emerald-500" : "bg-slate-300"
+                              }`}
+                              title={
+                                mapping.active
+                                  ? "Đang bật Whitelist (Click để tắt)"
+                                  : "Đang tắt Whitelist (Click để bật)"
+                              }
+                            >
+                              <span
+                                className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                                  mapping.active ? "translate-x-4" : "translate-x-0"
+                                }`}
+                              />
+                            </button>
+
+                            {/* Delete mapping */}
+                            <button
+                              type="button"
+                              onClick={() => requestDeleteMapping(mapping.id, mapping.zaloGroupName)}
+                              className="p-1.5 text-slate-400 hover:text-rose-500 rounded-lg transition cursor-pointer"
+                              title="Hủy ghép nhóm Zalo này"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
                           </div>
                         </div>
-
-                        {/* Controls for this Zalo group */}
-                        <div className="flex items-center gap-2 shrink-0">
-                          {onSelectGroupForSimulator && (
-                            <button
-                              onClick={() =>
-                                onSelectGroupForSimulator(mapping.zaloGroupId, mapping.zaloGroupName)
-                              }
-                              className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 px-2 py-1 rounded-lg border border-indigo-200 transition"
-                              title="Chọn nhóm này để test gửi tin nhắn Zalo"
-                            >
-                              Test Zalo
-                            </button>
-                          )}
-
-                          {/* Active switch */}
-                          <button
-                            onClick={() => handleToggle(mapping.id)}
-                            className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                              mapping.active ? "bg-emerald-500" : "bg-slate-300"
-                            }`}
-                            title={
-                              mapping.active
-                                ? "Đang bật Whitelist (Click để tắt)"
-                                : "Đang tắt Whitelist (Click để bật)"
-                            }
-                          >
-                            <span
-                              className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                                mapping.active ? "translate-x-4" : "translate-x-0"
-                              }`}
-                            />
-                          </button>
-
-                          {/* Delete mapping */}
-                          <button
-                            type="button"
-                            onClick={() => requestDeleteMapping(mapping.id, mapping.zaloGroupName)}
-                            className="p-1 text-slate-400 hover:text-rose-500 rounded transition cursor-pointer"
-                            title="Hủy ghép nhóm Zalo này"
-                          >
-                            <X className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
+                      ))
+                    ) : (
+                      <div className="flex items-center justify-between bg-white/90 p-3 rounded-2xl border border-dashed border-slate-200">
+                        <span className="text-xs text-slate-400 italic font-medium">
+                          Chưa liên kết nhóm Zalo bóc tách tin nhắn
+                        </span>
+                        <button
+                          onClick={() => handleOpenAddMappingForSubject(subject.id, subject.name)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-black text-indigo-700 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 rounded-xl border border-indigo-200 transition cursor-pointer"
+                        >
+                          <Link2 className="w-3.5 h-3.5" />
+                          <span>+ Ghép Zalo</span>
+                        </button>
                       </div>
-                    ))
-                  ) : (
-                    <div className="flex items-center justify-between bg-white/80 p-2.5 rounded-xl border border-dashed border-slate-200">
-                      <span className="text-[11px] text-slate-400 italic">
-                        Chưa liên kết nhóm Zalo bóc tách tin nhắn
-                      </span>
-                      <button
-                        onClick={() => handleOpenAddMappingForSubject(subject.id, subject.name)}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg border border-indigo-200 transition"
-                      >
-                        <Link2 className="w-3 h-3" />
-                        + Ghép Zalo
-                      </button>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
-              </div>
-            );
-          })
+              );
+            })}
+          </div>
         )}
-      </div>
-
-      {/* Bottom Summary Footer */}
-      <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-        <span>
-          Tổng cộng: <strong>{subjects.length}</strong> môn học
-        </span>
-        <span>
-          <strong>{connectedSubjectsCount}</strong> môn đã kết nối Zalo
-        </span>
       </div>
 
       {/* Confirm Delete Overlay Modal */}

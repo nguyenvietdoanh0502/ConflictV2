@@ -13,7 +13,8 @@ import {
   Calendar as CalendarIcon,
   RefreshCw,
   Settings,
-  CalendarPlus
+  CalendarPlus,
+  QrCode
 } from "lucide-react";
 import { useGetScheduleEventsQuery } from "../services/timetableApi";
 import EventDetailModal from "./EventDetailModal";
@@ -169,12 +170,21 @@ export default function CalendarView({ onOpenSettings }) {
         let eventColor;
         const textColor = "#FFFFFF";
 
+        const isCancelled = evt.eventType === "CANCELLED_CLASS";
+        const isPending = evt.status === "PENDING_REVIEW";
+        const isConfirmedCancelled = isCancelled && !isPending;
+        const isPendingCancellation = isCancelled && isPending;
+        const hasPendingRoomChange = Boolean(evt.originalRoom && isPending);
+
         switch (evt.eventType) {
+          case "CANCELLED_CLASS":
+            // Yêu cầu:
+            // "sự kiện đó sẽ chuyển thành màu xám, độ trong suốt 70%, chờ người dùng duyệt"
+            // "nếu duyệt sự kiện nghỉ học, sự kiện đó sẽ chuyển thành màu xám đậm"
+            eventColor = isPending ? "#64748B" : "#334155";
+            break;
           case "MAKEUP_CLASS":
             eventColor = "#F59E0B"; // Amber / Vàng cam
-            break;
-          case "CANCELLED_CLASS":
-            eventColor = "#64748B"; // Slate Gray / Xám
             break;
           case "EXAM":
             eventColor = "#E11D48"; // Rose / Đỏ hồng
@@ -210,7 +220,8 @@ export default function CalendarView({ onOpenSettings }) {
         const realTimeText = `${pad(rawStart.getHours())}:${pad(rawStart.getMinutes())} - ${pad(rawEnd.getHours())}:${pad(rawEnd.getMinutes())}`;
         const periodLabel = startPeriod === endPeriod ? `Tiết ${startPeriod}` : `Tiết ${startPeriod} - ${endPeriod}`;
         const displayTitle = cleanSubjectTitle(evt.title, evt.subjectName);
-        const isPending = evt.status === "PENDING_REVIEW";
+
+        // Effective background: 70% opacity when pending, 100% when confirmed
         const effectiveBgColor = isPending ? hexToRgba(eventColor, 0.7) : eventColor;
 
         return {
@@ -225,6 +236,10 @@ export default function CalendarView({ onOpenSettings }) {
           extendedProps: {
             ...evt,
             isPending,
+            isCancelled,
+            isConfirmedCancelled,
+            isPendingCancellation,
+            hasPendingRoomChange,
             calculatedColor: eventColor,
             cleanTitle: displayTitle,
             periodLabel,
@@ -313,14 +328,19 @@ export default function CalendarView({ onOpenSettings }) {
     const raw = eventInfo.event.extendedProps;
     const isCancelled = raw?.eventType === "CANCELLED_CLASS";
     const isPending = raw?.status === "PENDING_REVIEW";
+    const isConfirmedCancelled = isCancelled && !isPending;
+    const isPendingCancellation = isCancelled && isPending;
+    const hasPendingRoomChange = Boolean(raw?.originalRoom && isPending);
+
     const baseColor = raw?.calculatedColor || eventInfo.event.backgroundColor || eventInfo.event.color || "#4F46E5";
+    // For pending cancellation: gray with 70% opacity; for confirmed cancelled: dark gray with 100% opacity
     const displayBgColor = isPending ? hexToRgba(baseColor, 0.7) : baseColor;
     const displayTitle = raw?.cleanTitle || cleanSubjectTitle(eventInfo.event.title, raw?.subjectName);
 
     return (
       <div
         className={`p-2 sm:p-2.5 w-full h-full flex flex-col justify-between rounded-xl overflow-hidden leading-tight select-none transition-all duration-200 ${
-          isCancelled ? "line-through opacity-75" : ""
+          isConfirmedCancelled ? "line-through opacity-85" : ""
         }`}
         style={{
           backgroundColor: displayBgColor,
@@ -338,10 +358,34 @@ export default function CalendarView({ onOpenSettings }) {
             )}
           </div>
 
+          {/* Special Status Badges */}
+          {isPendingCancellation && (
+            <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-extrabold bg-amber-400/30 text-amber-100 border border-amber-300/40">
+              <span>⚠️ Báo nghỉ (Chờ duyệt)</span>
+            </div>
+          )}
+
+          {isConfirmedCancelled && (
+            <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-extrabold bg-slate-900/60 text-slate-200 border border-slate-700/50">
+              <span>✕ Đã nghỉ học</span>
+            </div>
+          )}
+
+          {hasPendingRoomChange && (
+            <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-extrabold bg-indigo-500/40 text-indigo-100 border border-indigo-400/40">
+              <span>🔄 Đổi phòng (Chờ duyệt)</span>
+            </div>
+          )}
+
           {/* Classroom (Phòng học) - Phóng to và In Đậm */}
           {raw?.room && (
             <div className="text-xs sm:text-[13px] font-black text-white flex items-center gap-1 break-words">
-              <span>📍 Phòng: <strong>{raw.room}</strong></span>
+              <span>
+                📍 Phòng: <strong>{raw.room}</strong>
+                {hasPendingRoomChange && raw.originalRoom && (
+                  <span className="text-[11px] font-normal text-slate-200 ml-1 line-through">({raw.originalRoom})</span>
+                )}
+              </span>
             </div>
           )}
         </div>
@@ -374,33 +418,34 @@ export default function CalendarView({ onOpenSettings }) {
           </div>
         </div>
 
-        {/* Legend Badges */}
-        <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold">
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200">
-            <span className="w-2 h-2 rounded-full bg-indigo-500"></span> Lịch thường
+        {/* Legend Badges & Action Buttons */}
+        <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 text-xs sm:text-[13px] font-bold">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50/90 text-indigo-800 border border-indigo-200/90 shadow-xs">
+            <span className="w-2.5 h-2.5 rounded-full bg-indigo-500 shrink-0"></span> Lịch thường
           </span>
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 border border-purple-200">
-            <span className="w-2 h-2 rounded-full bg-purple-500"></span> Lịch tự do
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-50/90 text-purple-800 border border-purple-200/90 shadow-xs">
+            <span className="w-2.5 h-2.5 rounded-full bg-purple-500 shrink-0"></span> Lịch tự do
           </span>
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-200">
-            <span className="w-2 h-2 rounded-full bg-amber-500"></span> Học bù
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50/90 text-amber-800 border border-amber-200/90 shadow-xs">
+            <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0"></span> Học bù
           </span>
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200">
-            <span className="w-2 h-2 rounded-full bg-rose-500"></span> Thi / Ktra
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50/90 text-rose-800 border border-rose-200/90 shadow-xs">
+            <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shrink-0"></span> Thi / Ktra
           </span>
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 border border-slate-300">
-            <span className="w-2 h-2 rounded-full bg-slate-400"></span> Báo nghỉ
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 border border-slate-300 shadow-xs">
+            <span className="w-2.5 h-2.5 rounded-full bg-slate-400 shrink-0"></span> Báo nghỉ
           </span>
+
           <button
             onClick={() => refetch()}
             disabled={isLoading}
-            className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition"
+            className="p-2 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 border border-slate-200 rounded-xl transition cursor-pointer shadow-xs"
             title="Làm mới lịch"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin text-indigo-600" : ""}`} />
+            <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin text-indigo-600" : ""}`} />
           </button>
 
-          {/* Quick Add Free Event Button */}
+          {/* Quick Add Free Event Button (Phóng to) */}
           <button
             onClick={() => {
               const today = new Date();
@@ -413,22 +458,22 @@ export default function CalendarView({ onOpenSettings }) {
                 duration: 2,
               });
             }}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-sm shadow-indigo-100 transition ml-1 cursor-pointer"
+            className="flex items-center gap-2 px-4 py-2 sm:px-4.5 sm:py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs sm:text-sm shadow-md shadow-indigo-500/25 transition ml-1 cursor-pointer"
             title="Thêm lịch tự do vào thời khóa biểu (hoặc click trực tiếp vào ô trên lịch)"
           >
-            <CalendarPlus className="w-3.5 h-3.5" />
+            <CalendarPlus className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
             <span>+ Thêm lịch</span>
           </button>
 
-          {/* Settings Button (Nút răng cưa cài đặt) */}
+          {/* Connect Button (Phóng to, đổi tên thành "Kết nối") */}
           {onOpenSettings && (
             <button
               onClick={onOpenSettings}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-indigo-700 text-white font-bold text-xs shadow-sm transition ml-1 cursor-pointer"
-              title="Cài đặt Whitelist & Giả lập Zalo AI"
+              className="flex items-center gap-2 px-4 py-2 sm:px-4.5 sm:py-2.5 rounded-2xl bg-slate-900 hover:bg-indigo-600 text-white font-black text-xs sm:text-sm shadow-md shadow-slate-900/20 transition ml-1 cursor-pointer"
+              title="Kết nối Zalo AI & Quản lý Whitelist"
             >
-              <Settings className="w-3.5 h-3.5" />
-              <span>Cài đặt Zalo AI</span>
+              <QrCode className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
+              <span>Kết nối</span>
             </button>
           )}
         </div>
@@ -445,6 +490,12 @@ export default function CalendarView({ onOpenSettings }) {
             left: "prev,next today",
             center: "title",
             right: "",
+          }}
+          titleFormat={(info) => {
+            const d = info.date || info.start;
+            const month = (d?.month ?? 0) + 1;
+            const year = d?.year ?? new Date().getFullYear();
+            return `Tháng ${month} năm ${year}`;
           }}
           locales={[viLocale]}
           locale="vi"

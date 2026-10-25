@@ -112,7 +112,8 @@ class GeminiService:
         # Từ khóa học vụ với word boundary để tránh nhầm (vd: 'thiết kế' không phải là 'thi')
         academic_patterns = [
             r'\bnghỉ\b', r'\boff\b', r'\bthầy bận\b', r'\bk học\b', r'\bko học\b',
-            r'\bbù\b', r'\bhọc bù\b', r'\bchuyển sang\b',
+            r'\bbù\b', r'\bhọc bù\b', r'\bchuyển sang\b', r'\bđổi phòng\b', r'\bchuyển phòng\b', r'\bsang phòng\b',
+            r'\bđổi lịch\b', r'\bdời lịch\b',
             r'\bktra\b', r'\bkiểm tra\b', r'\bthi\b', r'\btest\b', r'\bquiz\b',
             r'\bdeadline\b', r'\bhạn nộp\b', r'\bbtl\b', r'\bbài tập lớn\b'
         ]
@@ -128,8 +129,25 @@ class GeminiService:
         events: list[DetectedEventItem] = []
         default_room = request.default_room or "401-A1"
 
-        # 1. Phát hiện sự kiện báo nghỉ (CANCELLED_CLASS)
-        if re.search(r'\b(nghỉ|off|thầy bận|k học|ko học)\b', text_lower):
+        # 1. Phát hiện sự kiện đổi phòng học (ROOM_CHANGE)
+        if re.search(r'\b(đổi phòng|chuyển phòng|sang phòng|chuyển sang phòng)\b', text_lower) and not re.search(r'\b(bù|học bù|đổi lịch|dời lịch)\b', text_lower):
+            room_date = self._find_target_date(text_lower, now_dt, default_offset_days=1, target_role="room")
+            room_match = re.search(r'(?:phòng|p\.?)\s*([0-9]{3}-?[a-zA-Z0-9]*)', text_lower)
+            new_room = room_match.group(1).upper() if room_match else "502-A2"
+            t_start, t_end = period_range(1, 3)
+            events.append(
+                DetectedEventItem(
+                    event_type="ROOM_CHANGE",
+                    title=f"Đổi phòng: {request.subject_name}",
+                    start_datetime=room_date.strftime(f"%Y-%m-%dT{t_start.strftime('%H:%M:00')}+07:00"),
+                    end_datetime=room_date.strftime(f"%Y-%m-%dT{t_end.strftime('%H:%M:00')}+07:00"),
+                    room=new_room,
+                    note=f"Đổi phòng học sang {new_room}"
+                )
+            )
+
+        # 2. Phát hiện sự kiện báo nghỉ (CANCELLED_CLASS)
+        if re.search(r'\b(nghỉ|off|thầy bận|k học|ko học|đổi lịch|dời lịch)\b', text_lower):
             cancel_date = self._find_target_date(text_lower, now_dt, default_offset_days=2, target_role="cancel")
             t_start, t_end = period_range(1, 3)
             events.append(
@@ -143,12 +161,12 @@ class GeminiService:
                 )
             )
 
-        # 2. Phát hiện sự kiện học bù (MAKEUP_CLASS)
-        if re.search(r'\b(bù|học bù|chuyển sang)\b', text_lower):
+        # 3. Phát hiện sự kiện học bù hoặc đổi thời gian học (MAKEUP_CLASS)
+        if re.search(r'\b(bù|học bù|chuyển sang|đổi lịch|dời lịch)\b', text_lower):
             makeup_date = self._find_target_date(text_lower, now_dt, default_offset_days=4, target_role="makeup")
             # Tìm phòng học nếu có nhắc
             room_match = re.search(r'(?:phòng|p\.?)\s*([0-9]{3}-?[a-zA-Z0-9]*)', text_lower)
-            room = room_match.group(1).upper() if room_match else "305-A2"
+            room = room_match.group(1).upper() if room_match else default_room
 
             # Tìm ca/tiết
             if "chiều" in text_lower or "tiết 7" in text_lower or "tiết 7-9" in text_lower:

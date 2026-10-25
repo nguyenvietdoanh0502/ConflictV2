@@ -59,6 +59,7 @@ Nhiệm vụ của bạn là đọc các tin nhắn chat trong nhóm Zalo lớp 
 - `tuần sau nữa`: Cách tuần hiện tại 2 tuần.
 - `off` / `nghỉ` / `k học` / `ko học`: Hủy buổi học (`CANCELLED_CLASS`).
 - `bù` / `học bù` / `chuyển sang`: Học bù (`MAKEUP_CLASS`).
+- `đổi phòng` / `chuyển phòng`: Đổi phòng học (`ROOM_CHANGE`).
 - `ktra` / `kt` / `test` / `thi gk` / `thi ck`: Kiểm tra (`EXAM`).
 - `btl` / `bài tập lớn` / `deadline` / `hạn nộp`: Hạn nộp bài (`DEADLINE`).
 - `onl` / `online`: Học trực tuyến.
@@ -68,11 +69,15 @@ Nhiệm vụ của bạn là đọc các tin nhắn chat trong nhóm Zalo lớp 
 - MỌI tính toán ngày cụ thể (ngày, tháng, năm) PHẢI dựa trên thông tin này.
 - Tất cả các trường `start_datetime` và `end_datetime` PHẢI trả về đúng định dạng ISO 8601 kèm múi giờ `+07:00`.
 - Nếu trong 1 tin nhắn có NHIỀU sự kiện (ví dụ: vừa báo nghỉ thứ 7, vừa báo học bù thứ 2, vừa báo tuần sau kiểm tra), bạn PHẢI bóc tách ĐẦY ĐỦ từng sự kiện thành từng phần tử riêng biệt trong danh sách `detected_events`.
+- QUY TẮC ĐỔI LỊCH / DỜI THỜI GIAN HỌC: Khi tin nhắn thông báo dời lịch một buổi học sang ngày/giờ khác (ví dụ "Lớp thứ 4 chuyển sang học thứ 6", "Buổi 26/10 đổi sang 28/10..."), bạn PHẢI bóc tách thành 2 sự kiện:
+  1. Một sự kiện `CANCELLED_CLASS` vào ngày giờ của buổi cũ bị hoãn/chuyển đi.
+  2. Một sự kiện `MAKEUP_CLASS` vào ngày giờ của buổi mới chuyển sang.
 
 ### PHÂN LOẠI EVENT_TYPE HỢP LỆ:
-- `REGULAR_CLASS`: Buổi học thường hoặc đổi phòng.
-- `MAKEUP_CLASS`: Buổi học bù.
-- `CANCELLED_CLASS`: Buổi học được báo nghỉ.
+- `REGULAR_CLASS`: Buổi học thường.
+- `MAKEUP_CLASS`: Buổi học bù hoặc buổi học mới được dời sang.
+- `CANCELLED_CLASS`: Buổi học được báo nghỉ hoặc buổi cũ bị chuyển đi khi dời lịch.
+- `ROOM_CHANGE`: Buổi học đổi phòng (giữ nguyên ngày giờ, chỉ đổi phòng học sang phòng mới).
 - `EXAM`: Lịch kiểm tra hoặc thi cử.
 - `DEADLINE`: Hạn nộp bài tập lớn hoặc đồ án.
 """

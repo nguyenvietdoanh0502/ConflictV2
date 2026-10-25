@@ -7,14 +7,15 @@ EventTypeLiteral = Literal[
     "MAKEUP_CLASS",
     "CANCELLED_CLASS",
     "EXAM",
-    "DEADLINE"
+    "DEADLINE",
+    "ROOM_CHANGE"
 ]
 
 
 class DetectedEventItem(BaseModel):
     event_type: EventTypeLiteral = Field(
         ...,
-        description="Loại sự kiện học vụ: 'REGULAR_CLASS', 'MAKEUP_CLASS', 'CANCELLED_CLASS', 'EXAM', hoặc 'DEADLINE'"
+        description="Loại sự kiện học vụ: 'REGULAR_CLASS', 'MAKEUP_CLASS', 'CANCELLED_CLASS', 'EXAM', 'DEADLINE', hoặc 'ROOM_CHANGE'"
     )
     title: str = Field(
         ...,

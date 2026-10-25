@@ -52,6 +52,13 @@ public class ScheduleEvent {
     @Column(length = 100)
     private String room;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "original_event_type", length = 50)
+    private EventType originalEventType;
+
+    @Column(name = "original_room", length = 100)
+    private String originalRoom;
+
     @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)

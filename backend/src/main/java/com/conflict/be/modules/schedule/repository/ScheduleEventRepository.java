@@ -29,6 +29,22 @@ public interface ScheduleEventRepository extends JpaRepository<ScheduleEvent, UU
             @Param("to") Instant to
     );
 
+    @Query("""
+            SELECT e FROM ScheduleEvent e
+            LEFT JOIN FETCH e.subject
+            WHERE e.user.id = :userId
+              AND e.subject.id = :subjectId
+              AND e.startDatetime < :to
+              AND e.endDatetime > :from
+            ORDER BY e.startDatetime ASC
+            """)
+    List<ScheduleEvent> findByUserIdAndSubjectIdAndDateRange(
+            @Param("userId") UUID userId,
+            @Param("subjectId") UUID subjectId,
+            @Param("from") Instant from,
+            @Param("to") Instant to
+    );
+
     @Query("SELECT e FROM ScheduleEvent e LEFT JOIN FETCH e.subject WHERE e.id = :id AND e.user.id = :userId")
     Optional<ScheduleEvent> findByIdAndUserIdWithSubject(@Param("id") UUID id, @Param("userId") UUID userId);
 

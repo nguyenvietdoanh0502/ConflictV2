@@ -170,4 +170,118 @@ class ZaloMessageProcessorTest {
                 any()
         );
     }
+
+    @Test
+    @DisplayName("Nên cập nhật sự kiện cũ thành CANCELLED_CLASS và PENDING_REVIEW khi báo nghỉ học, không sinh sự kiện mới")
+    void shouldAttachCancellationToExistingEventInsteadOfCreatingNew() {
+        String msg = "Thứ 4 tuần này lớp Lập trình Web được nghỉ học nhé";
+        when(keywordFilter.isLikelyAcademic(msg)).thenReturn(true);
+        when(mappingRepository.findAllActiveByZaloGroupIdWithSubjectAndUser("zalo-group-101"))
+                .thenReturn(List.of(testMapping));
+        when(scheduleEventRepository.existsByUserIdAndSourceMessageId(eq(testUser.getId()), anyString()))
+                .thenReturn(false);
+
+        Instant start = Instant.now().plus(1, ChronoUnit.DAYS);
+        Instant end = start.plus(2, ChronoUnit.HOURS);
+
+        // Sự kiện học thường đã có sẵn trên TKB
+        ScheduleEvent existingClass = ScheduleEvent.builder()
+                .id(UUID.randomUUID())
+                .user(testUser)
+                .subject(testSubject)
+                .title("Lập trình Web")
+                .eventType(EventType.REGULAR_CLASS)
+                .startDatetime(start)
+                .endDatetime(end)
+                .room("401-A1")
+                .build();
+
+        when(scheduleEventRepository.findByUserIdAndSubjectIdAndDateRange(eq(testUser.getId()), eq(testSubject.getId()), any(), any()))
+                .thenReturn(List.of(existingClass));
+
+        AiDetectedEvent cancelDetected = AiDetectedEvent.builder()
+                .eventType(EventType.CANCELLED_CLASS)
+                .title("Nghỉ học: Lập trình Web")
+                .startDatetime(start)
+                .endDatetime(end)
+                .room("401-A1")
+                .note("Giảng viên báo nghỉ")
+                .build();
+
+        AiAnalyzeResponse aiResponse = AiAnalyzeResponse.builder()
+                .academicAnnouncement(true)
+                .confidenceScore(0.98)
+                .detectedEvents(List.of(cancelDetected))
+                .build();
+
+        when(aiEngineClient.analyzeMessage(any(AiAnalyzeRequest.class))).thenReturn(aiResponse);
+        when(scheduleEventRepository.save(any(ScheduleEvent.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        ZaloProcessResultDTO result = messageProcessor.processMessage(
+                "zalo-group-101", "msg-cancel-1", "Giảng viên", msg, Instant.now()
+        );
+
+        assertEquals(1, result.getEventsCreated());
+        // Kiểm tra sự kiện trả về chính là existingClass đã được cập nhật
+        assertEquals(existingClass.getId(), result.getCreatedEvents().get(0).getId());
+        assertEquals(EventType.CANCELLED_CLASS, existingClass.getEventType());
+        assertEquals(EventType.REGULAR_CLASS, existingClass.getOriginalEventType());
+        assertEquals(com.conflict.be.modules.schedule.enums.EventStatus.PENDING_REVIEW, existingClass.getStatus());
+    }
+
+    @Test
+    @DisplayName("Nên cập nhật phòng học mới và lưu originalRoom cho sự kiện cũ khi đổi phòng học, không sinh sự kiện mới")
+    void shouldUpdateExistingEventRoomInsteadOfCreatingNewOnRoomChange() {
+        String msg = "Lớp Lập trình Web ngày mai chuyển sang phòng 502-A2 nhé";
+        when(keywordFilter.isLikelyAcademic(msg)).thenReturn(true);
+        when(mappingRepository.findAllActiveByZaloGroupIdWithSubjectAndUser("zalo-group-101"))
+                .thenReturn(List.of(testMapping));
+        when(scheduleEventRepository.existsByUserIdAndSourceMessageId(eq(testUser.getId()), anyString()))
+                .thenReturn(false);
+
+        Instant start = Instant.now().plus(1, ChronoUnit.DAYS);
+        Instant end = start.plus(2, ChronoUnit.HOURS);
+
+        ScheduleEvent existingClass = ScheduleEvent.builder()
+                .id(UUID.randomUUID())
+                .user(testUser)
+                .subject(testSubject)
+                .title("Lập trình Web")
+                .eventType(EventType.REGULAR_CLASS)
+                .startDatetime(start)
+                .endDatetime(end)
+                .room("401-A1")
+                .build();
+
+        when(scheduleEventRepository.findByUserIdAndSubjectIdAndDateRange(eq(testUser.getId()), eq(testSubject.getId()), any(), any()))
+                .thenReturn(List.of(existingClass));
+
+        AiDetectedEvent roomChangeDetected = AiDetectedEvent.builder()
+                .eventType(EventType.ROOM_CHANGE)
+                .title("Đổi phòng: Lập trình Web")
+                .startDatetime(start)
+                .endDatetime(end)
+                .room("502-A2")
+                .note("Đổi sang phòng 502-A2")
+                .build();
+
+        AiAnalyzeResponse aiResponse = AiAnalyzeResponse.builder()
+                .academicAnnouncement(true)
+                .confidenceScore(0.99)
+                .detectedEvents(List.of(roomChangeDetected))
+                .build();
+
+        when(aiEngineClient.analyzeMessage(any(AiAnalyzeRequest.class))).thenReturn(aiResponse);
+        when(scheduleEventRepository.save(any(ScheduleEvent.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        ZaloProcessResultDTO result = messageProcessor.processMessage(
+                "zalo-group-101", "msg-room-1", "Lớp trưởng", msg, Instant.now()
+        );
+
+        assertEquals(1, result.getEventsCreated());
+        assertEquals(existingClass.getId(), result.getCreatedEvents().get(0).getId());
+        assertEquals("502-A2", existingClass.getRoom());
+        assertEquals("401-A1", existingClass.getOriginalRoom());
+        assertEquals(com.conflict.be.modules.schedule.enums.EventStatus.PENDING_REVIEW, existingClass.getStatus());
+    }
 }
