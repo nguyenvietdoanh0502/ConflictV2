@@ -20,9 +20,11 @@ class RealtimeService {
     this.client = null;
     this.currentAccessToken = null;
     this.messageListeners = new Set();
+    this.scheduleListeners = new Set();
     this.statusListeners = new Set();
     this.status = "disconnected"; // "connecting" | "connected" | "disconnected" | "error"
     this.messageSubscription = null;
+    this.scheduleSubscription = null;
   }
 
   updateStatus(newStatus) {
@@ -89,6 +91,24 @@ class RealtimeService {
         } catch (err) {
           console.error("Failed to subscribe to /user/queue/messages:", err);
         }
+
+        // Subscribe to real-time Schedule notifications (UniSync Zalo AI PoC)
+        try {
+          this.scheduleSubscription = this.client.subscribe(
+            "/user/queue/schedule",
+            (message) => {
+              try {
+                const parsed = JSON.parse(message.body);
+                const data = parsed.data || parsed;
+                this.notifyScheduleListeners(data);
+              } catch (err) {
+                console.error("Failed to parse incoming Schedule notification:", err);
+              }
+            }
+          );
+        } catch (err) {
+          console.error("Failed to subscribe to /user/queue/schedule:", err);
+        }
       },
       onDisconnect: () => {
         this.updateStatus("disconnected");
@@ -120,6 +140,15 @@ class RealtimeService {
         // ignore
       }
       this.messageSubscription = null;
+    }
+
+    if (this.scheduleSubscription) {
+      try {
+        this.scheduleSubscription.unsubscribe();
+      } catch {
+        // ignore
+      }
+      this.scheduleSubscription = null;
     }
 
     if (this.client) {
@@ -159,10 +188,27 @@ class RealtimeService {
     });
   }
 
+  notifyScheduleListeners(notification) {
+    this.scheduleListeners.forEach((listener) => {
+      try {
+        listener(notification);
+      } catch (err) {
+        console.error("Error in schedule listener:", err);
+      }
+    });
+  }
+
   onMessage(callback) {
     this.messageListeners.add(callback);
     return () => {
       this.messageListeners.delete(callback);
+    };
+  }
+
+  onScheduleUpdate(callback) {
+    this.scheduleListeners.add(callback);
+    return () => {
+      this.scheduleListeners.delete(callback);
     };
   }
 

@@ -1,0 +1,29 @@
+{
+  "name": "zalo-bridge",
+  "version": "1.0.0",
+  "description": "Zalo Bridge service for UniSync - connects Zalo Group messages to Spring Boot Backend",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test": "node tests/bridge.test.js"
+  },
+  "keywords": [
+    "zalo",
+    "bridge",
+    "unisync",
+    "webhook"
+  ],
+  "author": "UniSync Team",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.7.9",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "pg": "^8.23.1",
+    "qrcode": "^1.5.4",
+    "zca-js": "^2.2.0"
+  }
+}
