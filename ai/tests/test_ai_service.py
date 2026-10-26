@@ -141,3 +141,169 @@ def test_parse_message_alias_endpoint():
     assert data["is_academic_announcement"] is True
     assert len(data["detected_events"]) >= 1
     assert data["detected_events"][0]["event_type"] == "CANCELLED_CLASS"
+
+
+def test_analyze_image_payload_mock():
+    """Kiểm tra xử lý tin nhắn hình ảnh không có caption trong Mock mode."""
+    # 1x1 transparent PNG base64
+    dummy_b64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
+    payload = {
+        "current_datetime": "2026-10-22T15:20:00+07:00",
+        "subject_name": "Kiến trúc máy tính",
+        "default_room": "501-A1",
+        "sender_name": "Lớp trưởng",
+        "message_text": "",
+        "image_base64": dummy_b64,
+        "image_mime_type": "image/png"
+    }
+
+    response = client.post("/ai/analyze-message", json=payload, headers=AUTH_HEADERS)
+    assert response.status_code == 200
+    data = response.json()
+
+    assert data["is_academic_announcement"] is True
+    assert len(data["detected_events"]) == 1
+    event = data["detected_events"][0]
+    assert event["event_type"] == "MAKEUP_CLASS"
+    assert "từ ảnh" in event["title"]
+    assert event["room"] == "501-A1"
+    assert "+07:00" in event["start_datetime"]
+
+
+def test_analyze_image_with_caption_mock():
+    """Kiểm tra xử lý tin nhắn hình ảnh có kèm caption đổi phòng."""
+    dummy_b64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
+    payload = {
+        "current_datetime": "2026-10-22T15:20:00+07:00",
+        "subject_name": "Hệ điều hành",
+        "default_room": "401-A1",
+        "sender_name": "Giảng viên",
+        "message_text": "Lớp chú ý ảnh thông báo: ngày mai đổi phòng sang 502-A2 nhé",
+        "image_base64": dummy_b64,
+        "image_mime_type": "image/png"
+    }
+
+    response = client.post("/ai/analyze-message", json=payload, headers=AUTH_HEADERS)
+    assert response.status_code == 200
+    data = response.json()
+
+    assert data["is_academic_announcement"] is True
+    assert len(data["detected_events"]) >= 1
+    assert data["detected_events"][0]["event_type"] == "ROOM_CHANGE"
+    assert data["detected_events"][0]["room"] == "502-A2"
+
+
+def test_analyze_two_shifts_student_group_a_to_l():
+    """Kiểm tra tin nhắn chia 2 ca với sinh viên tên nhóm A-L (Nguyễn Việt Doanh -> Ca 1)."""
+    payload = {
+        "current_datetime": "2026-10-22T15:20:00+07:00",
+        "subject_name": "Lập trình Web",
+        "default_room": "401-A1",
+        "sender_name": "Lớp trưởng",
+        "student_name": "Nguyễn Việt Doanh",
+        "message_text": "Lớp chia 2 ca thực hành: Ca 1 từ tiết 1-3, Ca 2 từ tiết 4-6 chia theo danh sách tên."
+    }
+
+    response = client.post("/ai/analyze-message", json=payload, headers=AUTH_HEADERS)
+    assert response.status_code == 200
+    data = response.json()
+
+    assert data["is_academic_announcement"] is True
+    # Tuyệt đối không được xếp cả 2 ca vào lịch học
+    assert len(data["detected_events"]) == 1
+    event = data["detected_events"][0]
+    assert "Ca 1" in event["title"]
+    assert "Tiết 1-3" in event["title"]
+    assert "A-L" in event["note"]
+
+
+def test_analyze_two_shifts_student_group_m_to_z():
+    """Kiểm tra tin nhắn chia 2 ca với sinh viên tên nhóm M-Z (Lê Minh Tuấn -> Ca 2)."""
+    payload = {
+        "current_datetime": "2026-10-22T15:20:00+07:00",
+        "subject_name": "Lập trình Web",
+        "default_room": "401-A1",
+        "sender_name": "Lớp trưởng",
+        "student_name": "Lê Minh Tuấn",
+        "message_text": "Lớp chia 2 ca thực hành: Ca 1 từ tiết 1-3, Ca 2 từ tiết 4-6 chia theo danh sách tên."
+    }
+
+    response = client.post("/ai/analyze-message", json=payload, headers=AUTH_HEADERS)
+    assert response.status_code == 200
+    data = response.json()
+
+    assert data["is_academic_announcement"] is True
+    # Tuyệt đối không được xếp cả 2 ca vào lịch học
+    assert len(data["detected_events"]) == 1
+    event = data["detected_events"][0]
+    assert "Ca 2" in event["title"]
+    assert "Tiết 4-6" in event["title"]
+    assert "M-Z" in event["note"]
+
+
+def test_analyze_tiet_bd_and_so_tiet():
+    """Kiểm tra bóc tách thông tin Tiết BĐ và Số tiết (ví dụ: Tiết BĐ: 4, Số tiết: 3 -> Tiết 4-6: 09:40-12:15)."""
+    payload = {
+        "current_datetime": "2026-10-22T15:20:00+07:00",
+        "subject_name": "Kiến trúc máy tính",
+        "default_room": "401-A1",
+        "sender_name": "Giảng viên",
+        "student_name": "Nguyễn Việt Doanh",
+        "message_text": "Thông báo lịch học bù: ngày mai Tiết BĐ: 4, Số tiết: 3 tại phòng 401-A1."
+    }
+
+    response = client.post("/ai/analyze-message", json=payload, headers=AUTH_HEADERS)
+    assert response.status_code == 200
+    data = response.json()
+
+    assert data["is_academic_announcement"] is True
+    assert len(data["detected_events"]) == 1
+    event = data["detected_events"][0]
+    assert "Tiết 4-6" in event["title"]
+    assert "09:40:00+07:00" in event["start_datetime"]
+    assert "12:15:00+07:00" in event["end_datetime"]
+
+
+def test_analyze_two_shifts_accented_vietnamese_names():
+    """Kiểm tra nhận diện đúng ca cho các tên tiếng Việt có dấu phức tạp (Ánh -> Ca 1, Đạt -> Ca 1, Út -> Ca 2)."""
+    from app.services.gemini_service import get_student_shift
+
+    assert get_student_shift("Nguyễn Thị Ánh") == 1  # Ánh -> A -> Ca 1
+    assert get_student_shift("Lê Văn Đạt") == 1       # Đạt -> D -> Ca 1
+    assert get_student_shift("Phan Văn Đức") == 1     # Đức -> D -> Ca 1
+    assert get_student_shift("Lê Minh Tuấn") == 2     # Tuấn -> T -> Ca 2
+    assert get_student_shift("Vũ Thị Út") == 2        # Út -> U -> Ca 2
+    assert get_student_shift("Hoàng Yến") == 2        # Yến -> Y -> Ca 2
+
+
+def test_enforce_single_shift_same_day_unlabelled():
+    """Kiểm tra loại bỏ 1 ca khi có 2 sự kiện cùng ngày không gắn nhãn 'Ca 1'/'Ca 2'."""
+    from app.services.gemini_service import enforce_single_shift
+    from app.schemas import DetectedEventItem
+
+    e1 = DetectedEventItem(
+        event_type="MAKEUP_CLASS",
+        title="Lịch học: Lập trình Web",
+        start_datetime="2026-10-28T07:00:00+07:00",
+        end_datetime="2026-10-28T09:35:00+07:00",
+        room="401-A1"
+    )
+    e2 = DetectedEventItem(
+        event_type="MAKEUP_CLASS",
+        title="Lịch học: Lập trình Web",
+        start_datetime="2026-10-28T09:40:00+07:00",
+        end_datetime="2026-10-28T12:15:00+07:00",
+        room="401-A1"
+    )
+
+    # Sinh viên Doanh (A-L: Ca 1) -> Giữ ca sớm (07:00)
+    filtered_ca1 = enforce_single_shift([e1, e2], "Nguyễn Việt Doanh")
+    assert len(filtered_ca1) == 1
+    assert filtered_ca1[0].start_datetime == "2026-10-28T07:00:00+07:00"
+
+    # Sinh viên Tuấn (M-Z: Ca 2) -> Giữ ca muộn (09:40)
+    filtered_ca2 = enforce_single_shift([e1, e2], "Lê Minh Tuấn")
+    assert len(filtered_ca2) == 1
+    assert filtered_ca2[0].start_datetime == "2026-10-28T09:40:00+07:00"
+
+

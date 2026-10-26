@@ -1,8 +1,11 @@
 import asyncio
+import base64
 import logging
 import re
+from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from typing import Optional
+import unicodedata
 
 from google import genai
 from google.genai import types
@@ -14,6 +17,98 @@ from app.prompts import build_user_prompt, get_system_prompt
 from app.schemas import AnalyzeMessageRequest, AnalyzeMessageResponse, DetectedEventItem
 
 logger = logging.getLogger("unisync-ai")
+
+
+def get_base_letter(char: str) -> str:
+    """Loại bỏ dấu thanh/dấu tiếng Việt để lấy chữ cái gốc ASCII (A-Z)."""
+    if not char:
+        return 'A'
+    c = char.upper()
+    if c in ('Đ', 'đ'):
+        return 'D'
+    decomposed = unicodedata.normalize('NFD', c)
+    stripped = ''.join(ch for ch in decomposed if unicodedata.category(ch) != 'Mn')
+    base = stripped[0].upper() if stripped else c[0]
+    return base if 'A' <= base <= 'Z' else 'A'
+
+
+def get_student_shift(student_name: Optional[str]) -> int:
+    """Xác định ca học (1 hoặc 2) dựa trên chữ cái đầu của Tên sinh viên (A-L: Ca 1, M-Z: Ca 2)."""
+    if not student_name:
+        return 1
+    # Tách từ cuối cùng (Tên gọi trong họ tên tiếng Việt, vd: 'Nguyễn Việt Doanh' -> 'Doanh', 'Ánh' -> 'Ánh')
+    words = student_name.strip().split()
+    target_word = words[-1] if words else student_name.strip()
+    if not target_word:
+        return 1
+    base_letter = get_base_letter(target_word[0])
+    if 'A' <= base_letter <= 'L':
+        return 1
+    return 2
+
+
+def _get_vn_date_str(iso_str: str) -> str:
+    try:
+        dt = datetime.fromisoformat(iso_str)
+        tz_vn = timezone(timedelta(hours=7))
+        return dt.astimezone(tz_vn).strftime("%Y-%m-%d")
+    except Exception:
+        return iso_str[:10] if iso_str and len(iso_str) >= 10 else "default"
+
+
+def enforce_single_shift(events: list[DetectedEventItem], student_name: Optional[str]) -> list[DetectedEventItem]:
+    """Đảm bảo TUYỆT ĐỐI không xếp cả 2 ca vào lịch học:
+    Quy tắc: Nếu 2 dòng lịch học chung 1 ngày (khác tiết) thì đó là 2 ca học. Chỉ lấy 1 ca theo tên của user.
+    - Dòng có tiết bắt đầu sớm hơn = Ca 1 (Ca sớm).
+    - Dòng có tiết bắt đầu muộn hơn = Ca 2 (Ca muộn).
+    - User tên A-L: Giữ Ca 1, bỏ Ca 2.
+    - User tên M-Z: Giữ Ca 2, bỏ Ca 1.
+    """
+    if len(events) <= 1:
+        return events
+
+    target_shift = get_student_shift(student_name)
+
+    # 1. Tìm theo nhãn rõ ràng: Ca 1 / Ca 2 (kíp 1 / kíp 2 / nhóm 1 / nhóm 2)
+    ca1_indices = [i for i, e in enumerate(events) if re.search(r'\b(ca\s*1|kíp\s*1|nhóm\s*1|đợt\s*1)\b', (e.title + " " + (e.note or "")).lower())]
+    ca2_indices = [i for i, e in enumerate(events) if re.search(r'\b(ca\s*2|kíp\s*2|nhóm\s*2|đợt\s*2)\b', (e.title + " " + (e.note or "")).lower())]
+
+    if ca1_indices and ca2_indices:
+        indices_to_remove = set(ca2_indices if target_shift == 1 else ca1_indices)
+        filtered = [e for i, e in enumerate(events) if i not in indices_to_remove]
+        if filtered:
+            return filtered
+
+    # 2. Gom nhóm theo ngày học: nếu 2 dòng lịch học chung 1 ngày (khác tiết) -> đó là 2 ca học!
+    events_by_date = defaultdict(list)
+    for i, e in enumerate(events):
+        date_str = _get_vn_date_str(e.start_datetime)
+        events_by_date[date_str].append((i, e))
+
+    indices_to_drop = set()
+    for date_str, date_events in events_by_date.items():
+        if len(date_events) >= 2:
+            # Sắp xếp theo start_datetime tăng dần
+            sorted_events = sorted(date_events, key=lambda x: x[1].start_datetime)
+            first_start = sorted_events[0][1].start_datetime
+            has_different_periods = any(ev[1].start_datetime != first_start for ev in sorted_events[1:])
+            if has_different_periods:
+                shift1_idx = sorted_events[0][0]
+                shift2_idx = sorted_events[1][0]
+                if target_shift == 1:
+                    # Sinh viên A-L: chỉ lấy Ca 1 (dòng có tiết sớm hơn)
+                    for idx, _ in sorted_events[1:]:
+                        indices_to_drop.add(idx)
+                else:
+                    # Sinh viên M-Z: chỉ lấy Ca 2 (dòng có tiết muộn hơn)
+                    indices_to_drop.add(shift1_idx)
+                    for idx, _ in sorted_events[2:]:
+                        indices_to_drop.add(idx)
+
+    if indices_to_drop:
+        return [e for i, e in enumerate(events) if i not in indices_to_drop]
+
+    return events
 
 
 class GeminiService:
@@ -54,13 +149,31 @@ class GeminiService:
                 status_code=503
             )
 
+        has_image = bool(request.image_base64 or request.image_url)
         user_prompt = build_user_prompt(
             current_datetime=request.current_datetime,
             subject_name=request.subject_name,
             default_room=request.default_room,
             sender_name=request.sender_name,
             message_text=request.message_text,
+            has_image=has_image,
+            student_name=request.student_name,
         )
+
+        contents = []
+        if request.image_base64:
+            clean_b64 = request.image_base64.strip()
+            if "," in clean_b64:
+                clean_b64 = clean_b64.split(",", 1)[1]
+            try:
+                img_bytes = base64.b64decode(clean_b64)
+                mime = request.image_mime_type or "image/jpeg"
+                contents.append(types.Part.from_bytes(data=img_bytes, mime_type=mime))
+                logger.info(f"Đã nạp ảnh đính kèm (size: {len(img_bytes)} bytes, mime: {mime}) vào prompt Gemini")
+            except Exception as b64_err:
+                logger.warning(f"Không thể giải mã image_base64: {b64_err}")
+
+        contents.append(user_prompt)
 
         config = types.GenerateContentConfig(
             system_instruction=get_system_prompt(),
@@ -75,7 +188,7 @@ class GeminiService:
             try:
                 response = await self._client.aio.models.generate_content(
                     model=settings.gemini_model,
-                    contents=user_prompt,
+                    contents=contents,
                     config=config,
                 )
 
@@ -87,6 +200,8 @@ class GeminiService:
                     )
 
                 result = AnalyzeMessageResponse.model_validate_json(response.text)
+                # Hậu kiểm quy tắc 2 ca: Tuyệt đối không xếp cả 2 ca vào lịch học
+                result.detected_events = enforce_single_shift(result.detected_events, request.student_name)
                 logger.info(f"Phân tích tin nhắn thành công qua Gemini {settings.gemini_model}. Sự kiện: {len(result.detected_events)}")
                 return result
 
@@ -105,9 +220,10 @@ class GeminiService:
 
     def _mock_analyze_message(self, request: AnalyzeMessageRequest) -> AnalyzeMessageResponse:
         """Bộ phân tích giả lập (Mock Parser) chất lượng cao phục vụ kiểm thử và kịch bản demo độc lập."""
-        text = request.message_text.strip()
+        text = (request.message_text or "").strip()
         text_lower = text.lower()
         now_dt = self._parse_iso_datetime(request.current_datetime)
+        has_image = bool(request.image_base64 or request.image_url)
 
         # Từ khóa học vụ với word boundary để tránh nhầm (vd: 'thiết kế' không phải là 'thi')
         academic_patterns = [
@@ -115,10 +231,47 @@ class GeminiService:
             r'\bbù\b', r'\bhọc bù\b', r'\bchuyển sang\b', r'\bđổi phòng\b', r'\bchuyển phòng\b', r'\bsang phòng\b',
             r'\bđổi lịch\b', r'\bdời lịch\b',
             r'\bktra\b', r'\bkiểm tra\b', r'\bthi\b', r'\btest\b', r'\bquiz\b',
-            r'\bdeadline\b', r'\bhạn nộp\b', r'\bbtl\b', r'\bbài tập lớn\b'
+            r'\bdeadline\b', r'\bhạn nộp\b', r'\bbtl\b', r'\bbài tập lớn\b',
+            r'\bca\s*[12]\b', r'\b2\s*ca\b', r'\bhai\s*ca\b', r'\bchia ca\b', r'\bthực hành\b', r'\bchia làm 2 ca\b', r'\bchia 2 nhóm\b',
+            r'tiết\s*(?:bắt\s*đầu|bđ)', r'số\s*(?:lượng\s*)?tiết'
         ]
 
         has_academic_pattern = any(re.search(pat, text_lower) for pat in academic_patterns)
+
+        # Nhận diện cột / thông tin Tiết BĐ và Số tiết (ví dụ: 'Tiết BĐ: 1, Số tiết: 3' hoặc 'Tiết bắt đầu: 4, Số tiết: 3')
+        p_start_match = re.search(r'(?:tiết\s*(?:bắt\s*đầu|bđ)?|bắt\s*đầu\s*từ\s*tiết)\s*[:=]?\s*([0-9]+)', text_lower)
+        p_count_match = re.search(r'(?:số\s*tiết|số\s*lượng\s*tiết|học\s*trong)\s*[:=]?\s*([0-9]+)', text_lower)
+        custom_periods = None
+        if p_start_match and p_count_match:
+            p_s = int(p_start_match.group(1))
+            p_c = int(p_count_match.group(1))
+            p_e = p_s + p_c - 1
+            if 1 <= p_s <= 16 and 1 <= p_e <= 16:
+                custom_periods = (p_s, p_e)
+
+        # Nếu có ảnh và không có từ khóa text rõ rệt, sinh sự kiện mock bóc tách từ ảnh thời khóa biểu
+        if has_image and not has_academic_pattern:
+            target_shift = get_student_shift(request.student_name)
+            t_start, t_end = period_range(1, 3) if target_shift == 1 else period_range(4, 6)
+            shift_title = "Ca 1 (Tiết 1-3)" if target_shift == 1 else "Ca 2 (Tiết 4-6)"
+            group_label = "A-L" if target_shift == 1 else "M-Z"
+            target_date = now_dt + timedelta(days=2)
+            default_room = request.default_room or "401-A1"
+            return AnalyzeMessageResponse(
+                is_academic_announcement=True,
+                confidence_score=0.92,
+                detected_events=[
+                    DetectedEventItem(
+                        event_type="MAKEUP_CLASS",
+                        title=f"Lịch học (từ ảnh): {request.subject_name} - {shift_title}",
+                        start_datetime=target_date.strftime(f"%Y-%m-%dT{t_start.strftime('%H:%M:00')}+07:00"),
+                        end_datetime=target_date.strftime(f"%Y-%m-%dT{t_end.strftime('%H:%M:00')}+07:00"),
+                        room=default_room,
+                        note=f"Trích xuất từ ảnh thời khóa biểu Zalo. Xếp {shift_title} cho sinh viên '{request.student_name or group_label}' ({group_label})."
+                    )
+                ]
+            )
+
         if not has_academic_pattern or len(text) < 10:
             return AnalyzeMessageResponse(
                 is_academic_announcement=False,
@@ -128,6 +281,52 @@ class GeminiService:
 
         events: list[DetectedEventItem] = []
         default_room = request.default_room or "401-A1"
+
+        # 0.1 Phát hiện thông tin Tiết BĐ + Số tiết chỉ định rõ ràng
+        if custom_periods:
+            t_start, t_end = period_range(custom_periods[0], custom_periods[1])
+            target_date = self._find_target_date(text_lower, now_dt, default_offset_days=2, target_role="makeup")
+            period_label = f"Tiết {custom_periods[0]}-{custom_periods[1]}"
+            events.append(
+                DetectedEventItem(
+                    event_type="MAKEUP_CLASS",
+                    title=f"Lịch học: {request.subject_name} ({period_label})",
+                    start_datetime=target_date.strftime(f"%Y-%m-%dT{t_start.strftime('%H:%M:00')}+07:00"),
+                    end_datetime=target_date.strftime(f"%Y-%m-%dT{t_end.strftime('%H:%M:00')}+07:00"),
+                    room=default_room,
+                    note=f"Trích xuất từ bảng: Tiết BĐ {custom_periods[0]}, Số tiết {custom_periods[1] - custom_periods[0] + 1} -> {period_label}"
+                )
+            )
+            return AnalyzeMessageResponse(
+                is_academic_announcement=True,
+                confidence_score=0.96,
+                detected_events=events
+            )
+
+        # 0. Phát hiện thông báo chia 2 ca (Ca 1 / Ca 2)
+        if re.search(r'(2\s*ca|hai\s*ca|chia làm 2 ca|chia 2 nhóm|ca 1.*ca 2|ca 2.*ca 1)', text_lower, re.DOTALL):
+            target_shift = get_student_shift(request.student_name)
+            shift_date = self._find_target_date(text_lower, now_dt, default_offset_days=3, target_role="makeup")
+            t_start, t_end = period_range(1, 3) if target_shift == 1 else period_range(4, 6)
+            period_str = "Tiết 1-3" if target_shift == 1 else "Tiết 4-6"
+            shift_label = f"Ca {target_shift} ({period_str})"
+            group_label = "A-L" if target_shift == 1 else "M-Z"
+            student_display = request.student_name if request.student_name else group_label
+            events.append(
+                DetectedEventItem(
+                    event_type="MAKEUP_CLASS",
+                    title=f"Lịch học: {request.subject_name} - {shift_label}",
+                    start_datetime=shift_date.strftime(f"%Y-%m-%dT{t_start.strftime('%H:%M:00')}+07:00"),
+                    end_datetime=shift_date.strftime(f"%Y-%m-%dT{t_end.strftime('%H:%M:00')}+07:00"),
+                    room=default_room,
+                    note=f"Xếp {shift_label} cho sinh viên '{student_display}' theo phân ca {group_label} (tên bắt đầu bằng chữ cái {group_label})"
+                )
+            )
+            return AnalyzeMessageResponse(
+                is_academic_announcement=True,
+                confidence_score=0.96,
+                detected_events=events
+            )
 
         # 1. Phát hiện sự kiện đổi phòng học (ROOM_CHANGE)
         if re.search(r'\b(đổi phòng|chuyển phòng|sang phòng|chuyển sang phòng)\b', text_lower) and not re.search(r'\b(bù|học bù|đổi lịch|dời lịch)\b', text_lower):
@@ -219,6 +418,7 @@ class GeminiService:
                 )
             )
 
+        events = enforce_single_shift(events, request.student_name)
         return AnalyzeMessageResponse(
             is_academic_announcement=len(events) > 0,
             confidence_score=0.96 if events else 0.85,

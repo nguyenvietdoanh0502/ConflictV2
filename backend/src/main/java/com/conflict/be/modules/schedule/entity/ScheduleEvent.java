@@ -78,6 +78,9 @@ public class ScheduleEvent {
     @Column(name = "raw_zalo_message", columnDefinition = "TEXT")
     private String rawZaloMessage;
 
+    @Column(name = "raw_zalo_image_url", columnDefinition = "TEXT")
+    private String rawZaloImageUrl;
+
     @Column(name = "sender_name", length = 100)
     private String senderName;
 

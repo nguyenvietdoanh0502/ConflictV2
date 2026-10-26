@@ -28,8 +28,10 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 @Slf4j
 @Service
@@ -42,6 +44,9 @@ public class ZaloMessageProcessor {
     private final AiEngineClient aiEngineClient;
     private final SimpMessagingTemplate messagingTemplate;
 
+    private static final Pattern CA1_PATTERN = Pattern.compile("(?iu)(?:^|\\s|[(\\[])(ca\\s*1|kíp\\s*1|nhóm\\s*1)(?:$|\\s|[)\\]:,.-])");
+    private static final Pattern CA2_PATTERN = Pattern.compile("(?iu)(?:^|\\s|[(\\[])(ca\\s*2|kíp\\s*2|nhóm\\s*2)(?:$|\\s|[)\\]:,.-])");
+
     @Transactional
     public ZaloProcessResultDTO processMessage(
             String zaloGroupId,
@@ -50,10 +55,28 @@ public class ZaloMessageProcessor {
             String messageText,
             Instant currentDatetime
     ) {
-        log.info("Processing incoming Zalo message for group '{}', sender '{}'", zaloGroupId, senderName);
+        return processMessage(zaloGroupId, messageId, senderName, messageText, null, null, null, currentDatetime);
+    }
+
+    @Transactional
+    public ZaloProcessResultDTO processMessage(
+            String zaloGroupId,
+            String messageId,
+            String senderName,
+            String messageText,
+            String imageUrl,
+            String imageBase64,
+            String imageMimeType,
+            Instant currentDatetime
+    ) {
+        log.info("Processing incoming Zalo message for group '{}', sender '{}', hasImage={}",
+                zaloGroupId, senderName, (imageBase64 != null || imageUrl != null));
+
+        boolean hasImage = (imageBase64 != null && !imageBase64.isBlank()) || (imageUrl != null && !imageUrl.isBlank());
 
         // 1. Bộ lọc Regex từ khóa học vụ (Tiết kiệm chi phí AI & hạ độ trễ)
-        if (!keywordFilter.isLikelyAcademic(messageText)) {
+        // Nếu có hình ảnh, bỏ qua bộ lọc từ khóa text để Gemini Vision đọc trực tiếp nội dung trong ảnh
+        if (!hasImage && !keywordFilter.isLikelyAcademic(messageText)) {
             log.info("Message for group '{}' dropped by keyword filter: '{}'", zaloGroupId, messageText);
             return ZaloProcessResultDTO.builder()
                     .zaloGroupId(zaloGroupId)
@@ -84,11 +107,21 @@ public class ZaloMessageProcessor {
                 ? messageId
                 : UUID.randomUUID().toString();
 
+        String effectiveRawMessage;
+        if (messageText != null && !messageText.isBlank()) {
+            effectiveRawMessage = hasImage ? "🖼️ [Hình ảnh] " + messageText : messageText;
+        } else {
+            effectiveRawMessage = "🖼️ [Hình ảnh lịch học/thông báo được gửi trong nhóm Zalo]";
+        }
+
         List<ScheduleEventResponse> allCreatedEvents = new ArrayList<>();
 
         // 3. Xử lý cho từng sinh viên đã ghép nhóm này
         for (ZaloGroupMapping mapping : activeMappings) {
             User user = mapping.getUser();
+            String studentName = (user.getFullName() != null && !user.getFullName().isBlank())
+                    ? user.getFullName()
+                    : user.getEmail();
 
             // Kiểm tra trùng lặp tin nhắn (idempotency)
             if (scheduleEventRepository.existsByUserIdAndSourceMessageId(user.getId(), effectiveMessageId)) {
@@ -101,7 +134,11 @@ public class ZaloMessageProcessor {
                     .subjectName(mapping.getSubject().getName())
                     .defaultRoom(mapping.getSubject().getDefaultRoom())
                     .senderName(senderName)
-                    .messageText(messageText)
+                    .studentName(studentName)
+                    .messageText(messageText != null ? messageText : "")
+                    .imageUrl(imageUrl)
+                    .imageBase64(imageBase64)
+                    .imageMimeType(imageMimeType)
                     .build();
 
             AiAnalyzeResponse aiResponse = aiEngineClient.analyzeMessage(aiRequest);
@@ -115,7 +152,11 @@ public class ZaloMessageProcessor {
             List<ScheduleEventResponse> userCreatedEvents = new ArrayList<>();
             ScheduleEvent lastCancelledOldEvent = null;
 
-            for (AiDetectedEvent detected : aiResponse.getDetectedEvents()) {
+            // Đảm bảo chỉ xếp 1 ca học duy nhất cho sinh viên theo phân nhóm tên A-L (Ca 1), M-Z (Ca 2)
+            List<AiDetectedEvent> eventsToProcess = filterEventsForSingleShift(
+                    aiResponse.getDetectedEvents(), studentName);
+
+            for (AiDetectedEvent detected : eventsToProcess) {
                 EventType type = detected.getEventType() != null ? detected.getEventType() : EventType.MAKEUP_CLASS;
 
                 boolean isCancellation = (type == EventType.CANCELLED_CLASS);
@@ -125,7 +166,7 @@ public class ZaloMessageProcessor {
                 if (!isRoomChange && !isCancellation && detected.getRoom() != null && !detected.getRoom().isBlank()) {
                     String noteLower = (detected.getNote() != null ? detected.getNote() : "").toLowerCase();
                     String titleLower = (detected.getTitle() != null ? detected.getTitle() : "").toLowerCase();
-                    String msgLower = messageText.toLowerCase();
+                    String msgLower = (messageText != null ? messageText : "").toLowerCase();
                     if (noteLower.contains("đổi phòng") || titleLower.contains("đổi phòng")
                             || msgLower.contains("đổi phòng") || msgLower.contains("sang phòng") || msgLower.contains("chuyển sang phòng")) {
                         isRoomChange = true;
@@ -152,7 +193,8 @@ public class ZaloMessageProcessor {
                         matchedEvent.setStatus(EventStatus.PENDING_REVIEW);
                         matchedEvent.setSource(EventSource.ZALO_AI);
                         matchedEvent.setAiConfidence(aiResponse.getConfidenceScore());
-                        matchedEvent.setRawZaloMessage(messageText);
+                        matchedEvent.setRawZaloMessage(effectiveRawMessage);
+                        matchedEvent.setRawZaloImageUrl(imageUrl);
                         matchedEvent.setSenderName(senderName);
                         matchedEvent.setSourceMessageId(effectiveMessageId);
                         matchedEvent.setNote(detected.getNote() != null && !detected.getNote().isBlank()
@@ -182,7 +224,8 @@ public class ZaloMessageProcessor {
                                 .status(EventStatus.PENDING_REVIEW)
                                 .aiConfidence(aiResponse.getConfidenceScore())
                                 .note(detected.getNote() != null ? detected.getNote() : "Thông báo nghỉ học từ Zalo")
-                                .rawZaloMessage(messageText)
+                                .rawZaloMessage(effectiveRawMessage)
+                                .rawZaloImageUrl(imageUrl)
                                 .senderName(senderName)
                                 .sourceMessageId(effectiveMessageId)
                                 .build();
@@ -208,7 +251,8 @@ public class ZaloMessageProcessor {
                         matchedEvent.setStatus(EventStatus.PENDING_REVIEW);
                         matchedEvent.setSource(EventSource.ZALO_AI);
                         matchedEvent.setAiConfidence(aiResponse.getConfidenceScore());
-                        matchedEvent.setRawZaloMessage(messageText);
+                        matchedEvent.setRawZaloMessage(effectiveRawMessage);
+                        matchedEvent.setRawZaloImageUrl(imageUrl);
                         matchedEvent.setSenderName(senderName);
                         matchedEvent.setSourceMessageId(effectiveMessageId);
                         String roomNote = (detected.getNote() != null && !detected.getNote().isBlank())
@@ -236,7 +280,8 @@ public class ZaloMessageProcessor {
                                 .status(EventStatus.PENDING_REVIEW)
                                 .aiConfidence(aiResponse.getConfidenceScore())
                                 .note(detected.getNote())
-                                .rawZaloMessage(messageText)
+                                .rawZaloMessage(effectiveRawMessage)
+                                .rawZaloImageUrl(imageUrl)
                                 .senderName(senderName)
                                 .sourceMessageId(effectiveMessageId)
                                 .build();
@@ -265,7 +310,8 @@ public class ZaloMessageProcessor {
                             .status(EventStatus.PENDING_REVIEW)
                             .aiConfidence(aiResponse.getConfidenceScore())
                             .note(detected.getNote())
-                            .rawZaloMessage(messageText)
+                            .rawZaloMessage(effectiveRawMessage)
+                            .rawZaloImageUrl(imageUrl)
                             .senderName(senderName)
                             .sourceMessageId(effectiveMessageId)
                             .build();
@@ -380,5 +426,139 @@ public class ZaloMessageProcessor {
         }
 
         return closest;
+    }
+
+    /**
+     * Xác định ca học (1 hoặc 2) dựa trên chữ cái đầu của tên sinh viên.
+     * Quy tắc: Tên bắt đầu bằng chữ cái từ A đến L -> Ca 1, còn lại (M-Z) -> Ca 2.
+     * Tự động loại bỏ dấu thanh/dấu tiếng Việt để so sánh chuẩn xác (vd: Ánh -> A, Đạt -> D, Tuấn -> T).
+     */
+    public static int determineStudentShift(String studentName) {
+        if (studentName == null || studentName.isBlank()) {
+            return 1;
+        }
+        String[] words = studentName.trim().split("\\s+");
+        String targetWord = words.length > 0 ? words[words.length - 1] : studentName.trim();
+        if (targetWord.isEmpty()) {
+            return 1;
+        }
+
+        char firstChar = targetWord.charAt(0);
+        char baseChar;
+        if (firstChar == 'Đ' || firstChar == 'đ') {
+            baseChar = 'D';
+        } else {
+            String decomposed = java.text.Normalizer.normalize(String.valueOf(firstChar), java.text.Normalizer.Form.NFD);
+            String stripped = decomposed.replaceAll("\\p{M}", "");
+            baseChar = (!stripped.isEmpty()) ? Character.toUpperCase(stripped.charAt(0)) : Character.toUpperCase(firstChar);
+        }
+
+        // Nhóm A-L: A, Ă, Â, B, C, D, Đ, E, Ê, F, G, H, I, J, K, L -> Ca 1. Còn lại -> Ca 2.
+        if (baseChar >= 'A' && baseChar <= 'L') {
+            return 1;
+        }
+        return 2;
+    }
+
+    /**
+     * Lọc danh sách sự kiện từ AI sao cho tuyệt đối không được xếp cả 2 ca vào lịch học.
+     * 1. Kiểm tra nhãn rõ ràng: Ca 1 / Ca 2 (kíp 1 / kíp 2 / nhóm 1 / nhóm 2).
+     * 2. Gom nhóm theo ngày học: nếu cùng 1 ngày có 2 sự kiện học với giờ bắt đầu khác nhau,
+     *    sự kiện sớm hơn là Ca 1, sự kiện muộn hơn là Ca 2, chỉ giữ lại đúng ca của sinh viên.
+     */
+    public static List<AiDetectedEvent> filterEventsForSingleShift(List<AiDetectedEvent> events, String studentName) {
+        if (events == null || events.size() <= 1) {
+            return events != null ? events : Collections.emptyList();
+        }
+
+        int targetShift = determineStudentShift(studentName);
+
+        // 1. Kiểm tra nhãn rõ ràng: Ca 1 / Ca 2
+        boolean hasCa1 = false;
+        boolean hasCa2 = false;
+
+        for (AiDetectedEvent e : events) {
+            String combined = ((e.getTitle() != null ? e.getTitle() : "") + " "
+                    + (e.getNote() != null ? e.getNote() : "")).toLowerCase();
+            if (CA1_PATTERN.matcher(combined).find()) {
+                hasCa1 = true;
+            }
+            if (CA2_PATTERN.matcher(combined).find()) {
+                hasCa2 = true;
+            }
+        }
+
+        if (hasCa1 && hasCa2) {
+            log.info("Phát hiện 2 ca trong thông báo học vụ (theo nhãn). Sinh viên '{}' được xếp vào Ca {} (A-L: Ca 1, M-Z: Ca 2)",
+                    studentName, targetShift);
+
+            List<AiDetectedEvent> filtered = new ArrayList<>();
+            for (AiDetectedEvent e : events) {
+                String combined = ((e.getTitle() != null ? e.getTitle() : "") + " "
+                        + (e.getNote() != null ? e.getNote() : "")).toLowerCase();
+                boolean isOtherShift = (targetShift == 1)
+                        ? CA2_PATTERN.matcher(combined).find()
+                        : CA1_PATTERN.matcher(combined).find();
+
+                if (!isOtherShift) {
+                    filtered.add(e);
+                }
+            }
+            if (!filtered.isEmpty()) {
+                return filtered;
+            }
+        }
+
+        // 2. Gom nhóm theo ngày học (áp dụng cho ảnh TKB hoặc thông báo không ghi chữ 'Ca 1'/'Ca 2')
+        java.util.Map<LocalDate, List<AiDetectedEvent>> eventsByDate = new java.util.LinkedHashMap<>();
+        for (AiDetectedEvent e : events) {
+            if (e.getStartDatetime() != null) {
+                LocalDate date = e.getStartDatetime().atZone(ZoneId.of("Asia/Ho_Chi_Minh")).toLocalDate();
+                eventsByDate.computeIfAbsent(date, k -> new ArrayList<>()).add(e);
+            }
+        }
+
+        java.util.Set<AiDetectedEvent> eventsToDrop = new java.util.HashSet<>();
+        for (java.util.Map.Entry<LocalDate, List<AiDetectedEvent>> entry : eventsByDate.entrySet()) {
+            List<AiDetectedEvent> dayEvents = entry.getValue();
+            if (dayEvents.size() >= 2) {
+                dayEvents.sort(java.util.Comparator.comparing(AiDetectedEvent::getStartDatetime));
+                Instant firstStart = dayEvents.get(0).getStartDatetime();
+                boolean hasDifferentPeriods = dayEvents.stream()
+                        .anyMatch(ev -> !ev.getStartDatetime().equals(firstStart));
+
+                if (hasDifferentPeriods) {
+                    AiDetectedEvent earlyShift = dayEvents.get(0);
+                    AiDetectedEvent lateShift = dayEvents.get(1);
+
+                    log.info("Phát hiện 2 dòng lịch học chung 1 ngày {} (khác tiết): Sớm lúc {}, Muộn lúc {}. Xếp Ca {} cho '{}'",
+                            entry.getKey(), earlyShift.getStartDatetime(), lateShift.getStartDatetime(), targetShift, studentName);
+                    if (targetShift == 1) {
+                        // User tên A-L: giữ dòng có tiết sớm hơn (Ca 1), bỏ tất cả các dòng muộn hơn
+                        for (int i = 1; i < dayEvents.size(); i++) {
+                            eventsToDrop.add(dayEvents.get(i));
+                        }
+                    } else {
+                        // User tên M-Z: giữ dòng có tiết muộn hơn (Ca 2), bỏ dòng sớm hơn
+                        eventsToDrop.add(earlyShift);
+                        for (int i = 2; i < dayEvents.size(); i++) {
+                            eventsToDrop.add(dayEvents.get(i));
+                        }
+                    }
+                }
+            }
+        }
+
+        if (!eventsToDrop.isEmpty()) {
+            List<AiDetectedEvent> filtered = new ArrayList<>();
+            for (AiDetectedEvent e : events) {
+                if (!eventsToDrop.contains(e)) {
+                    filtered.add(e);
+                }
+            }
+            return filtered;
+        }
+
+        return events;
     }
 }

@@ -80,7 +80,60 @@ Nhiệm vụ của bạn là đọc các tin nhắn chat trong nhóm Zalo lớp 
 - `ROOM_CHANGE`: Buổi học đổi phòng (giữ nguyên ngày giờ, chỉ đổi phòng học sang phòng mới).
 - `EXAM`: Lịch kiểm tra hoặc thi cử.
 - `DEADLINE`: Hạn nộp bài tập lớn hoặc đồ án.
+
+### QUY TẮC XỬ LÝ HÌNH ẢNH (MULTIMODAL VISION & OCR):
+- Khi yêu cầu có đính kèm HÌNH ẢNH (ảnh chụp màn hình cổng đào tạo, bảng thời khóa biểu, công văn giấy, ảnh viết tay, ảnh chụp tin nhắn):
+  1. Đọc kỹ toàn bộ văn bản trong ảnh (OCR), nhận diện thứ, ngày/tháng, ca/tiết học, phòng học và môn học.
+  2. BÓC TÁCH CỘT "TIẾT BẮT ĐẦU" VÀ "SỐ TIẾT":
+     - Bảng thời khóa biểu thường có 2 cột riêng: `Tiết BĐ` (hoặc `Tiết bắt đầu`, `Tiết BD`, `Tiết đầu`) và `Số tiết` (hoặc `Số lượng tiết`, `SL tiết`).
+     - PHẢI áp dụng công thức: `Tiết kết thúc = Tiết BĐ + Số tiết - 1`.
+     - Sau đó tra bảng tiết để xác định chính xác `start_datetime` (giờ mở đầu của Tiết BĐ) và `end_datetime` (giờ kết thúc của Tiết kết thúc).
+     - Ví dụ: Thấy Tiết BĐ = 1, Số tiết = 3 -> Dải tiết là Tiết 1-3 (07:00 – 09:35).
+     - Ví dụ: Thấy Tiết BĐ = 4, Số tiết = 3 -> Dải tiết là Tiết 4-6 (09:40 – 12:15).
+     - Ví dụ: Thấy Tiết BĐ = 7, Số tiết = 3 -> Dải tiết là Tiết 7-9 (12:30 – 15:05).
+     - Ví dụ: Thấy Tiết BĐ = 10, Số tiết = 3 -> Dải tiết là Tiết 10-12 (15:10 – 17:45).
+     - Ví dụ: Thấy Tiết BĐ = 1, Số tiết = 2 -> Dải tiết là Tiết 1-2 (07:00 – 08:40).
+  3. Kết hợp thông tin môn học (`subject_name`) để bóc tách đúng dòng của môn học đó.
+  4. Nếu hình ảnh KHÔNG chứa thông tin học vụ (ảnh meme, đồ ăn, phong cảnh...), hãy đặt `is_academic_announcement = false` và `detected_events = []`.
+
+### QUY TẮC PHÂN CHIA CA HỌC (2 CA / NHÓM HỌC) - BẮT BUỘC TUÂN THỦ:
+- CÁCH NHẬN BIẾT 2 CA HỌC: Nếu trong hình ảnh hoặc tin nhắn xuất hiện 2 DÒNG LỊCH HỌC CHUNG 1 NGÀY (KHÁC TIẾT) (ví dụ: dòng 1 Tiết 1-3, dòng 2 Tiết 4-6; hoặc dòng 1 Tiết BĐ 1, dòng 2 Tiết BĐ 4; hoặc ca sáng và ca chiều) -> ĐÓ LÀ 2 CA HỌC!
+  + Dòng có tiết bắt đầu sớm hơn (tiết nhỏ hơn) = Ca 1 (Ca sớm).
+  + Dòng có tiết bắt đầu muộn hơn (tiết lớn hơn) = Ca 2 (Ca muộn).
+- CHỈ LẤY 1 CA THEO TÊN CỦA USER:
+  1. Bạn sẽ nhận được `student_name` (Tên Zalo / Họ tên của sinh viên).
+  2. Xác định chữ cái đầu trong Tên của sinh viên (ưu tiên từ cuối cùng là Tên trong họ tên tiếng Việt sau khi bỏ dấu, ví dụ: "Nguyễn Việt Doanh" -> Tên "Doanh" -> chữ cái 'D'; "Trần Văn Nam" -> Tên "Nam" -> chữ cái 'N'; "Lê Văn Đạt" -> 'D'; "Ánh" -> 'A'; "Linh" -> 'L'; "Minh Tuấn" -> 'T').
+  3. Quy tắc xếp ca:
+     - Nếu chữ cái đầu của Tên thuộc khoảng từ `A` đến `L` (A, Ă, Â, B, C, D, Đ, E, Ê, F, G, H, I, J, K, L): Xếp sinh viên vào **Ca 1** (Dòng có tiết bắt đầu sớm hơn trong ngày).
+     - Nếu chữ cái đầu của Tên thuộc khoảng từ `M` đến `Z` (M, N, O, Ô, Ơ, P, Q, R, S, T, U, Ư, V, X, Y): Xếp sinh viên vào **Ca 2** (Dòng có tiết bắt đầu muộn hơn trong ngày).
+- TUYỆT ĐỐI KHÔNG ĐƯỢC XẾP CẢ 2 CA VÀO LỊCH HỌC:
+  + Danh sách `detected_events` PHẢI CHỈ CHỨA DUY NHẤT 1 SỰ KIỆN tương ứng với ca học của sinh viên.
+  + KHÔNG ĐƯỢC trả về cả Ca 1 và Ca 2 trong `detected_events`. Phải loại bỏ hoàn toàn ca còn lại!
+- Tiêu đề `title` ghi rõ ca và tiết, ví dụ: "Lịch học: [Tên môn] - Ca 1 (Tiết 1-3)".
+- Ghi chú vào trường `note`: `"Xếp Ca 1 (A-L) theo tên sinh viên"` hoặc `"Xếp Ca 2 (M-Z) theo tên sinh viên"`.
 """
+
+
+import unicodedata
+
+def extract_given_name_and_shift(student_name: str | None) -> tuple[str, str, int]:
+    """Tách tên gọi trong tiếng Việt (từ cuối cùng) và xác định Ca 1 (A-L) hoặc Ca 2 (M-Z)."""
+    if not student_name:
+        return "Sinh viên", "A", 1
+    words = student_name.strip().split()
+    given_name = words[-1] if words else student_name.strip()
+    if not given_name:
+        return "Sinh viên", "A", 1
+    c = given_name[0]
+    if c in ('Đ', 'đ'):
+        base_letter = 'D'
+    else:
+        decomposed = unicodedata.normalize('NFD', c.upper())
+        stripped = ''.join(ch for ch in decomposed if unicodedata.category(ch) != 'Mn')
+        base_letter = stripped[0].upper() if stripped else c.upper()
+
+    shift = 1 if 'A' <= base_letter <= 'L' else 2
+    return given_name, base_letter, shift
 
 
 def build_user_prompt(
@@ -88,7 +141,9 @@ def build_user_prompt(
     subject_name: str,
     default_room: str | None,
     sender_name: str | None,
-    message_text: str,
+    message_text: str | None,
+    has_image: bool = False,
+    student_name: str | None = None,
 ) -> str:
     try:
         base_dt = datetime.fromisoformat(current_datetime)
@@ -99,15 +154,44 @@ def build_user_prompt(
     calendar_ref = _build_calendar_reference(base_dt)
     room_info = default_room if default_room else "Chưa có phòng cố định"
     sender_info = sender_name if sender_name else "Thành viên nhóm"
+    student_info = student_name if student_name else "Sinh viên"
+    clean_text = (message_text or "").strip()
+
+    given_name, base_letter, target_shift = extract_given_name_and_shift(student_name)
+    shift_label = f"Ca {target_shift} ({'Ca 1 - Ca sớm / Tiết sớm hơn' if target_shift == 1 else 'Ca 2 - Ca muộn / Tiết muộn hơn'})"
+    group_label = "Nhóm A-L" if target_shift == 1 else "Nhóm M-Z"
+
+    image_notice = ""
+    if has_image:
+        image_notice = "\n* Lưu ý: Có HÌNH ẢNH đính kèm. Hãy đọc kỹ toàn bộ văn bản/bảng biểu/lịch học trong hình ảnh để bóc tách sự kiện học vụ."
+
+    period_notice = (
+        "\n* QUY TẮC TIẾT BẮT ĐẦU & SỐ TIẾT: Nếu bảng có 'Tiết BĐ' và 'Số tiết', áp dụng: Tiết kết thúc = Tiết BĐ + Số tiết - 1 "
+        "(Ví dụ: Tiết BĐ=1, Số tiết=3 -> Tiết 1-3: 07:00-09:35; Tiết BĐ=4, Số tiết=3 -> Tiết 4-6: 09:40-12:15; "
+        "Tiết BĐ=7, Số tiết=3 -> Tiết 7-9: 12:30-15:05; Tiết BĐ=10, Số tiết=3 -> Tiết 10-12: 15:10-17:45)."
+    )
+
+    shift_notice = (
+        f"\n* CHỈ THỊ PHÂN CA BẮT BUỘC (QUAN TRỌNG NHẤT): "
+        f"Theo quy tắc: nếu thấy 2 dòng lịch học chung 1 ngày (khác tiết) thì đó là 2 ca học! "
+        f"Dòng có tiết bắt đầu sớm hơn là Ca 1, dòng có tiết bắt đầu muộn hơn là Ca 2. "
+        f"Sinh viên nhận lịch là '{student_info}' (Tên gọi: '{given_name}', chữ cái đầu '{base_letter}' thuộc {group_label}). "
+        f"Do đó, sinh viên này ĐƯỢC CHỈ ĐỊNH HỌC {shift_label}. "
+        f"Nếu trong ảnh hoặc tin nhắn xuất hiện 2 dòng lịch học chung 1 ngày (khác tiết): "
+        f"BẠN BẮT BUỘC CHỈ ĐƯỢC TRÍCH XUẤT DUY NHẤT 1 SỰ KIỆN CỦA {shift_label}. "
+        f"TUYỆT ĐỐI KHÔNG ĐƯỢC XẾP CẢ 2 CA / 2 DÒNG VÀO LỊCH HỌC!"
+    )
+
+    text_section = f'Nội dung tin nhắn văn bản / caption đi kèm:\n"""{clean_text}"""' if clean_text else "Tin nhắn không có văn bản đi kèm (chỉ gửi hình ảnh)."
 
     return f"""Thông tin ngữ cảnh:
 - Môn học của nhóm: {subject_name}
 - Phòng học mặc định: {room_info}
 - Người gửi tin: {sender_info}
+- Sinh viên nhận lịch: {student_info} (Tên: {given_name}, Chữ cái: {base_letter} -> Xếp {shift_label}){image_notice}{period_notice}{shift_notice}
 
 {calendar_ref}
 
-Nội dung tin nhắn cần phân tích:
-\"\"\"{message_text}\"\"\"
+{text_section}
 
-Hãy phân tích tin nhắn trên và trích xuất dữ liệu học vụ theo đúng cấu trúc JSON yêu cầu."""
+Hãy phân tích thông tin trên (kèm hình ảnh đính kèm nếu có) và trích xuất dữ liệu học vụ theo đúng cấu trúc JSON yêu cầu."""

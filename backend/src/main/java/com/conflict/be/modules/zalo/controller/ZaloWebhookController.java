@@ -72,6 +72,9 @@ public class ZaloWebhookController {
                 messageId,
                 request.getSenderName() != null ? request.getSenderName() : "Lớp trưởng",
                 request.getMessageText(),
+                request.getImageUrl(),
+                request.getImageBase64(),
+                request.getImageMimeType(),
                 request.getCurrentDatetime()
         );
 
@@ -111,6 +114,9 @@ public class ZaloWebhookController {
                 messageDTO.getMessageId(),
                 messageDTO.getSenderName() != null ? messageDTO.getSenderName() : "Thành viên Zalo",
                 messageDTO.getMessageText(),
+                messageDTO.getImageUrl(),
+                messageDTO.getImageBase64(),
+                messageDTO.getImageMimeType(),
                 messageDTO.getTimestamp()
         );
 

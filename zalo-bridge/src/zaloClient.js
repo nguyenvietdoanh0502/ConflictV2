@@ -311,30 +311,82 @@ class ZaloClient {
       (msg.isSelf ? this.user?.displayName : null) ||
       "Thành viên nhóm";
 
-    // Extract Message Text
+    // Extract Image and Caption/Text
     let messageText = "";
+    let imageUrl = "";
+
     if (typeof msg.data?.content === "string") {
-      messageText = msg.data.content;
+      try {
+        const parsed = JSON.parse(msg.data.content);
+        if (parsed && typeof parsed === "object") {
+          imageUrl = parsed.rawUrl || parsed.hdUrl || parsed.normalUrl || parsed.href || parsed.url || parsed.thumb || "";
+          messageText = parsed.desc || parsed.description || parsed.title || parsed.msg || "";
+        } else {
+          messageText = msg.data.content;
+        }
+      } catch {
+        messageText = msg.data.content;
+      }
     } else if (msg.data?.content && typeof msg.data.content === "object") {
-      messageText =
-        msg.data.content.title ||
-        msg.data.content.description ||
-        msg.data.content.msg ||
-        "";
+      const c = msg.data.content;
+      imageUrl = c.rawUrl || c.hdUrl || c.normalUrl || c.href || c.url || c.thumb || "";
+      messageText = c.desc || c.description || c.title || c.msg || "";
+
+      // Also check c.params (often JSON string containing media URLs)
+      if (typeof c.params === "string") {
+        try {
+          const p = JSON.parse(c.params);
+          if (p && typeof p === "object") {
+            imageUrl = imageUrl || p.rawUrl || p.hdUrl || p.normalUrl || p.thumbUrl || p.url || "";
+            messageText = messageText || p.desc || p.description || p.title || "";
+          }
+        } catch {}
+      }
     } else if (typeof msg.content === "string") {
       messageText = msg.content;
     } else if (typeof msg.text === "string") {
       messageText = msg.text;
     }
 
-    messageText = (messageText || "").trim();
+    // Top-level fallback for photo URLs
+    if (!imageUrl) {
+      imageUrl = msg.data?.rawUrl || msg.data?.hdUrl || msg.data?.normalUrl || msg.data?.thumbUrl || msg.data?.url || msg.url || "";
+    }
 
-    if (!messageText) {
-      console.log(`[ZaloBridge Listener] Ignored non-text message in group [${zaloGroupId}] (sender: ${senderName})`);
+    messageText = (messageText || "").trim();
+    imageUrl = (imageUrl || "").trim();
+
+    // Check if there is an image to download
+    let imageBase64 = null;
+    let imageMimeType = "image/jpeg";
+
+    if (imageUrl) {
+      try {
+        console.log(`[ZaloBridge Listener] Image detected in group [${zaloGroupId}], downloading from: ${imageUrl.substring(0, 80)}...`);
+        const imgRes = await axios.get(imageUrl, {
+          responseType: "arraybuffer",
+          timeout: 15000,
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+          }
+        });
+        imageBase64 = Buffer.from(imgRes.data).toString("base64");
+        const ct = imgRes.headers["content-type"];
+        if (ct && ct.startsWith("image/")) {
+          imageMimeType = ct;
+        }
+        console.log(`[ZaloBridge Listener] Downloaded image (${(imageBase64.length * 0.75 / 1024).toFixed(1)} KB, type: ${imageMimeType})`);
+      } catch (err) {
+        console.warn(`[ZaloBridge Listener] Could not download image directly: ${err.message}. Forwarding imageUrl only.`);
+      }
+    }
+
+    if (!messageText && !imageBase64 && !imageUrl) {
+      console.log(`[ZaloBridge Listener] Ignored non-text, non-image message in group [${zaloGroupId}] (sender: ${senderName})`);
       return;
     }
 
-    console.log(`[ZaloBridge Real Listener] Group: [${zaloGroupId}], Sender: [${senderName}], Text: "${messageText}"`);
+    console.log(`[ZaloBridge Real Listener] Group: [${zaloGroupId}], Sender: [${senderName}], Text: "${messageText}", HasImage: ${Boolean(imageBase64 || imageUrl)}`);
 
     try {
       const response = await this.forwardMessageToBackend({
@@ -342,6 +394,9 @@ class ZaloClient {
         messageId,
         senderName,
         messageText,
+        imageUrl: imageUrl || null,
+        imageBase64: imageBase64 || null,
+        imageMimeType,
         timestamp: new Date().toISOString(),
       });
       console.log(`[ZaloBridge Real Listener] Forwarded to backend successfully:`, response?.data?.statusMessage || response?.status || "OK");
@@ -353,12 +408,15 @@ class ZaloClient {
   /**
    * Forwards a message payload to Spring Boot Backend
    */
-  async forwardMessageToBackend({ zaloGroupId, messageId, senderName, messageText, timestamp }) {
+  async forwardMessageToBackend({ zaloGroupId, messageId, senderName, messageText, imageUrl, imageBase64, imageMimeType, timestamp }) {
     const payload = {
       zalo_group_id: zaloGroupId,
       message_id: messageId || `bridge-${Date.now()}`,
       sender_name: senderName || "Thành viên nhóm",
-      message_text: messageText,
+      message_text: messageText || "",
+      image_url: imageUrl || null,
+      image_base64: imageBase64 || null,
+      image_mime_type: imageMimeType || "image/jpeg",
       timestamp: timestamp || new Date().toISOString(),
     };
 
@@ -367,7 +425,7 @@ class ZaloClient {
       "X-Internal-Api-Key": config.internalApiKey,
     };
 
-    console.log(`[ZaloBridge] Forwarding to Backend: ${config.backendUrl}`);
+    console.log(`[ZaloBridge] Forwarding to Backend: ${config.backendUrl} (hasImage: ${Boolean(imageBase64 || imageUrl)})`);
     const response = await axios.post(config.backendUrl, payload, { headers, timeout: 30000 });
     console.log(`[ZaloBridge] Backend responded with status: ${response.status}`);
     return response.data;

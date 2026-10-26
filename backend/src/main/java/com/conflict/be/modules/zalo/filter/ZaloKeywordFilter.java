@@ -23,8 +23,8 @@ public class ZaloKeywordFilter {
             "(?iu)(?:^|[\\s,.;:!?()\\[\\]\"'-])(" +
                     "thứ\\s*[2-7]|t[2-7]|cn|chủ\\s*nhật|" +
                     "mai|mốt|hôm\\s*nay|tuần\\s*(?:này|sau|tới)|" +
-                    "tiết\\s*\\d+|tiết|ca\\s*(?:sáng|chiều|tối)|" +
-                    "nghỉ|học\\s*bù|bù|off|báo\\s*nghỉ|đổi\\s*lịch|dời\\s*lịch|lịch\\s*học|" +
+                    "tiết\\s*\\d+|tiết|ca\\s*(?:sáng|chiều|tối|[0-9]+)|2\\s*ca|hai\\s*ca|chia\\s*ca|" +
+                    "nghỉ|học\\s*bù|bù|off|báo\\s*nghỉ|đổi\\s*lịch|dời\\s*lịch|lịch\\s*học|thực\\s*hành|" +
                     "phòng\\s*[a-zA-Z0-9_-]+|" +
                     "thi|kiểm\\s*tra|ktra|test|giữa\\s*kỳ|cuối\\s*kỳ|" +
                     "deadline|hạn\\s*nộp|hạn\\s*chót|btl|bài\\s*tập\\s*lớn|báo\\s*cáo|thuyết\\s*trình" +

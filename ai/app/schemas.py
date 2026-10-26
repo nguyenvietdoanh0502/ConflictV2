@@ -69,9 +69,25 @@ class AnalyzeMessageRequest(BaseModel):
         None,
         description="Tên người gửi tin nhắn trong nhóm Zalo, ví dụ: 'Lớp trưởng Nam'"
     )
-    message_text: str = Field(
-        ...,
-        description="Nội dung tin nhắn gốc từ nhóm Zalo"
+    message_text: Optional[str] = Field(
+        "",
+        description="Nội dung tin nhắn văn bản hoặc caption đính kèm ảnh từ nhóm Zalo"
+    )
+    image_base64: Optional[str] = Field(
+        None,
+        description="Dữ liệu hình ảnh được mã hóa Base64 (nếu tin nhắn là hình ảnh hoặc kèm ảnh)"
+    )
+    image_mime_type: Optional[str] = Field(
+        "image/jpeg",
+        description="Định dạng MIME của hình ảnh, ví dụ: 'image/jpeg', 'image/png', 'image/webp'"
+    )
+    image_url: Optional[str] = Field(
+        None,
+        description="Đường dẫn URL của hình ảnh trên Zalo CDN nếu có"
+    )
+    student_name: Optional[str] = Field(
+        None,
+        description="Tên Zalo hoặc họ và tên của sinh viên để AI xếp ca học chính xác (A-L: Ca 1, M-Z: Ca 2) khi lớp chia 2 ca"
     )
 
 

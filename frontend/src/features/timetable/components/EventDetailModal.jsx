@@ -250,6 +250,29 @@ export default function EventDetailModal({ event, onClose }) {
               <div className="p-3 rounded-xl bg-white border border-slate-200/80 text-xs text-slate-700 leading-relaxed font-mono">
                 "{event.rawZaloMessage}"
               </div>
+
+              {event.rawZaloImageUrl && (
+                <div className="mt-3 pt-3 border-t border-indigo-100/60">
+                  <p className="text-[11px] font-bold text-indigo-900 mb-1.5 flex items-center gap-1">
+                    <span>🖼️</span> Ảnh thông báo gốc đính kèm:
+                  </p>
+                  <a
+                    href={event.rawZaloImageUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-block group relative rounded-xl overflow-hidden border border-slate-200 max-w-xs"
+                  >
+                    <img
+                      src={event.rawZaloImageUrl}
+                      alt="Ảnh thông báo Zalo"
+                      className="max-h-48 w-auto object-cover group-hover:scale-105 transition-transform"
+                    />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold">
+                      🔍 Mở ảnh gốc
+                    </div>
+                  </a>
+                </div>
+              )}
             </div>
           )}
         </div>

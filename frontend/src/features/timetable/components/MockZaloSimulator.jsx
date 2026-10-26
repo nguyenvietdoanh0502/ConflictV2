@@ -45,6 +45,24 @@ const PRESET_MESSAGES = [
     text: "Thiết kế slide đẹp thế, trưa nay tan học có ai đi ăn cơm tấm ở cổng phụ với tui không ae ơi?",
     color: "slate",
   },
+  {
+    id: 5,
+    title: "Mẫu 5: Ảnh thời khóa biểu Zalo (Vision AI OCR)",
+    tag: "Ảnh TKB",
+    sender: "Ban cán sự",
+    text: "Gửi mn ảnh lịch học bù tuần này",
+    imageBase64: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+    imageUrl: "https://res-zalo.zadn.vn/mock-schedule.png",
+    color: "purple",
+  },
+  {
+    id: 6,
+    title: "Mẫu 6: Thông báo chia 2 ca (Ca 1: A-L, Ca 2: M-Z)",
+    tag: "Chia 2 ca",
+    sender: "Lớp trưởng",
+    text: "Thông báo lớp mình chia làm 2 ca thực hành: Ca 1 từ A-L học tiết 1-3 sáng thứ 4, Ca 2 từ M-Z học tiết 4-6 chiều thứ 4 tại phòng 401-A1.",
+    color: "emerald",
+  },
 ];
 
 export default function MockZaloSimulator({ selectedGroupId, selectedGroupName }) {
@@ -54,6 +72,8 @@ export default function MockZaloSimulator({ selectedGroupId, selectedGroupName }
   const [activeGroupId, setActiveGroupId] = useState("");
   const [senderName, setSenderName] = useState("Lớp trưởng");
   const [messageText, setMessageText] = useState(PRESET_MESSAGES[0].text);
+  const [simulatedImageBase64, setSimulatedImageBase64] = useState(null);
+  const [simulatedImageUrl, setSimulatedImageUrl] = useState(null);
 
   const [simulationLog, setSimulationLog] = useState(null);
 
@@ -66,22 +86,31 @@ export default function MockZaloSimulator({ selectedGroupId, selectedGroupName }
   const handleSelectPreset = (preset) => {
     setMessageText(preset.text);
     setSenderName(preset.sender);
+    setSimulatedImageBase64(preset.imageBase64 || null);
+    setSimulatedImageUrl(preset.imageUrl || null);
   };
 
   const handleSendSimulation = async () => {
-    if (!messageText.trim()) {
-      alert("Vui lòng nhập nội dung tin nhắn!");
+    if (!messageText.trim() && !simulatedImageBase64) {
+      alert("Vui lòng nhập nội dung tin nhắn hoặc chọn mẫu có hình ảnh!");
       return;
     }
 
     const t0 = performance.now();
     try {
-      const response = await simulateMessage({
+      const payload = {
         zalo_group_id: effectiveGroupId || undefined,
         sender_name: senderName.trim() || "Lớp trưởng",
         message_text: messageText.trim(),
         current_datetime: new Date().toISOString(),
-      }).unwrap();
+      };
+      if (simulatedImageBase64) {
+        payload.image_base64 = simulatedImageBase64;
+        payload.image_url = simulatedImageUrl;
+        payload.image_mime_type = "image/png";
+      }
+
+      const response = await simulateMessage(payload).unwrap();
 
       const elapsed = ((performance.now() - t0) / 1000).toFixed(2);
       setSimulationLog({

@@ -37,6 +37,7 @@ public class ScheduleEventResponse {
     private Double aiConfidence;
     private String note;
     private String rawZaloMessage;
+    private String rawZaloImageUrl;
     private String senderName;
     private String sourceMessageId;
     private Instant createdAt;
@@ -66,6 +67,7 @@ public class ScheduleEventResponse {
                 .aiConfidence(event.getAiConfidence())
                 .note(event.getNote())
                 .rawZaloMessage(event.getRawZaloMessage())
+                .rawZaloImageUrl(event.getRawZaloImageUrl())
                 .senderName(event.getSenderName())
                 .sourceMessageId(event.getSourceMessageId())
                 .createdAt(event.getCreatedAt())

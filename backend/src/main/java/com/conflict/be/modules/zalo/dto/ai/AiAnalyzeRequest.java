@@ -26,4 +26,16 @@ public class AiAnalyzeRequest {
 
     @JsonProperty("message_text")
     private String messageText;
+
+    @JsonProperty("image_url")
+    private String imageUrl;
+
+    @JsonProperty("image_base64")
+    private String imageBase64;
+
+    @JsonProperty("image_mime_type")
+    private String imageMimeType;
+
+    @JsonProperty("student_name")
+    private String studentName;
 }

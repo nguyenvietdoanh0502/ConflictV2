@@ -90,8 +90,21 @@ def get_playground_html(model_name: str, mode: str, internal_api_key: str = "") 
         </div>
 
         <div>
-          <label class="block text-xs font-bold text-slate-600 mb-1">Nội dung tin nhắn Zalo</label>
-          <textarea id="messageInput" rows="5" class="w-full text-sm p-3.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium placeholder-slate-400" placeholder="Gõ thử tiếng lóng: 'thứ 3 tuần sau nghỉ học bù sang sáng thứ 5 tiết 1-3 phòng 302...'"></textarea>
+          <label class="block text-xs font-bold text-slate-600 mb-1">Nội dung tin nhắn Zalo (hoặc caption ảnh)</label>
+          <textarea id="messageInput" rows="4" class="w-full text-sm p-3.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium placeholder-slate-400" placeholder="Gõ thử tiếng lóng: 'thứ 3 tuần sau nghỉ học bù sang sáng thứ 5 tiết 1-3 phòng 302...'"></textarea>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">🖼️ Đính kèm ảnh thời khóa biểu / thông báo (Tùy chọn)</label>
+          <input id="imageFileInput" type="file" accept="image/*" onchange="handleImageSelected(event)" class="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-3.5 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer">
+          <div id="imagePreviewContainer" class="hidden mt-2 flex items-center gap-3 p-2 rounded-xl bg-slate-50 border border-slate-200">
+            <img id="imagePreview" class="h-16 w-16 rounded-lg object-cover border border-slate-200" />
+            <div class="flex-1 min-w-0">
+              <p id="imageFileName" class="text-xs font-bold text-slate-700 truncate"></p>
+              <p id="imageFileSize" class="text-[11px] text-slate-400"></p>
+            </div>
+            <button type="button" onclick="clearImage()" class="px-2.5 py-1 text-xs font-bold text-rose-600 hover:bg-rose-50 rounded-lg">Xóa ảnh</button>
+          </div>
         </div>
 
         <button id="submitBtn" onclick="runAnalyze()" class="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-extrabold text-sm shadow-md transition flex items-center justify-center gap-2">
@@ -185,14 +198,41 @@ def get_playground_html(model_name: str, mode: str, internal_api_key: str = "") 
       runAnalyze();
     }}
 
+    let selectedImageBase64 = null;
+    let selectedImageMimeType = "image/jpeg";
+
+    function handleImageSelected(event) {{
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+
+      selectedImageMimeType = file.type || "image/jpeg";
+      document.getElementById('imageFileName').innerText = file.name;
+      document.getElementById('imageFileSize').innerText = `${{(file.size / 1024).toFixed(1)}} KB`;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {{
+        selectedImageBase64 = e.target.result;
+        document.getElementById('imagePreview').src = selectedImageBase64;
+        document.getElementById('imagePreviewContainer').classList.remove('hidden');
+      }};
+      reader.readAsDataURL(file);
+    }}
+
+    function clearImage() {{
+      selectedImageBase64 = null;
+      document.getElementById('imageFileInput').value = "";
+      document.getElementById('imagePreview').src = "";
+      document.getElementById('imagePreviewContainer').classList.add('hidden');
+    }}
+
     async function runAnalyze() {{
       const subject = document.getElementById('subjectInput').value.trim();
       const room = document.getElementById('roomInput').value.trim();
       const sender = document.getElementById('senderInput').value.trim();
       const text = document.getElementById('messageInput').value.trim();
 
-      if (!text) {{
-        alert("Vui lòng nhập nội dung tin nhắn!");
+      if (!text && !selectedImageBase64) {{
+        alert("Vui lòng nhập nội dung tin nhắn hoặc tải lên một hình ảnh!");
         return;
       }}
 
@@ -212,16 +252,23 @@ def get_playground_html(model_name: str, mode: str, internal_api_key: str = "") 
           headers['X-Internal-Api-Key'] = internalKey;
         }}
 
+        const payload = {{
+          current_datetime: new Date().toISOString(),
+          subject_name: subject,
+          default_room: room,
+          sender_name: sender,
+          message_text: text || "",
+        }};
+
+        if (selectedImageBase64) {{
+          payload.image_base64 = selectedImageBase64;
+          payload.image_mime_type = selectedImageMimeType;
+        }}
+
         const response = await fetch('/ai/analyze-message', {{
           method: 'POST',
           headers: headers,
-          body: JSON.stringify({{
-            current_datetime: new Date().toISOString(),
-            subject_name: subject,
-            default_room: room,
-            sender_name: sender,
-            message_text: text
-          }})
+          body: JSON.stringify(payload)
         }});
 
         const elapsed = ((performance.now() - t0) / 1000).toFixed(2);

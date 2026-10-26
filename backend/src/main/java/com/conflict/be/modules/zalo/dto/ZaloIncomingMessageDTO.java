@@ -1,6 +1,7 @@
 package com.conflict.be.modules.zalo.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -25,10 +26,25 @@ public class ZaloIncomingMessageDTO {
     @JsonProperty("sender_name")
     private String senderName;
 
-    @NotBlank(message = "messageText không được để trống")
     @JsonProperty("message_text")
     private String messageText;
 
+    @JsonProperty("image_url")
+    private String imageUrl;
+
+    @JsonProperty("image_base64")
+    private String imageBase64;
+
+    @JsonProperty("image_mime_type")
+    private String imageMimeType;
+
     @JsonProperty("timestamp")
     private Instant timestamp;
+
+    @AssertTrue(message = "Phải cung cấp message_text hoặc hình ảnh (image_base64/image_url)")
+    public boolean hasContent() {
+        return (messageText != null && !messageText.isBlank())
+                || (imageBase64 != null && !imageBase64.isBlank())
+                || (imageUrl != null && !imageUrl.isBlank());
+    }
 }
