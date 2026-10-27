@@ -8,7 +8,7 @@ export default function FriendAvatar({
   avatarUrl,
   size = "md",
 }) {
-  const displayName = fullName?.trim() || "Người dùng Conflict";
+  const displayName = fullName?.trim() || "Người dùng UniSync";
   const firstLetter = Array.from(displayName)[0]?.toUpperCase() || "?";
   const sizeClass = avatarSizes[size] ?? avatarSizes.md;
 
@@ -27,7 +27,7 @@ export default function FriendAvatar({
   return (
     <span
       aria-hidden="true"
-      className={`${sizeClass} grid shrink-0 place-items-center border-2 border-white bg-gradient-to-br from-[#9B8FF0] via-[#7C6EE6] to-[#FF8FB3] font-bold text-white shadow-[0_8px_22px_rgba(124,110,230,0.22)] ring-1 ring-[#E8E2FF]`}
+      className={`${sizeClass} grid shrink-0 place-items-center border-2 border-white bg-social-violet font-bold text-white shadow-[0_8px_22px_rgba(124,110,230,0.22)] ring-1 ring-[#E8E2FF]`}
     >
       {firstLetter}
     </span>

@@ -96,13 +96,13 @@ export default function RemoveFriendModal({
         className="relative w-full max-w-md overflow-hidden rounded-[28px] border border-white/90 bg-[#FFF9FC] text-[#2F2A45] shadow-[0_30px_100px_rgba(47,42,69,0.30)]"
       >
         <div
-          className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-[#FFE2EC] via-[#F3EEFF]/70 to-transparent"
+          className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-[#FFE2EC]/40"
           aria-hidden="true"
         />
 
         <div className="relative px-6 pb-6 pt-7 sm:px-7 sm:pb-7">
           <span
-            className="grid h-14 w-14 place-items-center rounded-[20px] border border-white bg-gradient-to-br from-[#FFD8BE] to-[#FFBBD0] text-[#A94064] shadow-[0_10px_24px_rgba(255,143,179,0.20)]"
+            className="grid h-14 w-14 place-items-center rounded-[20px] border border-white bg-[#FFE2EC] text-[#A94064] shadow-[0_10px_24px_rgba(255,143,179,0.20)]"
             aria-hidden="true"
           >
             <svg viewBox="0 0 24 24" className="h-7 w-7" fill="none" stroke="currentColor" strokeWidth="1.8">

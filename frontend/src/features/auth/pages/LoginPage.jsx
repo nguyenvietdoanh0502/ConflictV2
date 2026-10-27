@@ -3,6 +3,7 @@ import { useDispatch } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
 import { useLoginMutation } from "../authApi";
 import { setCredentials } from "../authSlice";
+import { getLocalizedErrorMessage } from "../../../utils/errorMessages";
 
 const initialForm = {
   email: "",
@@ -10,20 +11,10 @@ const initialForm = {
 };
 
 function getLoginErrorMessage(error) {
-  if (error?.status === "FETCH_ERROR") {
-    return "Không kết nối được tới backend. Hãy kiểm tra server đang chạy ở cổng 8080.";
-  }
-
-  if (typeof error?.data?.message === "string") {
-    return error.data.message;
-  }
-
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return "Đăng nhập thất bại. Vui lòng kiểm tra lại email và mật khẩu.";
+  return getLocalizedErrorMessage(error, "Đăng nhập thất bại. Vui lòng kiểm tra lại email và mật khẩu.");
 }
+
+
 
 export default function LoginPage() {
   const [form, setForm] = useState(initialForm);
@@ -90,7 +81,7 @@ export default function LoginPage() {
           </svg>
         </span>
         <h2 className="mt-5 text-3xl font-extrabold tracking-[-0.035em] text-[#2F2A45] sm:text-[34px]">
-          Chào bạn trở lại! 👋
+          Chào bạn trở lại!
         </h2>
         <p className="mt-2.5 text-sm leading-6 text-[#777087]">
           Đăng nhập để tiếp tục kết nối với hội bạn của mình.
@@ -246,7 +237,7 @@ export default function LoginPage() {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="group flex h-14 w-full items-center justify-center gap-2 rounded-[18px] bg-gradient-to-r from-[#7C6EE6] to-[#9385EC] px-5 text-sm font-bold text-white shadow-[0_14px_30px_rgba(124,110,230,0.28)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_36px_rgba(124,110,230,0.34)] focus:outline-none focus:ring-4 focus:ring-[#7C6EE6]/25 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
+                  className="group flex h-14 w-full items-center justify-center gap-2 rounded-[18px] bg-social-violet hover:bg-[#6E60DC] px-5 text-sm font-bold text-white shadow-[0_14px_30px_rgba(124,110,230,0.28)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_36px_rgba(124,110,230,0.34)] focus:outline-none focus:ring-4 focus:ring-[#7C6EE6]/25 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
                 >
                   {isLoading ? (
                     <>

@@ -1,3 +1,4 @@
+import { getLocalizedErrorMessage } from "../../../utils/errorMessages";
 import { useState, useEffect, useMemo } from "react";
 import {
   CalendarPlus,
@@ -172,7 +173,7 @@ export default function CreateFreeEventModal({
       if (onSuccess) onSuccess();
       onClose();
     } catch (err) {
-      setErrorMsg(err.data?.message || err.message || "Không thể tạo lịch. Vui lòng thử lại!");
+      setErrorMsg(getLocalizedErrorMessage(err, "Không thể tạo lịch. Vui lòng thử lại!"));
     }
   };
 
@@ -182,7 +183,7 @@ export default function CreateFreeEventModal({
       <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 w-full max-w-4xl lg:max-w-5xl overflow-hidden flex flex-col max-h-[92vh] animate-in zoom-in-95 duration-200 my-auto">
         
         {/* Header Bar */}
-        <div className="px-6 py-4 sm:px-8 sm:py-5 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-indigo-50/80 via-purple-50/50 to-white">
+        <div className="px-6 py-4 sm:px-8 sm:py-5 border-b border-slate-100 flex items-center justify-between bg-[#F8F7FC]">
           <div className="flex items-center gap-3.5">
             <div className="p-3 rounded-2xl bg-indigo-600 text-white shadow-lg shadow-indigo-500/25">
               <CalendarPlus className="w-6 h-6" />
@@ -352,7 +353,7 @@ export default function CreateFreeEventModal({
             <div className="lg:col-span-5 space-y-5">
               
               {/* Card Thời gian & Tiết học */}
-              <div className="p-5 rounded-3xl bg-gradient-to-br from-indigo-50/80 via-slate-50/90 to-purple-50/50 border border-indigo-100/90 shadow-sm space-y-4">
+              <div className="p-5 rounded-3xl bg-[#F8F7FC] border border-indigo-100/90 shadow-sm space-y-4">
                 
                 <div className="flex items-center justify-between pb-3 border-b border-indigo-100">
                   <span className="text-xs sm:text-sm font-extrabold text-indigo-950 flex items-center gap-2">
@@ -456,7 +457,7 @@ export default function CreateFreeEventModal({
                   </span>
                 </div>
 
-                <div className="p-3.5 rounded-2xl bg-gradient-to-r from-purple-500/10 via-indigo-500/10 to-blue-500/10 border-2 border-indigo-300/80 space-y-1.5">
+                <div className="p-3.5 rounded-2xl bg-social-violet/10 border-2 border-indigo-300/80 space-y-1.5">
                   <div className="flex items-center justify-between">
                     <span className="text-xs sm:text-sm font-black text-slate-900 truncate">
                       {title.trim() || "Chưa đặt tên lịch"}

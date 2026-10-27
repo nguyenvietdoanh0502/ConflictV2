@@ -62,7 +62,7 @@ export default function ConfirmDeleteModal({
       >
         {/* Soft top gradient accent */}
         <div
-          className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-rose-100/70 via-rose-50/40 to-transparent"
+          className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-rose-50/40"
           aria-hidden="true"
         />
 

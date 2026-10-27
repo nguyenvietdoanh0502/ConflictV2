@@ -1,3 +1,4 @@
+import { getLocalizedErrorMessage } from "../../../utils/errorMessages";
 import { useState, useEffect, useRef } from "react";
 import {
   QrCode,
@@ -83,7 +84,7 @@ export default function ZaloConnectPanel({ onNavigateToWhitelist, onNavigateToSi
       const updated = await generateBridgeQr();
       setStatus(updated);
     } catch (err) {
-      setActionError(err.message || "Không thể tạo mã QR mới");
+      setActionError(getLocalizedErrorMessage(err, "Không thể tạo mã QR mới"));
     } finally {
       setIsQrRefreshing(false);
     }
@@ -97,7 +98,7 @@ export default function ZaloConnectPanel({ onNavigateToWhitelist, onNavigateToSi
       setStatus(updated);
       setShowLogoutConfirm(false);
     } catch (err) {
-      setActionError(err.message || "Lỗi khi đăng xuất Zalo");
+      setActionError(getLocalizedErrorMessage(err, "Lỗi khi đăng xuất Zalo"));
     } finally {
       setIsLoading(false);
     }
@@ -184,7 +185,7 @@ export default function ZaloConnectPanel({ onNavigateToWhitelist, onNavigateToSi
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             
             {/* Cột trái: Thẻ User Profile Zalo */}
-            <div className="lg:col-span-5 p-6 rounded-3xl bg-gradient-to-br from-indigo-50/80 via-white to-purple-50/40 border border-indigo-100/90 shadow-sm space-y-5">
+            <div className="lg:col-span-5 p-6 rounded-3xl bg-[#F8F7FC] border border-indigo-100/90 shadow-sm space-y-5">
               <div className="flex items-center gap-4">
                 {status?.user?.avatar ? (
                   <img
@@ -248,7 +249,7 @@ export default function ZaloConnectPanel({ onNavigateToWhitelist, onNavigateToSi
             <div className="lg:col-span-7 space-y-5">
               
               {/* Alert Realtime Listener */}
-              <div className="p-6 rounded-3xl bg-gradient-to-br from-emerald-50/90 via-teal-50/50 to-white border border-emerald-200/90 shadow-sm space-y-3">
+              <div className="p-6 rounded-3xl bg-emerald-50/60 border border-emerald-200/90 shadow-sm space-y-3">
                 <div className="flex items-center gap-3">
                   <div className="p-2.5 rounded-2xl bg-emerald-600 text-white shadow-md shadow-emerald-500/20">
                     <Radio className="w-5 h-5 animate-pulse" />
@@ -362,7 +363,7 @@ export default function ZaloConnectPanel({ onNavigateToWhitelist, onNavigateToSi
 
             {/* Cột phải (Lg: 5 cột): Khung QR Code to bản sang trọng */}
             <div className="lg:col-span-5 flex flex-col items-center justify-center">
-              <div className="w-full max-w-sm p-6 sm:p-8 rounded-3xl bg-gradient-to-b from-slate-50 to-indigo-50/30 border border-slate-200 shadow-xl flex flex-col items-center justify-center text-center space-y-4">
+              <div className="w-full max-w-sm p-6 sm:p-8 rounded-3xl bg-[#F8F7FC] border border-slate-200 shadow-xl flex flex-col items-center justify-center text-center space-y-4">
                 
                 {status?.qrStatus === "generating" ? (
                   <div className="flex flex-col items-center gap-3 py-12 text-xs sm:text-sm text-slate-500">

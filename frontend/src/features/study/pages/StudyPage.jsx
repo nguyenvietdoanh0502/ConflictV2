@@ -1,3 +1,4 @@
+import { getLocalizedErrorMessage } from "../../../utils/errorMessages";
 import React, { useState } from "react";
 import { useGetSubjectsQuery } from "../../timetable/services/timetableApi";
 import {
@@ -19,8 +20,7 @@ export default function StudyPage() {
   const [selectedSubjectId, setSelectedSubjectId] = useState(null);
 
   const { data: materials = [], isLoading: isLoadingMaterials } = useGetMaterialsQuery(
-    selectedSubjectId,
-    { refetchOnMountOrArgChange: true }
+    selectedSubjectId
   );
 
   const [deleteMaterial] = useDeleteMaterialMutation();
@@ -63,7 +63,7 @@ export default function StudyPage() {
       }
       setMaterialToDelete(null);
     } catch (err) {
-      const msg = err?.data?.message || "Không thể xóa tài liệu. Vui lòng thử lại.";
+      const msg = getLocalizedErrorMessage(err, "Không thể xóa tài liệu. Vui lòng thử lại.");
       showToast(msg);
     } finally {
       setIsDeletingMaterial(false);
@@ -81,7 +81,7 @@ export default function StudyPage() {
       }
       showToast("Đã tạo Minigame thành công. Bạn có thể vào ôn thi ngay.");
     } catch (err) {
-      const msg = err?.data?.message || "Không thể tạo Minigame. Vui lòng thử lại.";
+      const msg = getLocalizedErrorMessage(err, "Không thể tạo Minigame. Vui lòng thử lại.");
       showToast(msg);
     } finally {
       setGeneratingId(null);
@@ -148,7 +148,7 @@ export default function StudyPage() {
           </div>
 
           {/* Danh sách Đề cương / Học liệu */}
-          <div className="space-y-4">
+          <div className="space-y-4 min-h-[340px]">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-lg font-black text-[#2F2A45]">

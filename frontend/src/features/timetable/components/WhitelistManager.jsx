@@ -1,3 +1,4 @@
+import { getLocalizedErrorMessage } from "../../../utils/errorMessages";
 import { useState, useEffect } from "react";
 import {
   ShieldCheck,
@@ -189,7 +190,7 @@ export default function WhitelistManager({ onSelectGroupForSimulator, onNavigate
       });
       setShowAddSubject(false);
     } catch (err) {
-      alert("Lỗi khi tạo môn học: " + (err.data?.message || err.message));
+      alert("Lỗi khi tạo môn học: " + getLocalizedErrorMessage(err, "Không thể tạo môn học"));
     }
   };
 
@@ -209,7 +210,7 @@ export default function WhitelistManager({ onSelectGroupForSimulator, onNavigate
       setMappingForm({ subjectId: "", zaloGroupId: "", zaloGroupName: "", active: true });
       setShowAddMapping(false);
     } catch (err) {
-      alert("Lỗi khi ghép nhóm Zalo: " + (err.data?.message || err.message));
+      alert("Lỗi khi ghép nhóm Zalo: " + getLocalizedErrorMessage(err, "Không thể ghép nhóm Zalo"));
     }
   };
 
@@ -217,7 +218,7 @@ export default function WhitelistManager({ onSelectGroupForSimulator, onNavigate
     try {
       await toggleMapping(id).unwrap();
     } catch (err) {
-      alert("Lỗi khi đổi trạng thái: " + (err.data?.message || err.message));
+      alert("Lỗi khi đổi trạng thái: " + getLocalizedErrorMessage(err, "Không thể cập nhật trạng thái"));
     }
   };
 
@@ -258,7 +259,7 @@ export default function WhitelistManager({ onSelectGroupForSimulator, onNavigate
       }
       setDeleteConfirmState(null);
     } catch (err) {
-      setDeleteError(err.data?.message || err.message || "Xóa thất bại!");
+      setDeleteError(getLocalizedErrorMessage(err, "Xóa thất bại!"));
     }
   };
 
@@ -336,7 +337,7 @@ export default function WhitelistManager({ onSelectGroupForSimulator, onNavigate
       </div>
 
       {/* Zalo Account Status Card */}
-      <div className="p-4 rounded-2xl bg-gradient-to-r from-slate-50 via-indigo-50/30 to-purple-50/20 border border-slate-200/90 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="p-4 rounded-2xl bg-[#F8F7FC] border border-slate-200/90 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
           <div className={`w-3 h-3 rounded-full shrink-0 ${bridgeStatus?.connected && bridgeStatus?.mode === "real" ? "bg-emerald-500 animate-pulse shadow-sm shadow-emerald-300" : "bg-amber-400"}`} />
           <div className="min-w-0">
@@ -374,7 +375,7 @@ export default function WhitelistManager({ onSelectGroupForSimulator, onNavigate
 
       {/* Form Add Subject Modal - BỐ CỤC NGANG RỘNG RÃI */}
       {showAddSubject && (
-        <form onSubmit={handleCreateSubject} className="p-6 rounded-3xl bg-gradient-to-br from-indigo-50/90 via-slate-50 to-purple-50/40 border border-indigo-200/90 shadow-md space-y-5 animate-in fade-in duration-200">
+        <form onSubmit={handleCreateSubject} className="p-6 rounded-3xl bg-[#F8F7FC] border border-indigo-200/90 shadow-md space-y-5 animate-in fade-in duration-200">
           <div className="flex items-center justify-between pb-3 border-b border-indigo-100">
             <div className="flex items-center gap-2">
               <BookOpen className="w-5 h-5 text-indigo-600" />
@@ -602,7 +603,7 @@ export default function WhitelistManager({ onSelectGroupForSimulator, onNavigate
 
       {/* Form Add Mapping Modal - BỐ CỤC NGANG RỘNG RÃI */}
       {showAddMapping && (
-        <form onSubmit={handleCreateMapping} className="p-6 rounded-3xl bg-gradient-to-br from-emerald-50/90 via-slate-50 to-teal-50/40 border border-emerald-200/90 shadow-md space-y-4 animate-in fade-in duration-200">
+        <form onSubmit={handleCreateMapping} className="p-6 rounded-3xl bg-emerald-50/50 border border-emerald-200/90 shadow-md space-y-4 animate-in fade-in duration-200">
           <div className="flex items-center justify-between pb-3 border-b border-emerald-100">
             <div className="flex items-center gap-2">
               <Link2 className="w-5 h-5 text-emerald-600" />

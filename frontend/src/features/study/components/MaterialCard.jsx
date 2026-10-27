@@ -1,4 +1,5 @@
 import React from "react";
+import { getLocalizedErrorMessage } from "../../../utils/errorMessages";
 
 function MaterialCard({
   material,
@@ -84,7 +85,7 @@ function MaterialCard({
 
           {isFailed && (
             <div className="rounded-xl bg-rose-50 p-2.5 text-xs font-bold text-rose-600 border border-rose-200">
-              Lỗi xử lý: {material.errorMessage || "Không trích xuất được chữ"}
+              Lỗi xử lý: {getLocalizedErrorMessage({ message: material.errorMessage }, "Không thể xử lý hoặc trích xuất văn bản.")}
             </div>
           )}
 
@@ -147,7 +148,7 @@ function MaterialCard({
                 type="button"
                 disabled={isGeneratingMinigames}
                 onClick={() => onGenerateMinigames && onGenerateMinigames(material)}
-                className="rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-md shadow-violet-500/25 hover:from-violet-700 hover:to-indigo-700 transition-all disabled:opacity-50"
+                className="rounded-xl bg-social-violet px-3.5 py-1.5 text-xs font-bold text-white shadow-md shadow-violet-500/25 hover:bg-[#6E60DC] transition-all disabled:opacity-50"
               >
                 {isGeneratingMinigames ? "Đang tạo..." : "Tạo Minigame"}
               </button>

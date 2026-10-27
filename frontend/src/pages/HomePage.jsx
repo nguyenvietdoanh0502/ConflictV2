@@ -8,32 +8,36 @@ import ContactsSidebar from "../features/chat/components/ContactsSidebar";
 
 function FeatureCard({ icon, title, description, to, accent }) {
   const content = (
-    <div className="group relative flex flex-col justify-between overflow-hidden rounded-[24px] border border-white/80 bg-white/85 p-6 shadow-card backdrop-blur-xl transition duration-200 hover:-translate-y-1 hover:bg-white hover:shadow-soft">
-      <div>
+    <div className="group relative flex h-full flex-col justify-between overflow-hidden rounded-[24px] border border-white/80 bg-white/85 p-6 shadow-card backdrop-blur-xl transition duration-200 hover:-translate-y-1 hover:bg-white hover:shadow-soft">
+      <div className="flex flex-1 flex-col">
         <div className="flex items-center justify-between">
           <span className={`grid h-12 w-12 place-items-center rounded-2xl ${accent} text-2xl shadow-sm`}>
             {icon}
           </span>
         </div>
-        <h3 className="mt-4 text-lg font-extrabold text-social-ink group-hover:text-social-violet transition-colors">
+        <h3 className="mt-4 text-base sm:text-lg font-bold text-social-ink group-hover:text-social-violet transition-colors min-h-[3rem] flex items-center">
           {title}
         </h3>
-        <p className="mt-2 text-sm leading-6 text-social-muted">
+        <p className="mt-2 text-xs sm:text-sm leading-6 text-social-muted flex-1">
           {description}
         </p>
       </div>
-      {to && (
-        <div className="mt-5 flex items-center gap-1.5 text-xs font-bold text-social-violet">
-          <span>Khám phá ngay</span>
-          <svg className="h-4 w-4 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7" />
-          </svg>
-        </div>
-      )}
+      <div className="mt-5 flex items-center gap-1.5 text-xs font-bold text-social-violet pt-3 border-t border-[#F0EEF8]">
+        <span>Khám phá ngay</span>
+        <svg className="h-4 w-4 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7" />
+        </svg>
+      </div>
     </div>
   );
 
-  return to ? <Link to={to} className="block focus:outline-none">{content}</Link> : content;
+  return to ? (
+    <Link to={to} className="block h-full focus:outline-none">
+      {content}
+    </Link>
+  ) : (
+    <div className="h-full">{content}</div>
+  );
 }
 
 export default function HomePage() {
@@ -59,7 +63,7 @@ export default function HomePage() {
                   </div>
                 </div>
 
-                <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-5 sm:grid-cols-2 auto-rows-fr">
                   <FeatureCard
                     icon="📅"
                     title="Thời khóa biểu Thông minh"
@@ -78,6 +82,7 @@ export default function HomePage() {
                     icon="🎮"
                     title="Đề cương & Minigame"
                     description="Tải lên PDF/Word đề cương, AI sinh bản tóm tắt và minigame trắc nghiệm, lật thẻ khái niệm."
+                    to="/study"
                     accent="bg-[#E5F7F1] text-[#41957F]"
                   />
                   <FeatureCard
@@ -87,6 +92,8 @@ export default function HomePage() {
                     to="/friends"
                     accent="bg-[#FFF0E5] text-[#D47C4D]"
                   />
+                  {/* Tạm ẩn 2 box cuối cùng theo yêu cầu của người dùng */}
+                  {/*
                   <FeatureCard
                     icon="🔔"
                     title="Nhắc nhở Đa kênh"
@@ -100,6 +107,7 @@ export default function HomePage() {
                     to="/friends"
                     accent="bg-[#F1EAFE] text-[#7C6EE6]"
                   />
+                  */}
                 </div>
               </div>
             </div>
@@ -115,12 +123,9 @@ export default function HomePage() {
           /* Public Landing Page */
           <div className="space-y-12 py-6">
             <div className="text-center">
-              <span className="inline-flex items-center gap-2 rounded-full border border-social-violet/20 bg-social-violet/10 px-4 py-1.5 text-xs font-bold text-social-violet">
-                <span>✦</span> SICT WEB/APP CHALLENGE – CLB Tin học HIT
-              </span>
               <h1 className="mt-6 text-4xl font-black tracking-tight text-social-ink sm:text-5xl lg:text-6xl">
                 Đồng bộ Học vụ & Ôn thi <br className="hidden sm:inline" />
-                <span className="bg-gradient-to-r from-social-violet via-[#8F82ED] to-social-pink bg-clip-text text-transparent">
+                <span className="text-social-violet">
                   Thông minh cùng AI
                 </span>
               </h1>
@@ -133,7 +138,7 @@ export default function HomePage() {
                   to="/register"
                   className="rounded-full bg-social-violet px-8 py-3.5 text-sm font-extrabold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-[#6E60DC]"
                 >
-                  Bắt đầu ngay miễn phí
+                  Bắt đầu ngay
                 </Link>
                 <Link
                   to="/login"
@@ -148,14 +153,14 @@ export default function HomePage() {
             <div className="grid gap-6 sm:grid-cols-3">
               <div className="rounded-[28px] border border-white/80 bg-white/70 p-6 shadow-card backdrop-blur">
                 <div className="grid h-12 w-12 place-items-center rounded-2xl bg-[#EAE6FF] text-2xl">⚡</div>
-                <h3 className="mt-4 text-lg font-extrabold text-social-ink">AI Zalo-to-Calendar</h3>
+                <h3 className="mt-4 text-lg font-extrabold text-social-ink">Zalo to Calendar</h3>
                 <p className="mt-2 text-sm leading-6 text-social-muted">
                   Kết nối nhóm Zalo môn học với cơ chế Whitelist bảo mật. AI nhận diện lịch nghỉ, học bù và ghim vào lịch chuẩn xác.
                 </p>
               </div>
               <div className="rounded-[28px] border border-white/80 bg-white/70 p-6 shadow-card backdrop-blur">
                 <div className="grid h-12 w-12 place-items-center rounded-2xl bg-[#FFE5EE] text-2xl">🎯</div>
-                <h3 className="mt-4 text-lg font-extrabold text-social-ink">Syllabus-to-Minigame</h3>
+                <h3 className="mt-4 text-lg font-extrabold text-social-ink">Syllabus to Minigame</h3>
                 <p className="mt-2 text-sm leading-6 text-social-muted">
                   Bóc tách đề cương PDF/Word thành tóm tắt Markdown và bộ câu hỏi trắc nghiệm tốc độ, lật thẻ ghép cặp khái niệm.
                 </p>

@@ -11,6 +11,7 @@ import {
   useGetZaloMappingsQuery,
   useSimulateZaloMessageMutation,
 } from "../services/timetableApi";
+import { getLocalizedErrorMessage } from "../../../utils/errorMessages";
 
 const PRESET_MESSAGES = [
   {
@@ -123,7 +124,7 @@ export default function MockZaloSimulator({ selectedGroupId, selectedGroupName }
       const elapsed = ((performance.now() - t0) / 1000).toFixed(2);
       setSimulationLog({
         success: false,
-        error: err.data?.message || err.message || "Lỗi xử lý tin nhắn",
+        error: getLocalizedErrorMessage(err, "Lỗi xử lý tin nhắn."),
         elapsed,
         timestamp: new Date().toLocaleTimeString("vi-VN"),
       });
@@ -135,7 +136,7 @@ export default function MockZaloSimulator({ selectedGroupId, selectedGroupName }
       {/* Header */}
       <div className="flex items-center justify-between pb-3 border-b border-slate-100">
         <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-2xl bg-gradient-to-tr from-indigo-500 to-purple-500 text-white shadow-sm shadow-indigo-200">
+          <div className="p-2 rounded-2xl bg-social-violet text-white shadow-sm shadow-indigo-200">
             <Zap className="w-5 h-5" />
           </div>
           <div>
@@ -231,7 +232,7 @@ export default function MockZaloSimulator({ selectedGroupId, selectedGroupName }
       <button
         onClick={handleSendSimulation}
         disabled={isSimulating}
-        className="w-full py-2.5 px-4 rounded-2xl bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white text-xs font-extrabold shadow-md shadow-indigo-200 hover:shadow-lg transition flex items-center justify-center gap-2 disabled:opacity-60"
+        className="w-full py-2.5 px-4 rounded-2xl bg-social-violet hover:bg-[#6E60DC] text-white text-xs font-extrabold shadow-md shadow-indigo-200 hover:shadow-lg transition flex items-center justify-center gap-2 disabled:opacity-60"
       >
         {isSimulating ? (
           <>

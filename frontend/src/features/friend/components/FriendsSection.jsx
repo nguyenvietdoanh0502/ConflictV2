@@ -93,9 +93,9 @@ export default function FriendsSection({
         ) : null}
 
         {!isLoading && !isError && itemCount === 0 ? (
-          <div className="rounded-[22px] border border-dashed border-[#DCD5F3] bg-gradient-to-br from-white to-[#F7F5FF] px-5 py-9 text-center">
+          <div className="rounded-[22px] border border-dashed border-[#DCD5F3] bg-[#FAF9FF] px-5 py-9 text-center">
             <span
-              className="mx-auto grid h-14 w-14 place-items-center rounded-[20px] border border-white bg-gradient-to-br from-[#EAE5FF] to-[#FFE8F0] text-[#7C6EE6] shadow-[0_9px_22px_rgba(124,110,230,0.15)]"
+              className="mx-auto grid h-14 w-14 place-items-center rounded-[20px] border border-white bg-[#EAE5FF] text-[#7C6EE6] shadow-[0_9px_22px_rgba(124,110,230,0.15)]"
               aria-hidden="true"
             >
               <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.7">

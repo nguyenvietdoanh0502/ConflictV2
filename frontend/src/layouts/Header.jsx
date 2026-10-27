@@ -1,13 +1,16 @@
-import { Link, NavLink } from "react-router-dom";
+import { useState, useRef, useEffect } from "react";
+import { Link, NavLink, useLocation } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
+import logoWithoutText from "../assets/logowithouttext.png";
+import justText from "../assets/justtext.png";
 import {
   selectCurrentUser,
   selectIsAuthenticated,
 } from "../features/auth/authSelectors";
 import {
-  toggleMobileContacts,
   selectTotalUnreadCount,
 } from "../features/chat/chatSlice";
+import MessengerDropdown from "../features/chat/components/MessengerDropdown";
 
 function HomeIcon() {
   return (
@@ -103,15 +106,13 @@ function MessengerIcon() {
 
 function BrandMark() {
   return (
-    <span className="grid h-10 w-10 place-items-center rounded-full bg-social-violet text-white shadow-[0_5px_14px_rgba(124,110,230,0.30)]">
-      <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" aria-hidden="true">
-        <path
-          d="M6.5 5.5h11A3.5 3.5 0 0 1 21 9v4a3.5 3.5 0 0 1-3.5 3.5h-5L8 20v-3.5H6.5A3.5 3.5 0 0 1 3 13V9a3.5 3.5 0 0 1 3.5-3.5Z"
-          fill="currentColor"
-        />
-        <path d="M8 11h8" stroke="#7C6EE6" strokeWidth="2.4" strokeLinecap="round" />
-      </svg>
-    </span>
+    <div className="flex items-center gap-2.5">
+      <img
+        src={justText}
+        alt="UniSync"
+        className="hidden sm:inline-block h-6 sm:h-7 w-auto object-contain drop-shadow-sm transition-transform hover:scale-105"
+      />
+    </div>
   );
 }
 
@@ -164,6 +165,29 @@ export default function Header() {
   const avatarUrl = user?.avatarUrl?.trim();
   const avatarLetter = displayName.charAt(0).toUpperCase();
   const visibleNavItems = navItems.filter((item) => !item.protected || isAuthenticated);
+
+  const [isMessengerOpen, setIsMessengerOpen] = useState(false);
+  const messengerRef = useRef(null);
+  const location = useLocation();
+
+  // Close dropdown on route change
+  useEffect(() => {
+    setIsMessengerOpen(false);
+  }, [location.pathname]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    if (!isMessengerOpen) return;
+    function handleClickOutside(event) {
+      if (messengerRef.current && !messengerRef.current.contains(event.target)) {
+        setIsMessengerOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isMessengerOpen]);
 
   return (
     <header className="sticky top-0 z-50 h-16 w-full border-b border-[#E5E2EC] bg-white shadow-[0_2px_10px_rgba(47,42,69,0.07)]">
@@ -246,20 +270,30 @@ export default function Header() {
                 <PlusIcon />
               </button>
 
-              <button
-                type="button"
-                onClick={() => dispatch(toggleMobileContacts())}
-                className={`${roundButtonClass} relative`}
-                aria-label="Trò chuyện tin nhắn"
-                title="Trò chuyện cùng bạn bè"
-              >
-                <MessengerIcon />
-                {totalUnreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 grid h-5 min-w-[20px] place-items-center rounded-full bg-[#E41E3F] px-1 text-[10px] font-extrabold text-white ring-2 ring-white animate-pulse">
-                    {totalUnreadCount > 9 ? "9+" : totalUnreadCount}
-                  </span>
+              <div className="relative" ref={messengerRef}>
+                <button
+                  type="button"
+                  onClick={() => setIsMessengerOpen((prev) => !prev)}
+                  className={`${roundButtonClass} relative ${
+                    isMessengerOpen ? "bg-[#EAE6FF] text-social-violet" : ""
+                  }`}
+                  aria-label="Trò chuyện tin nhắn"
+                  title="Đoạn chat"
+                  aria-expanded={isMessengerOpen}
+                  aria-haspopup="dialog"
+                >
+                  <MessengerIcon />
+                  {totalUnreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 grid h-5 min-w-[20px] place-items-center rounded-full bg-[#E41E3F] px-1 text-[10px] font-extrabold text-white ring-2 ring-white animate-pulse">
+                      {totalUnreadCount > 9 ? "9+" : totalUnreadCount}
+                    </span>
+                  )}
+                </button>
+
+                {isMessengerOpen && (
+                  <MessengerDropdown onClose={() => setIsMessengerOpen(false)} />
                 )}
-              </button>
+              </div>
 
               <button
                 type="button"
@@ -285,7 +319,7 @@ export default function Header() {
                     className="h-10 w-10 rounded-full object-cover ring-2 ring-[#E8E4F7]"
                   />
                 ) : (
-                  <span className="grid h-10 w-10 place-items-center rounded-full bg-gradient-to-br from-social-violet to-social-pink text-sm font-extrabold text-white ring-2 ring-[#E8E4F7]">
+                  <span className="grid h-10 w-10 place-items-center rounded-full bg-social-violet text-sm font-extrabold text-white ring-2 ring-[#E8E4F7]">
                     {avatarLetter}
                   </span>
                 )}
@@ -303,7 +337,7 @@ export default function Header() {
                 to="/register"
                 className="rounded-full bg-social-violet px-3.5 py-2.5 text-xs font-bold text-white shadow-[0_5px_14px_rgba(124,110,230,0.24)] hover:bg-[#6E60DC] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-social-violet/20 sm:px-5 sm:text-sm"
               >
-                Tham gia
+                Đăng ký
               </Link>
             </>
           )}
