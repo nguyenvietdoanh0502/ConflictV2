@@ -20,7 +20,7 @@ export default {
         },
       },
       fontFamily: {
-        sans: ['Inter', 'Avenir Next', 'Segoe UI', 'sans-serif'],
+        sans: ['"Plus Jakarta Sans"', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', 'sans-serif'],
       },
       boxShadow: {
         soft: '0 18px 50px rgba(82, 67, 126, 0.10)',

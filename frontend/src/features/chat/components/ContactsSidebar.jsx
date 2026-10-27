@@ -150,7 +150,7 @@ export default function ContactsSidebar({ className = "" }) {
                       className="h-10 w-10 rounded-full object-cover ring-2 ring-white"
                     />
                   ) : (
-                    <span className="grid h-10 w-10 place-items-center rounded-full bg-gradient-to-br from-[#8F82ED] to-[#FF8FB3] text-sm font-extrabold text-white ring-2 ring-white">
+                    <span className="grid h-10 w-10 place-items-center rounded-full bg-social-violet text-sm font-extrabold text-white ring-2 ring-white">
                       {avatarLetter}
                     </span>
                   )}

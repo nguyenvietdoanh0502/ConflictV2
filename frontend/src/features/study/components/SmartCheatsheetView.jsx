@@ -122,7 +122,7 @@ export default function SmartCheatsheetView({
               type="button"
               disabled={isGeneratingMinigames}
               onClick={() => onGenerateMinigames && onGenerateMinigames(material)}
-              className="rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-4 py-2 text-xs font-extrabold text-white shadow-md shadow-violet-500/25 hover:from-violet-700 hover:to-indigo-700 transition-all hover:scale-105 disabled:opacity-50"
+              className="rounded-xl bg-social-violet px-4 py-2 text-xs font-extrabold text-white shadow-md shadow-violet-500/25 hover:bg-[#6E60DC] transition-all hover:scale-105 disabled:opacity-50"
             >
               {isGeneratingMinigames ? "Đang tạo minigame..." : "Khởi tạo Minigames"}
             </button>
@@ -132,7 +132,7 @@ export default function SmartCheatsheetView({
 
       {/* Banner Khởi tạo Minigame nếu chưa có */}
       {!hasMinigames && (
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 rounded-2xl bg-gradient-to-r from-violet-500/10 via-purple-500/10 to-indigo-500/10 p-4 border border-social-violet/20 animate-in fade-in duration-300">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 rounded-2xl bg-social-violet/10 p-4 border border-social-violet/20 animate-in fade-in duration-300">
           <div>
             <p className="text-sm font-black text-[#2F2A45]">Muốn kiểm tra mức độ ghi nhớ kiến thức?</p>
             <p className="text-xs text-[#6B6584] mt-0.5">Tạo 10 câu hỏi trắc nghiệm tốc độ và bộ thẻ lật ghi nhớ từ nội dung bản tóm tắt này.</p>

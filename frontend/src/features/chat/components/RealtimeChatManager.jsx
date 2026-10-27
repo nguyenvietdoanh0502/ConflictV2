@@ -10,11 +10,8 @@ import {
   incrementUnread,
   selectActiveFriend,
   selectIsChatMinimized,
-  selectIsMobileContactsOpen,
-  setMobileContactsOpen,
 } from "../chatSlice";
 import ChatWindow from "./ChatWindow";
-import ContactsSidebar from "./ContactsSidebar";
 
 export default function RealtimeChatManager() {
   const dispatch = useDispatch();
@@ -23,7 +20,6 @@ export default function RealtimeChatManager() {
   const isAuthenticated = useSelector(selectIsAuthenticated);
   const activeFriend = useSelector(selectActiveFriend);
   const isMinimized = useSelector(selectIsChatMinimized);
-  const isMobileContactsOpen = useSelector(selectIsMobileContactsOpen);
 
   // Manage WebSocket connection lifecycle
   useEffect(() => {
@@ -64,37 +60,6 @@ export default function RealtimeChatManager() {
     <>
       {/* Docked Messenger Chat Window */}
       {activeFriend && <ChatWindow key={activeFriend.id} />}
-
-      {/* Mobile Contacts Drawer / Modal */}
-      {isMobileContactsOpen && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-sm transition-opacity">
-          <div
-            className="fixed inset-0"
-            onClick={() => dispatch(setMobileContactsOpen(false))}
-            aria-hidden="true"
-          />
-
-          <div className="relative z-10 w-full max-w-md rounded-t-[28px] sm:rounded-[28px] bg-white p-5 shadow-2xl max-h-[85vh] flex flex-col animate-in fade-in slide-in-from-bottom duration-200">
-            <div className="flex items-center justify-between pb-3 border-b border-[#F0EDF7]">
-              <h2 className="text-base font-extrabold text-social-ink flex items-center gap-2">
-                <span>💬</span> Trò chuyện cùng bạn bè
-              </h2>
-              <button
-                type="button"
-                onClick={() => dispatch(setMobileContactsOpen(false))}
-                className="grid h-8 w-8 place-items-center rounded-full text-social-muted hover:bg-[#F3EFFC] hover:text-social-ink transition"
-                aria-label="Đóng danh sách bạn bè"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="mt-3 flex-1 overflow-y-auto">
-              <ContactsSidebar className="border-0 shadow-none p-0 bg-transparent" />
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
 }

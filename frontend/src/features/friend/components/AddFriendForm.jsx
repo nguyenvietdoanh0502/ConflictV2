@@ -119,7 +119,7 @@ export default function AddFriendForm({
           </form>
         </div>
 
-        <div className="relative flex min-h-64 flex-col justify-between overflow-hidden border-t border-[#E9E3F5] bg-gradient-to-br from-[#E7E2FF] via-[#F6E9FF] to-[#FFE7EF] p-5 sm:p-7 lg:border-l lg:border-t-0">
+        <div className="relative flex min-h-64 flex-col justify-between overflow-hidden border-t border-[#E9E3F5] bg-[#F5F3FF] p-5 sm:p-7 lg:border-l lg:border-t-0">
           <span className="pointer-events-none absolute -right-10 -top-10 h-36 w-36 rounded-full bg-[#B8EADD]/60 blur-2xl" aria-hidden="true" />
           <span className="pointer-events-none absolute -bottom-12 -left-10 h-36 w-36 rounded-full bg-[#FFD8BE]/70 blur-2xl" aria-hidden="true" />
           <div>

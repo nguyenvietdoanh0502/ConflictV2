@@ -26,7 +26,7 @@ export default function FriendCard({
   isRemoving = false,
 }) {
   const dispatch = useDispatch();
-  const displayName = friend?.user?.fullName?.trim() || "Người dùng Conflict";
+  const displayName = friend?.user?.fullName?.trim() || "Người dùng UniSync";
 
   return (
     <article

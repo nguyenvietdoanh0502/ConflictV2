@@ -44,7 +44,7 @@ export default function TimetableSettingsModal({
       <div className="relative bg-white rounded-3xl shadow-2xl border border-slate-200/90 w-full max-w-6xl xl:max-w-7xl h-[86vh] min-h-[580px] max-h-[880px] flex flex-col overflow-hidden z-10 animate-in zoom-in-95 duration-200">
         
         {/* Header Bar - Cố định ở đỉnh, không bị xê dịch */}
-        <div className="px-6 py-4 sm:px-8 sm:py-5 border-b border-slate-100 flex items-center justify-between gap-4 bg-gradient-to-r from-slate-50 via-indigo-50/30 to-white shrink-0">
+        <div className="px-6 py-4 sm:px-8 sm:py-5 border-b border-slate-100 flex items-center justify-between gap-4 bg-[#F8F7FC] shrink-0">
           <div className="flex items-center gap-3.5 min-w-0">
             <div className="p-3 rounded-2xl bg-indigo-600 text-white shadow-lg shadow-indigo-500/25 shrink-0">
               <Settings className="w-6 h-6" />

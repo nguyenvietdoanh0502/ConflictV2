@@ -1,10 +1,11 @@
+import { getLocalizedErrorMessage } from "../../../utils/errorMessages";
 import React, { useState, useRef, useEffect } from "react";
 import { useUploadMaterialMutation } from "../services/studyApi";
 
 const LOADING_STEPS = [
   { step: "01", title: "Đang tải lên & bóc tách tệp...", desc: "Đọc cấu trúc văn bản và trích xuất nội dung đề cương" },
-  { step: "02", title: "AI Gemini đang đọc hiểu tài liệu...", desc: "Phân loại các khái niệm, định nghĩa và công thức trọng tâm" },
-  { step: "03", title: "Đang tổng hợp 3 phần Smart Cheatsheet...", desc: "Bóc tách: Khái niệm cốt lõi, Công thức cần nhớ & Câu hỏi thường gặp" },
+  { step: "02", title: "AI đang đọc hiểu tài liệu...", desc: "Phân loại các khái niệm, định nghĩa và công thức trọng tâm" },
+  { step: "03", title: "Đang tổng hợp 3 phần tóm tắt...", desc: "Bóc tách: Khái niệm cốt lõi, Công thức cần nhớ & Câu hỏi thường gặp" },
   { step: "04", title: "Sắp hoàn thành bản tóm tắt...", desc: "Định dạng Markdown và hoàn tất lưu trữ" }
 ];
 
@@ -105,7 +106,7 @@ export default function MaterialUploadModal({
       }
       onClose();
     } catch (err) {
-      const msg = err?.data?.message || "Không thể xử lý tài liệu. Vui lòng kiểm tra lại file hoặc mạng.";
+      const msg = getLocalizedErrorMessage(err, "Không thể xử lý tài liệu. Vui lòng kiểm tra lại file hoặc mạng.");
       setErrorMsg(msg);
     }
   };
@@ -125,7 +126,7 @@ export default function MaterialUploadModal({
         <div className="flex items-center justify-between pb-4 border-b border-[#E5E2EC]">
           <div>
             <h3 className="text-lg font-extrabold text-[#2F2A45]">Tải Lên Đề Cương & Bài Giảng</h3>
-            <p className="text-xs text-[#77718C] mt-0.5">Tự động phân tích và tạo Smart Cheatsheet</p>
+            <p className="text-xs text-[#77718C] mt-0.5">Tự động phân tích và tạo tóm tắt</p>
           </div>
 
           <button
@@ -231,7 +232,7 @@ export default function MaterialUploadModal({
 
           {/* Trạng thái xử lý AI */}
           {isLoading && (
-            <div className="rounded-2xl border border-social-violet/20 bg-gradient-to-br from-[#F5F3FC] to-[#EDE9FE] p-4 text-center shadow-inner animate-in fade-in duration-300">
+            <div className="rounded-2xl border border-social-violet/20 bg-[#F5F3FF] p-4 text-center shadow-inner animate-in fade-in duration-300">
               <div className="flex items-center justify-between text-xs font-bold text-social-violet mb-2">
                 <span className="font-mono bg-social-violet/15 px-2.5 py-0.5 rounded-md">TIẾN TRÌNH [{currentStepInfo.step}/04]</span>
                 <span className="text-[#77718C] font-normal">AI có thể mất 10-25s để phân tích chuyên sâu</span>
@@ -248,7 +249,7 @@ export default function MaterialUploadModal({
               {/* Progress bar dạng gradient */}
               <div className="mt-3.5 h-2 w-full overflow-hidden rounded-full bg-white/70 shadow-inner">
                 <div
-                  className="h-full rounded-full bg-gradient-to-r from-social-violet via-purple-500 to-indigo-500 transition-all duration-700 ease-out"
+                  className="h-full rounded-full bg-social-violet transition-all duration-700 ease-out"
                   style={{ width: `${((loadingStep + 1) / LOADING_STEPS.length) * 100}%` }}
                 />
               </div>

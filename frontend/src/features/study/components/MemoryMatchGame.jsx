@@ -277,7 +277,7 @@ export default function MemoryMatchGame({
               >
                 {/* Mặt úp (Mặt sau của thẻ - hiển thị logo UniSync kèm icon 🎓) */}
                 <div
-                  className="absolute inset-0 flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-social-violet/40 bg-gradient-to-br from-[#7C6EE6] to-[#594ABF] text-white shadow-md p-4"
+                  className="absolute inset-0 flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-social-violet/40 bg-social-violet text-white shadow-md p-4"
                   style={{
                     backfaceVisibility: "hidden",
                     WebkitBackfaceVisibility: "hidden",

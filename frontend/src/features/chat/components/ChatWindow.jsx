@@ -227,7 +227,7 @@ export default function ChatWindow() {
     >
       {/* Header (Facebook Messenger style) */}
       <div
-        className="flex items-center justify-between border-b border-[#ECE8F5] bg-gradient-to-r from-white via-white to-[#FAF8FF] px-3.5 py-2.5 rounded-t-[22px] cursor-pointer select-none"
+        className="flex items-center justify-between border-b border-[#ECE8F5] bg-white px-3.5 py-2.5 rounded-t-[22px] cursor-pointer select-none"
         onClick={() => dispatch(toggleMinimize())}
       >
         <div className="flex items-center gap-2.5 min-w-0">
@@ -240,7 +240,7 @@ export default function ChatWindow() {
                 className="h-9 w-9 rounded-full object-cover ring-2 ring-white shadow-sm"
               />
             ) : (
-              <span className="grid h-9 w-9 place-items-center rounded-full bg-gradient-to-br from-social-violet to-[#FF8FB3] text-xs font-black text-white shadow-sm">
+              <span className="grid h-9 w-9 place-items-center rounded-full bg-social-violet text-xs font-black text-white shadow-sm">
                 {avatarLetter}
               </span>
             )}
@@ -420,7 +420,7 @@ export default function ChatWindow() {
                       <div
                         className={`group relative break-words px-3.5 py-2 text-xs leading-relaxed shadow-sm ${
                           isMe
-                            ? "rounded-2xl rounded-tr-sm bg-gradient-to-r from-social-violet to-[#8F82ED] text-white"
+                            ? "rounded-2xl rounded-tr-sm bg-social-violet text-white"
                             : "rounded-2xl rounded-tl-sm bg-white text-social-ink border border-[#ECE8F5]"
                         }`}
                         title={formattedTime}

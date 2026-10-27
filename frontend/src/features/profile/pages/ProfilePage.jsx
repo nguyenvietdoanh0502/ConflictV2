@@ -188,7 +188,7 @@ export default function ProfilePage() {
     >
       <div className="mx-auto grid w-full max-w-[1320px] items-start gap-5 lg:grid-cols-[296px_minmax(0,1fr)] lg:gap-6">
         <aside className="overflow-hidden rounded-[28px] border border-white/80 bg-white/[.85] shadow-[0_22px_60px_rgba(92,80,150,0.12)] backdrop-blur-xl lg:self-start">
-          <div className="relative overflow-hidden bg-gradient-to-br from-[#EAE6FF] via-[#FFF3F8] to-[#FFF0E4] px-5 pb-6 pt-7">
+          <div className="relative overflow-hidden bg-[#EAE6FF] px-5 pb-6 pt-7">
             <span
               className="absolute -right-7 -top-8 h-24 w-24 rounded-full border-[18px] border-white/[.45]"
               aria-hidden="true"
@@ -208,7 +208,7 @@ export default function ProfilePage() {
                     className="relative h-20 w-20 rounded-full border-4 border-white object-cover shadow-[0_12px_28px_rgba(124,110,230,0.2)] lg:h-24 lg:w-24"
                   />
                 ) : (
-                  <span className="relative grid h-20 w-20 place-items-center rounded-full border-4 border-white bg-gradient-to-br from-[#8F82ED] to-[#FF8FB3] text-2xl font-extrabold text-white shadow-[0_12px_28px_rgba(124,110,230,0.2)] lg:h-24 lg:w-24 lg:text-3xl">
+                  <span className="relative grid h-20 w-20 place-items-center rounded-full border-4 border-white bg-social-violet text-2xl font-extrabold text-white shadow-[0_12px_28px_rgba(124,110,230,0.2)] lg:h-24 lg:w-24 lg:text-3xl">
                     {avatarLetter}
                   </span>
                 )}
@@ -220,9 +220,9 @@ export default function ProfilePage() {
               </div>
 
               <div className="relative min-w-0 lg:mt-4">
-                <span className="inline-flex items-center rounded-full bg-white/75 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#7C6EE6] shadow-sm">
-                  My space
-                </span>
+                  <span className="inline-flex items-center rounded-full bg-white/75 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#7C6EE6] shadow-sm">
+                    My space
+                  </span>
                 <h1 className="mt-2 truncate text-xl font-extrabold tracking-tight text-[#2F2A45]">
                   {displayName}
                 </h1>
@@ -296,21 +296,6 @@ export default function ProfilePage() {
             ))}
           </nav>
 
-          <div className="mx-4 mb-4 rounded-[22px] bg-[#FFF4F8] p-4">
-            <div className="flex items-start gap-3">
-              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#FFE0EA] text-base">
-                <span aria-hidden="true">✦</span>
-              </span>
-              <div>
-                <p className="text-xs font-extrabold text-[#574E71]">
-                  Góc nhỏ của bạn
-                </p>
-                <p className="mt-1 text-[11px] font-medium leading-5 text-[#6F6880]">
-                  Cập nhật hồ sơ để bạn bè nhận ra bạn dễ hơn nhé.
-                </p>
-              </div>
-            </div>
-          </div>
 
           <div className="border-t border-[#F0ECF7] p-4">
             <button
@@ -361,13 +346,6 @@ export default function ProfilePage() {
                 </p>
               </div>
 
-              <span className="inline-flex items-center gap-2 rounded-full border border-[#DCD6F6] bg-[#F4F1FF] px-3.5 py-2 text-xs font-bold text-[#6559B9]">
-                <span
-                  className="h-2 w-2 rounded-full bg-[#7C6EE6]"
-                  aria-hidden="true"
-                />
-                UniSync Member
-              </span>
             </div>
           </header>
 
@@ -377,7 +355,7 @@ export default function ProfilePage() {
           >
             {isProfileInfoSection ? (
               <div className="space-y-5 sm:space-y-6">
-                <section className="relative overflow-hidden rounded-[26px] bg-gradient-to-br from-[#7C6EE6] via-[#8D7FE8] to-[#A792EC] p-5 text-white shadow-[0_18px_44px_rgba(124,110,230,0.22)] sm:p-7">
+                <section className="relative overflow-hidden rounded-[26px] bg-social-violet p-5 text-white shadow-[0_18px_44px_rgba(124,110,230,0.22)] sm:p-7">
                   <span
                     className="absolute -right-10 -top-12 h-40 w-40 rounded-full border-[24px] border-white/10"
                     aria-hidden="true"
@@ -402,9 +380,6 @@ export default function ProfilePage() {
                       )}
 
                       <div className="min-w-0">
-                        <p className="text-xs font-bold uppercase tracking-[0.15em] text-white/70">
-                          Xin chào, mình là
-                        </p>
                         <h3 className="mt-1.5 truncate text-xl font-extrabold sm:text-2xl">
                           {displayName}
                         </h3>

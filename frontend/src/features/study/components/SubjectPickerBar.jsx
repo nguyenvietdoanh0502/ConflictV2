@@ -1,3 +1,4 @@
+import { getLocalizedErrorMessage } from "../../../utils/errorMessages";
 import React, { useState } from "react";
 import { useCreateSubjectMutation } from "../../timetable/services/timetableApi";
 
@@ -52,7 +53,7 @@ export default function SubjectPickerBar({
         onSelectSubject(res.data.id);
       }
     } catch (err) {
-      setErrorMsg(err?.data?.message || "Không thể tạo môn học. Vui lòng thử lại.");
+      setErrorMsg(getLocalizedErrorMessage(err, "Không thể tạo môn học. Vui lòng thử lại."));
     }
   };
 
@@ -86,9 +87,9 @@ export default function SubjectPickerBar({
       </div>
 
       {isLoading ? (
-        <div className="flex gap-2 overflow-x-auto py-3">
+        <div className="flex gap-2 overflow-x-auto py-2.5">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-8 w-28 animate-pulse rounded-2xl bg-[#FAF9FD]" />
+            <div key={i} className="h-10 w-28 animate-pulse rounded-2xl bg-[#FAF9FD]" />
           ))}
         </div>
       ) : subjects.length === 0 ? (
@@ -105,14 +106,14 @@ export default function SubjectPickerBar({
           </button>
         </div>
       ) : (
-        <div className="flex items-center gap-2 overflow-x-auto pt-3 pb-1 scrollbar-thin">
+        <div className="flex items-center gap-2 overflow-x-auto py-2.5 scrollbar-thin">
           <button
             type="button"
             onClick={() => onSelectSubject(null)}
-            className={`inline-flex shrink-0 items-center rounded-2xl px-4 py-2 text-xs font-bold transition-all ${
+            className={`inline-flex h-10 shrink-0 items-center justify-center rounded-2xl px-4 text-xs font-bold transition-colors ${
               selectedSubjectId === null
-                ? "bg-social-violet text-white shadow-md shadow-social-violet/30"
-                : "bg-[#FAF9FD] text-[#4F4965] border border-[#E5E2EC] hover:bg-[#F0EEF8] hover:border-social-violet/30"
+                ? "border border-social-violet bg-social-violet text-white shadow-sm shadow-social-violet/25"
+                : "border border-[#E5E2EC] bg-[#FAF9FD] text-[#4F4965] hover:border-social-violet/30 hover:bg-[#F0EEF8]"
             }`}
           >
             Tất cả môn
@@ -125,20 +126,20 @@ export default function SubjectPickerBar({
                 key={sub.id}
                 type="button"
                 onClick={() => onSelectSubject(sub.id)}
-                className={`group inline-flex shrink-0 items-center gap-2 rounded-2xl px-4 py-2 text-xs font-bold transition-all ${
+                className={`group inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-2xl px-4 text-xs font-bold transition-colors ${
                   isSelected
-                    ? "bg-social-violet text-white shadow-md shadow-social-violet/30"
-                    : "bg-[#FAF9FD] text-[#4F4965] border border-[#E5E2EC] hover:bg-[#F0EEF8] hover:border-social-violet/30"
+                    ? "border border-social-violet bg-social-violet text-white shadow-sm shadow-social-violet/25"
+                    : "border border-[#E5E2EC] bg-[#FAF9FD] text-[#4F4965] hover:border-social-violet/30 hover:bg-[#F0EEF8]"
                 }`}
               >
                 <span
-                  className="h-2 w-2 rounded-full"
+                  className="h-2 w-2 rounded-full shrink-0"
                   style={{ backgroundColor: sub.colorHex || "#7C6EE6" }}
                 />
-                <span className="truncate max-w-[150px]">{sub.name}</span>
+                <span className="truncate max-w-[150px] leading-none">{sub.name}</span>
                 {sub.code && (
                   <span
-                    className={`rounded-lg px-1.5 py-0.5 text-[10px] font-bold ${
+                    className={`inline-flex items-center justify-center rounded-lg px-1.5 py-0.5 text-[10px] font-bold leading-none ${
                       isSelected
                         ? "bg-white/20 text-white"
                         : "bg-[#E5E2EC]/60 text-[#77718C]"
