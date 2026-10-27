@@ -1,0 +1,127 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: ${DOCKER_USERNAME:-local}/unisync-backend:latest
+    container_name: unisync-backend
+    restart: unless-stopped
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - DB_URL=${DB_URL}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - JWT_SECRET=${JWT_SECRET}
+      - COOKIE_SECURE=${COOKIE_SECURE:-true}
+      - COOKIE_SAME_SITE=${COOKIE_SAME_SITE:-None}
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-http://localhost:5173,http://localhost:3000,https://*.vercel.app}
+      - MAIL_HOST=${MAIL_HOST:-smtp.gmail.com}
+      - MAIL_PORT=${MAIL_PORT:-587}
+      - MAIL_USERNAME=${MAIL_USERNAME}
+      - MAIL_PASSWORD=${MAIL_PASSWORD}
+      - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}
+      - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}
+      - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
+      - CLOUDINARY_FOLDER=${CLOUDINARY_FOLDER:-unisync/avatars}
+      - AI_SERVICE_URL=http://ai-engine:8000
+      - INTERNAL_API_KEY=${INTERNAL_API_KEY:-unisync_internal_secret_key_2026}
+      - AI_TIMEOUT_SECONDS=120
+    depends_on:
+      redis:
+        condition: service_started
+    deploy:
+      resources:
+        limits:
+          memory: 384M
+    networks:
+      - unisync-net
+
+  ai-engine:
+    build:
+      context: ./ai
+      dockerfile: Dockerfile
+    image: ${DOCKER_USERNAME:-local}/unisync-ai:latest
+    container_name: unisync-ai
+    restart: unless-stopped
+    environment:
+      - PORT=8000
+      - HOST=0.0.0.0
+      - AI_MODE=live
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GEMINI_MODEL=${GEMINI_MODEL:-gemini-2.5-flash}
+      - INTERNAL_API_KEY=${INTERNAL_API_KEY:-unisync_internal_secret_key_2026}
+    deploy:
+      resources:
+        limits:
+          memory: 192M
+    networks:
+      - unisync-net
+
+  zalo-bridge:
+    build:
+      context: ./zalo-bridge
+      dockerfile: Dockerfile
+    image: ${DOCKER_USERNAME:-local}/unisync-bridge:latest
+    container_name: unisync-bridge
+    restart: unless-stopped
+    environment:
+      - PORT=3001
+      - BACKEND_URL=http://backend:8080/api/v1/internal/zalo/messages
+      - INTERNAL_API_KEY=${INTERNAL_API_KEY:-unisync_internal_secret_key_2026}
+      - ZALO_MODE=real
+      - SESSION_FILE_PATH=/app/data/zalo_session.json
+    volumes:
+      - zalo_data:/app/data
+    deploy:
+      resources:
+        limits:
+          memory: 96M
+    networks:
+      - unisync-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: unisync-redis
+    restart: unless-stopped
+    command: ["redis-server", "--save", "", "--appendonly", "no", "--maxmemory", "25mb", "--maxmemory-policy", "allkeys-lru"]
+    volumes:
+      - redis_data:/data
+    deploy:
+      resources:
+        limits:
+          memory: 32M
+    networks:
+      - unisync-net
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: unisync-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - certbot_web:/var/www/certbot:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+    depends_on:
+      - backend
+    deploy:
+      resources:
+        limits:
+          memory: 24M
+    networks:
+      - unisync-net
+
+volumes:
+  redis_data:
+  zalo_data:
+  certbot_web:
+
+networks:
+  unisync-net:
+    driver: bridge

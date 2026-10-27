@@ -28,16 +28,24 @@ public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
     private final AuthenticationProvider authenticationProvider;
+    @org.springframework.beans.factory.annotation.Value("${conflict.cors.allowed-origins:http://localhost:5173,http://localhost:3000,https://*.vercel.app}")
+    private String allowedOriginsConfig;
+
     @Bean
     CorsConfigurationSource corsConfigurationSource(){
         CorsConfiguration config = new CorsConfiguration();
 
-        config.setAllowedOrigins(List.of("http://localhost:5173"));
+        java.util.List<String> origins = java.util.Arrays.stream(allowedOriginsConfig.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(java.util.stream.Collectors.toList());
+
+        config.setAllowedOriginPatterns(origins);
         config.setAllowedMethods(
                 List.of("GET","POST","PUT","PATCH","DELETE","OPTIONS")
         );
         config.setAllowedHeaders(
-                List.of("Authorization", "Content-Type", "X-XSRF-TOKEN", "X-Internal-Api-Key")
+                List.of("Authorization", "Content-Type", "X-XSRF-TOKEN", "X-Internal-Api-Key", "Origin", "Accept", "X-Requested-With")
         );
         config.setAllowCredentials(true);
 

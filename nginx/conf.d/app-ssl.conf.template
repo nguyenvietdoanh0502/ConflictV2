@@ -1,0 +1,58 @@
+# Sau khi cấp chứng chỉ SSL bằng Certbot thành công,
+# Đổi tên file này thành app.conf (ghi đè file cũ) và thay YOUR_DOMAIN bằng domain của bạn (ví dụ: unisync-api.duckdns.org),
+# rồi chạy: docker compose -f docker-compose.prod.yml exec nginx nginx -s reload
+
+server {
+    listen 80;
+    server_name YOUR_DOMAIN;
+
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+server {
+    listen 443 ssl;
+    server_name YOUR_DOMAIN;
+
+    ssl_certificate /etc/letsencrypt/live/YOUR_DOMAIN/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/YOUR_DOMAIN/privkey.pem;
+
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers on;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+
+    # API Gateway chuyển tiếp tới Spring Boot
+    location /api/ {
+        proxy_pass http://backend:8080/api/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_read_timeout 180s;
+        proxy_connect_timeout 60s;
+    }
+
+    # WebSocket STOMP Endpoint với WSS
+    location /ws/ {
+        proxy_pass http://backend:8080/ws/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "Upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_read_timeout 86400s;
+        proxy_send_timeout 86400s;
+    }
+
+    location / {
+        default_type application/json;
+        return 200 '{"status":"UP","message":"UniSync Cloud API Gateway (HTTPS) is running securely"}';
+    }
+}

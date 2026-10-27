@@ -21,7 +21,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
             StompEndpointRegistry registry
     ) {
         registry.addEndpoint("/ws")
-                .setAllowedOrigins("http://localhost:5173");
+                .setAllowedOriginPatterns("*");
 
         registry.setPreserveReceiveOrder(true);
     }

@@ -1,0 +1,88 @@
+server:
+  port: 8080
+  tomcat:
+    max-http-form-post-size: 20MB
+    max-swallow-size: 20MB
+    threads:
+      max: 50
+      min-spare: 10
+
+spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      idle-timeout: 300000
+      max-lifetime: 600000
+      connection-timeout: 20000
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  data:
+    redis:
+      host: ${REDIS_HOST:redis}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 25MB
+
+conflict:
+  jwt:
+    secret: ${JWT_SECRET}
+    access-token-expiration: 86400000 # 24h
+    refresh-token-expiration: 2592000000 # 30 days
+    reset-password-expiration: 300000
+  auth:
+    cookie:
+      secure: ${COOKIE_SECURE:true}
+      same-site: ${COOKIE_SAME_SITE:None}
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:3000,https://*.vercel.app}
+  cloudinary:
+    cloud-name: ${CLOUDINARY_CLOUD_NAME}
+    api-key: ${CLOUDINARY_API_KEY}
+    api-secret: ${CLOUDINARY_API_SECRET}
+    folder: ${CLOUDINARY_FOLDER:unisync/avatars}
+
+unisync:
+  ai:
+    service-url: ${AI_SERVICE_URL:http://ai-engine:8000}
+    internal-api-key: ${INTERNAL_API_KEY:unisync_internal_secret_key_2026}
+    timeout-seconds: ${AI_TIMEOUT_SECONDS:120}
+
+logging:
+  level:
+    root: INFO
+    com.hit.conflict: INFO
+    com.conflict.be: INFO
+    org.hibernate: WARN
