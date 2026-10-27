@@ -24,3 +24,12 @@ backend/target/
 .env
 .env.local
 *.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+env/
+venv/
+.pytest_cache/

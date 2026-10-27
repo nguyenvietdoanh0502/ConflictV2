@@ -1,5 +1,8 @@
 server:
   port: 8080
+  tomcat:
+    max-http-form-post-size: 20MB
+    max-swallow-size: 20MB
 
 spring:
   datasource:
@@ -41,8 +44,8 @@ spring:
 
   servlet:
     multipart:
-      max-file-size: 5MB
-      max-request-size: 6MB
+      max-file-size: 20MB
+      max-request-size: 25MB
 
 conflict:
   jwt:
@@ -66,5 +69,11 @@ logging:
     com.hit.conflict: DEBUG
     org.hibernate.SQL: DEBUG
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+
+unisync:
+  ai:
+    service-url: ${AI_SERVICE_URL:http://localhost:8000}
+    internal-api-key: ${INTERNAL_API_KEY:unisync_internal_secret_key_2026}
+    timeout-seconds: ${AI_TIMEOUT_SECONDS:120}
 
 

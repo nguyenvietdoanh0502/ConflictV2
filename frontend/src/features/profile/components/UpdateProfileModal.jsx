@@ -1,3 +1,4 @@
+import { getLocalizedErrorMessage } from "../../../utils/errorMessages";
 import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useDispatch, useSelector } from "react-redux";
@@ -20,37 +21,7 @@ function getLocalDateInputValue(date = new Date()) {
 }
 
 function getUpdateProfileErrorMessage(error) {
-  if (error?.status === "FETCH_ERROR") {
-    return "Không kết nối được tới backend. Hãy kiểm tra server đang chạy ở cổng 8080.";
-  }
-
-  const errorMessages = {
-    MISSING_FULL_NAME: "Vui lòng nhập họ và tên.",
-    INVALID_FULL_NAME: "Họ và tên phải có từ 2 đến 100 ký tự.",
-    INVALID_AVATAR_FILE: "Ảnh phải có định dạng JPEG, PNG hoặc WebP.",
-    AVATAR_TOO_LARGE: "Ảnh không được vượt quá 5 MB.",
-    AVATAR_UPLOAD_FAILED: "Không thể tải ảnh lên Cloudinary.",
-    INVALID_DATE_OF_BIRTH:
-      "Ngày sinh không hợp lệ hoặc nằm trong tương lai.",
-    INVALID_ADDRESS: "Địa chỉ không được vượt quá 255 ký tự.",
-    INVALID_GENDER: "Giới tính không hợp lệ.",
-    USER_NOT_EXISTED: "Không tìm thấy tài khoản.",
-  };
-  const errorCode = error?.data?.errorCode;
-
-  if (errorCode && errorMessages[errorCode]) {
-    return errorMessages[errorCode];
-  }
-
-  if (typeof error?.data?.message === "string") {
-    return error.data.message;
-  }
-
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return "Cập nhật hồ sơ thất bại.";
+  return getLocalizedErrorMessage(error, "Cập nhật hồ sơ thất bại. Vui lòng thử lại.");
 }
 
 export default function UpdateProfileModal({ isOpen, onClose, onConfirm }) {
@@ -215,7 +186,7 @@ export default function UpdateProfileModal({ isOpen, onClose, onConfirm }) {
         aria-describedby={descriptionId}
         aria-busy={isLoading}
       >
-        <div className="relative overflow-hidden border-b border-[#EEE8F4] bg-gradient-to-br from-[#F0ECFF] via-[#FFF5F9] to-[#FFF0E5] px-5 pb-5 pt-6 sm:px-7 sm:pb-6 sm:pt-7">
+        <div className="relative overflow-hidden border-b border-[#EEE8F4] bg-[#F5F3FF] px-5 pb-5 pt-6 sm:px-7 sm:pb-6 sm:pt-7">
           <span
             className="pointer-events-none absolute -right-8 -top-10 h-32 w-32 rounded-full border-[20px] border-white/[.45]"
             aria-hidden="true"
@@ -251,10 +222,7 @@ export default function UpdateProfileModal({ isOpen, onClose, onConfirm }) {
               </svg>
             </div>
 
-            <div>
-              <p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-[#7C6EE6]">
-                Make it yours
-              </p>
+            <div> 
               <h2
                 id={titleId}
                 className="mt-1 text-xl font-extrabold tracking-tight text-[#2F2A45] sm:text-2xl"

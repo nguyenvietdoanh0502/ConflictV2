@@ -11,6 +11,8 @@ import ProfilePage from "./features/profile/pages/ProfilePage";
 import MainLayout from "./layouts/MainLayout";
 import ProtectedRoute from "./features/auth/components/ProtectedRoute";
 import FriendsPage from "./features/friend/pages/FriendsPage";
+import ZaloAiPoCPage from "./features/timetable/pages/ZaloAiPoCPage";
+import StudyPage from "./features/study/pages/StudyPage";
 
 function App() {
   return (
@@ -26,6 +28,10 @@ function App() {
       <Route element={<MainLayout/>}>
         <Route path="/" element={<HomePage/>} />
         <Route element = {<ProtectedRoute/>}>
+          <Route path="/timetable" element={<ZaloAiPoCPage />} />
+          <Route path="/zalo-ai" element={<Navigate to="/timetable" replace />} />
+          <Route path="/study" element={<StudyPage />} />
+          <Route path="/materials" element={<Navigate to="/study" replace />} />
           <Route path="/friends" element={<FriendsPage />} />
           <Route path="/profile/friends" element={<Navigate to="/friends" replace />} />
           <Route path="/profile" element={<ProfilePage/>}>

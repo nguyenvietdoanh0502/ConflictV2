@@ -1,9 +1,16 @@
-import { Link, NavLink } from "react-router-dom";
-import { useSelector } from "react-redux";
+import { useState, useRef, useEffect } from "react";
+import { Link, NavLink, useLocation } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import logoWithoutText from "../assets/logowithouttext.png";
+import justText from "../assets/justtext.png";
 import {
   selectCurrentUser,
   selectIsAuthenticated,
 } from "../features/auth/authSelectors";
+import {
+  selectTotalUnreadCount,
+} from "../features/chat/chatSlice";
+import MessengerDropdown from "../features/chat/components/MessengerDropdown";
 
 function HomeIcon() {
   return (
@@ -82,22 +89,66 @@ function BellIcon() {
   );
 }
 
+function MessengerIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden="true">
+      <path
+        d="M12 2C6.477 2 2 6.145 2 11.258c0 2.912 1.455 5.512 3.727 7.159V21.5a.75.75 0 0 0 1.157.633l2.844-1.748c.725.2 1.488.307 2.272.307 5.523 0 10-4.145 10-9.258C22 6.145 17.523 2 12 2Z"
+        fill="currentColor"
+      />
+      <path
+        d="m8.5 13.5 2.5-3 2.5 3 4-4.5-5 5.5-2.5-3-4 4.5 2.5-2.5Z"
+        fill="white"
+      />
+    </svg>
+  );
+}
+
 function BrandMark() {
   return (
-    <span className="grid h-10 w-10 place-items-center rounded-full bg-social-violet text-white shadow-[0_5px_14px_rgba(124,110,230,0.30)]">
-      <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" aria-hidden="true">
-        <path
-          d="M6.5 5.5h11A3.5 3.5 0 0 1 21 9v4a3.5 3.5 0 0 1-3.5 3.5h-5L8 20v-3.5H6.5A3.5 3.5 0 0 1 3 13V9a3.5 3.5 0 0 1 3.5-3.5Z"
-          fill="currentColor"
-        />
-        <path d="M8 11h8" stroke="#7C6EE6" strokeWidth="2.4" strokeLinecap="round" />
-      </svg>
-    </span>
+    <div className="flex items-center gap-2.5">
+      <img
+        src={justText}
+        alt="UniSync"
+        className="hidden sm:inline-block h-6 sm:h-7 w-auto object-contain drop-shadow-sm transition-transform hover:scale-105"
+      />
+    </div>
+  );
+}
+
+function TimetableIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" aria-hidden="true">
+      <path
+        d="M19 4H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2ZM16 2v4M8 2v4M3 10h18"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle cx="12" cy="15" r="1.5" fill="currentColor" />
+    </svg>
+  );
+}
+
+function StudyIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" aria-hidden="true">
+      <path
+        d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 }
 
 const navItems = [
   { label: "Trang chủ", to: "/", end: true, icon: HomeIcon },
+  { label: "Thời khóa biểu AI", to: "/timetable", protected: true, icon: TimetableIcon },
+  { label: "Góc học tập & AI", to: "/study", protected: true, icon: StudyIcon },
   { label: "Bạn bè", to: "/friends", protected: true, icon: FriendsIcon },
   { label: "Hồ sơ", to: "/profile", end: true, protected: true, icon: ProfileIcon },
 ];
@@ -106,12 +157,37 @@ const roundButtonClass =
   "grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#F0EEF8] text-[#4F4965] hover:bg-[#E8E4F7] hover:text-social-violet focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-social-violet/20 disabled:cursor-default disabled:hover:bg-[#F0EEF8] disabled:hover:text-[#4F4965]";
 
 export default function Header() {
+  const dispatch = useDispatch();
   const user = useSelector(selectCurrentUser);
   const isAuthenticated = useSelector(selectIsAuthenticated);
+  const totalUnreadCount = useSelector(selectTotalUnreadCount);
   const displayName = user?.fullName?.trim() || user?.email || "Người dùng";
   const avatarUrl = user?.avatarUrl?.trim();
   const avatarLetter = displayName.charAt(0).toUpperCase();
   const visibleNavItems = navItems.filter((item) => !item.protected || isAuthenticated);
+
+  const [isMessengerOpen, setIsMessengerOpen] = useState(false);
+  const messengerRef = useRef(null);
+  const location = useLocation();
+
+  // Close dropdown on route change
+  useEffect(() => {
+    setIsMessengerOpen(false);
+  }, [location.pathname]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    if (!isMessengerOpen) return;
+    function handleClickOutside(event) {
+      if (messengerRef.current && !messengerRef.current.contains(event.target)) {
+        setIsMessengerOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isMessengerOpen]);
 
   return (
     <header className="sticky top-0 z-50 h-16 w-full border-b border-[#E5E2EC] bg-white shadow-[0_2px_10px_rgba(47,42,69,0.07)]">
@@ -194,6 +270,31 @@ export default function Header() {
                 <PlusIcon />
               </button>
 
+              <div className="relative" ref={messengerRef}>
+                <button
+                  type="button"
+                  onClick={() => setIsMessengerOpen((prev) => !prev)}
+                  className={`${roundButtonClass} relative ${
+                    isMessengerOpen ? "bg-[#EAE6FF] text-social-violet" : ""
+                  }`}
+                  aria-label="Trò chuyện tin nhắn"
+                  title="Đoạn chat"
+                  aria-expanded={isMessengerOpen}
+                  aria-haspopup="dialog"
+                >
+                  <MessengerIcon />
+                  {totalUnreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 grid h-5 min-w-[20px] place-items-center rounded-full bg-[#E41E3F] px-1 text-[10px] font-extrabold text-white ring-2 ring-white animate-pulse">
+                      {totalUnreadCount > 9 ? "9+" : totalUnreadCount}
+                    </span>
+                  )}
+                </button>
+
+                {isMessengerOpen && (
+                  <MessengerDropdown onClose={() => setIsMessengerOpen(false)} />
+                )}
+              </div>
+
               <button
                 type="button"
                 disabled
@@ -218,7 +319,7 @@ export default function Header() {
                     className="h-10 w-10 rounded-full object-cover ring-2 ring-[#E8E4F7]"
                   />
                 ) : (
-                  <span className="grid h-10 w-10 place-items-center rounded-full bg-gradient-to-br from-social-violet to-social-pink text-sm font-extrabold text-white ring-2 ring-[#E8E4F7]">
+                  <span className="grid h-10 w-10 place-items-center rounded-full bg-social-violet text-sm font-extrabold text-white ring-2 ring-[#E8E4F7]">
                     {avatarLetter}
                   </span>
                 )}
@@ -236,7 +337,7 @@ export default function Header() {
                 to="/register"
                 className="rounded-full bg-social-violet px-3.5 py-2.5 text-xs font-bold text-white shadow-[0_5px_14px_rgba(124,110,230,0.24)] hover:bg-[#6E60DC] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-social-violet/20 sm:px-5 sm:text-sm"
               >
-                Tham gia
+                Đăng ký
               </Link>
             </>
           )}

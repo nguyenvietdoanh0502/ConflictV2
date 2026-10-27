@@ -1,12 +1,30 @@
+/* FullCalendar v7 Core & Theme Styles */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,300;1,400;1,500;1,600;1,700;1,800&display=swap');
+@import "@fullcalendar/react/skeleton.css";
+@import "@fullcalendar/react/themes/classic/theme.css";
+@import "@fullcalendar/react/themes/classic/palette.css";
+@import "katex/dist/katex.min.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   color: #2f2a45;
   background: #f7f5ff;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
+}
+
+html,
+body,
+#root,
+button,
+input,
+textarea,
+select {
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
 html {
@@ -25,8 +43,8 @@ body {
   margin: 0;
   min-width: 320px;
   background-image:
-    radial-gradient(circle at 8% 8%, rgba(255, 216, 190, 0.36), transparent 27rem),
-    radial-gradient(circle at 92% 2%, rgba(184, 234, 221, 0.34), transparent 25rem);
+    radial-gradient(circle at 8% 8%, rgba(124, 110, 230, 0.08), transparent 27rem),
+    radial-gradient(circle at 92% 2%, rgba(124, 110, 230, 0.05), transparent 25rem);
   background-attachment: fixed;
 }
 
@@ -81,3 +99,59 @@ code {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* FullCalendar Timetable Event Box Customization:
+   - Fill box width close to vertical column lines (1px margin)
+   - Remove default FullCalendar borders, ring box-shadows, and internal paddings
+*/
+.fc .fc-timegrid-col div[role="list"],
+.fc div[role="list"] {
+  margin-inline-start: 1px !important;
+  margin-inline-end: 1px !important;
+}
+
+.fc div[role="listitem"],
+.fc-timegrid-event-harness {
+  margin-inline-end: 0 !important;
+}
+
+.fc div[role="listitem"] > *,
+.fc-timegrid-event,
+.fc-v-event,
+.fc-event {
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+  padding: 0 !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  height: 100% !important;
+}
+
+.fc div[role="listitem"] > * > div {
+  padding: 0 !important;
+  height: 100% !important;
+  width: 100% !important;
+}
+
+/* Interactive Timetable Slots for Quick Event Creation */
+.fc .fc-timegrid-slot {
+  cursor: pointer !important;
+  transition: background-color 0.15s ease;
+}
+
+.fc .fc-timegrid-slot:hover {
+  background-color: rgba(99, 102, 241, 0.05) !important;
+}
+
+.fc-highlight {
+  background: rgba(99, 102, 241, 0.2) !important;
+  border-radius: 8px !important;
+}
+
+/* Capitalize the month title on the timetable: 'tháng 10 năm 2026' -> 'Tháng 10 năm 2026' */
+.fc .fc-toolbar-title {
+  text-transform: capitalize !important;
+  font-weight: 800 !important;
+}
+

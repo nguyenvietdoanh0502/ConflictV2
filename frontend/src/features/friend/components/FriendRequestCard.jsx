@@ -26,7 +26,7 @@ export default function FriendRequestCard({
   isBusy = false,
 }) {
   const isIncoming = direction === "incoming";
-  const displayName = request?.user?.fullName?.trim() || "Người dùng Conflict";
+  const displayName = request?.user?.fullName?.trim() || "Người dùng UniSync";
   const dateLabel = formatRequestTime(request?.createdAt);
 
   return (

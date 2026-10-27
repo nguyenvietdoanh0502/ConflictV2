@@ -1,3 +1,4 @@
+import { getLocalizedErrorMessage } from "../../../utils/errorMessages";
 import { useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useVerifyForgotPasswordOtpMutation } from "../authApi";
@@ -5,19 +6,7 @@ import { useVerifyForgotPasswordOtpMutation } from "../authApi";
 const OTP_LENGTH = 6;
 
 function getVerifyOtpForgotPasswordErrorMessage(error) {
-  if (error?.status === "FETCH_ERROR") {
-    return "Không kết nối được tới backend. Hãy kiểm tra server đang chạy ở cổng 8080.";
-  }
-
-  if (typeof error?.data?.message === "string") {
-    return error.data.message;
-  }
-
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return "Xác minh thất bại. Vui lòng kiểm tra lại email và mã OTP.";
+  return getLocalizedErrorMessage(error, "Xác minh thất bại. Vui lòng kiểm tra lại mã OTP.");
 }
 
 export default function VerifyOtpForgotPasswordPage() {
@@ -262,7 +251,7 @@ export default function VerifyOtpForgotPasswordPage() {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="group flex h-14 w-full items-center justify-center gap-2 rounded-[18px] bg-gradient-to-r from-[#7C6EE6] to-[#9385EC] px-5 text-sm font-bold text-white shadow-[0_14px_30px_rgba(124,110,230,0.28)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_36px_rgba(124,110,230,0.34)] focus:outline-none focus:ring-4 focus:ring-[#7C6EE6]/25 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
+                  className="group flex h-14 w-full items-center justify-center gap-2 rounded-[18px] bg-social-violet hover:bg-[#6E60DC] px-5 text-sm font-bold text-white shadow-[0_14px_30px_rgba(124,110,230,0.28)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_36px_rgba(124,110,230,0.34)] focus:outline-none focus:ring-4 focus:ring-[#7C6EE6]/25 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
                 >
                   {isLoading ? (
                     <>

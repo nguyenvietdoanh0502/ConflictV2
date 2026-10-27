@@ -29,4 +29,33 @@ public class UrlConstant {
         public static final String HISTORY = "/chat/{friendUserId}/messages";
     }
 
+    public static class Subject {
+        public static final String BASE = "/subjects";
+        public static final String BY_ID = "/subjects/{id}";
+    }
+
+    public static class Zalo {
+        public static final String MAPPINGS = "/zalo/mappings";
+        public static final String MAPPING_BY_ID = "/zalo/mappings/{id}";
+        public static final String MAPPING_TOGGLE = "/zalo/mappings/{id}/toggle";
+        public static final String SIMULATE = "/zalo/simulate";
+        public static final String INTERNAL_MESSAGES = "/internal/zalo/messages";
+        public static final String MOCK_WEBHOOK = "/webhook/mock-zalo";
+    }
+
+    public static class Schedule {
+        public static final String EVENTS = "/schedule/events";
+        public static final String EVENT_BY_ID = "/schedule/events/{id}";
+        public static final String CONFIRM_EVENT = "/schedule/events/{id}/confirm";
+        public static final String REJECT_EVENT = "/schedule/events/{id}/reject";
+    }
+
+    public static class Material {
+        public static final String BASE = "/materials";
+        public static final String BY_ID = "/materials/{id}";
+        public static final String REGENERATE = "/materials/{id}/regenerate";
+        public static final String GENERATE_MINIGAMES = "/materials/{id}/generate-minigames";
+        public static final String SCORES = "/materials/{id}/scores";
+        public static final String LEADERBOARD = "/materials/{id}/leaderboard";
+    }
 }

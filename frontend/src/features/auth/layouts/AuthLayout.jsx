@@ -1,4 +1,6 @@
 import { Link, Outlet, useNavigate } from "react-router-dom";
+import logoWithoutText from "../../../assets/logowithouttext.png";
+import justText from "../../../assets/justtext.png";
 
 export default function AuthLayout() {
   const navigate = useNavigate();
@@ -20,36 +22,26 @@ export default function AuthLayout() {
         <section className="text-center lg:pb-12 lg:text-left">
           <Link
             to="/"
-            className="inline-flex items-center gap-3 rounded-[18px] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#7C6EE6]/20"
-            aria-label="Về trang chủ Conflict"
+            className="inline-flex items-center gap-3 rounded-[18px] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#7C6EE6]/20 group"
+            aria-label="Về trang chủ UniSync"
           >
-            <span className="grid h-12 w-12 place-items-center rounded-[16px] bg-[#7C6EE6] text-white shadow-[0_8px_20px_rgba(124,110,230,0.22)] sm:h-14 sm:w-14 sm:rounded-[18px]">
-              <svg
-                className="h-7 w-7 sm:h-8 sm:w-8"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                aria-hidden="true"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M7.5 10.5h.01m4.49 0h.01m4.49 0h.01M5.25 19.5l-2.25.75.75-2.25A8.25 8.25 0 1 1 5.25 19.5Z"
-                />
-              </svg>
-            </span>
-            <span className="text-3xl font-extrabold tracking-[-0.045em] text-[#675BAF] sm:text-4xl">
-              Conflict
-            </span>
+            <img
+              src={logoWithoutText}
+              alt="UniSync"
+              className="h-12 w-12 sm:h-14 sm:w-14 object-contain drop-shadow-md transition-transform group-hover:scale-105"
+            />
+            <img
+              src={justText}
+              alt="UniSync"
+              className="h-8 sm:h-10 w-auto object-contain drop-shadow-sm transition-transform group-hover:scale-105"
+            />
           </Link>
 
           <h1 className="mx-auto mt-4 max-w-[520px] text-lg font-semibold leading-7 text-[#514B65] sm:text-xl lg:mx-0 lg:mt-6 lg:text-[28px] lg:leading-10">
-            Kết nối với bạn bè và chia sẻ những khoảnh khắc của bạn.
+            Đồng bộ hóa đại học — Học tập, giao lưu & xếp lịch dễ dàng.
           </h1>
           <p className="mx-auto mt-2 hidden max-w-[500px] text-base leading-7 text-[#7C758F] lg:block">
-            Một không gian gần gũi để trò chuyện, khám phá và luôn ở cạnh
-            những người bạn quan tâm.
+            Nền tảng giúp sinh viên kết nối, quản lý thời khóa biểu thông minh và tối ưu hóa việc học tập mỗi ngày.
           </p>
         </section>
 
@@ -82,7 +74,7 @@ export default function AuthLayout() {
           </div>
 
           <p className="mt-4 text-center text-xs leading-5 text-[#847D96]">
-            Conflict · Kết nối tích cực, chia sẻ chân thành.
+            UniSync · University + Synchronize · Học tập & gắn kết.
           </p>
         </section>
       </div>
