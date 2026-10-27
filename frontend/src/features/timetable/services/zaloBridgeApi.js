@@ -1,4 +1,20 @@
-const BRIDGE_URL = import.meta.env.VITE_ZALO_BRIDGE_URL || "http://localhost:3001";
+function getBridgeBaseUrl() {
+  if (import.meta.env.VITE_ZALO_BRIDGE_URL) {
+    return import.meta.env.VITE_ZALO_BRIDGE_URL;
+  }
+  const apiUrl = import.meta.env.VITE_API_URL;
+  if (apiUrl && !apiUrl.includes("localhost") && !apiUrl.includes("127.0.0.1")) {
+    try {
+      const url = new URL(apiUrl);
+      return url.origin;
+    } catch {
+      // ignore
+    }
+  }
+  return "http://localhost:3001";
+}
+
+const BRIDGE_URL = getBridgeBaseUrl();
 
 export async function fetchBridgeStatus() {
   try {
