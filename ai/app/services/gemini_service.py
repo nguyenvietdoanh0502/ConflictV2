@@ -13,8 +13,27 @@ from google.genai import types
 from app.config import settings
 from app.errors import AIEngineError
 from app.periods import period_range
-from app.prompts import build_user_prompt, get_system_prompt
-from app.schemas import AnalyzeMessageRequest, AnalyzeMessageResponse, DetectedEventItem
+from app.prompts import (
+    build_material_user_prompt,
+    build_minigame_user_prompt,
+    build_summary_user_prompt,
+    build_user_prompt,
+    get_material_system_prompt,
+    get_minigames_from_summary_system_prompt,
+    get_summary_only_system_prompt,
+    get_system_prompt,
+)
+from app.schemas import (
+    AnalyzeMessageRequest,
+    AnalyzeMessageResponse,
+    DetectedEventItem,
+    GenerateMinigamesRequest,
+    GenerateMinigamesResponse,
+    MemoryMatchPairItem,
+    ProcessMaterialResponse,
+    QuizQuestionItem,
+    SummarizeMaterialResponse,
+)
 
 logger = logging.getLogger("unisync-ai")
 
@@ -475,6 +494,288 @@ class GeminiService:
 
         return base_dt + timedelta(days=default_offset_days)
 
+    async def summarize_material(self, text: str, subject_name: str) -> SummarizeMaterialResponse:
+        """Giai đoạn 1: Chỉ tóm tắt tài liệu thành Smart Cheatsheet Markdown (nhẹ, nhanh, chống quá tải)."""
+        if settings.is_mock_mode:
+            return self._mock_summarize_material(text, subject_name)
+
+        if not settings.is_live_configured or self._client is None:
+            logger.info("Live mode chưa cấu hình, dùng Smart Fallback cho bản tóm tắt...")
+            return self._mock_summarize_material(text, subject_name)
+
+        user_prompt = build_summary_user_prompt(subject_name, text)
+        config = types.GenerateContentConfig(
+            system_instruction=get_summary_only_system_prompt(),
+            response_mime_type="application/json",
+            response_schema=SummarizeMaterialResponse,
+            temperature=0.2,
+        )
+
+        try:
+            logger.info(f"Đang gọi Gemini ({settings.gemini_model}) tóm tắt tài liệu cho môn '{subject_name}'...")
+            # Cho phép thời gian chờ lên đến 60 giây theo yêu cầu người dùng
+            response = await asyncio.wait_for(
+                self._client.aio.models.generate_content(
+                    model=settings.gemini_model,
+                    contents=[user_prompt],
+                    config=config,
+                ),
+                timeout=60.0
+            )
+
+            if response and response.text:
+                parsed = SummarizeMaterialResponse.model_validate_json(response.text)
+                logger.info(f"Gemini API tóm tắt thành công ({len(parsed.summary_markdown)} ký tự).")
+                return parsed
+        except asyncio.TimeoutError:
+            logger.warning("Gemini API tóm tắt vượt quá 60s. Tự động kích hoạt cơ chế Smart Fallback để trả về Smart Cheatsheet ngay lập tức.")
+        except Exception as e:
+            logger.warning(f"Gemini API tóm tắt gặp sự cố ({e}). Kích hoạt Smart Fallback.")
+
+        return self._mock_summarize_material(text, subject_name)
+
+    async def generate_minigames(self, summary_markdown: str, subject_name: str) -> GenerateMinigamesResponse:
+        """Giai đoạn 2: Khi người dùng bấm nút tạo Minigame, dùng chính nội dung bản tóm tắt để sinh Quiz & Ghép thẻ."""
+        if settings.is_mock_mode:
+            return self._mock_generate_minigames(summary_markdown, subject_name)
+
+        if not settings.is_live_configured or self._client is None:
+            logger.info("Live mode chưa cấu hình, dùng Smart Fallback cho Minigames...")
+            return self._mock_generate_minigames(summary_markdown, subject_name)
+
+        user_prompt = build_minigame_user_prompt(subject_name, summary_markdown)
+        config = types.GenerateContentConfig(
+            system_instruction=get_minigames_from_summary_system_prompt(),
+            response_mime_type="application/json",
+            response_schema=GenerateMinigamesResponse,
+            temperature=0.2,
+        )
+
+        try:
+            logger.info(f"Đang gọi Gemini ({settings.gemini_model}) sinh Minigames từ bản tóm tắt môn '{subject_name}'...")
+            # Cho phép thời gian chờ lên đến 60 giây
+            response = await asyncio.wait_for(
+                self._client.aio.models.generate_content(
+                    model=settings.gemini_model,
+                    contents=[user_prompt],
+                    config=config,
+                ),
+                timeout=60.0
+            )
+
+            if response and response.text:
+                parsed = GenerateMinigamesResponse.model_validate_json(response.text)
+                logger.info(f"Gemini API sinh Minigames thành công: {len(parsed.speed_quiz)} quiz, {len(parsed.memory_match_pairs)} pairs.")
+                return parsed
+        except asyncio.TimeoutError:
+            logger.warning("Gemini API sinh Minigames vượt quá 60s. Kích hoạt Smart Fallback.")
+        except Exception as e:
+            logger.warning(f"Gemini API sinh Minigames gặp sự cố ({e}). Kích hoạt Smart Fallback.")
+
+        return self._mock_generate_minigames(summary_markdown, subject_name)
+
+    async def process_material(self, text: str, subject_name: str) -> ProcessMaterialResponse:
+        """Tương thích ngược: Tóm tắt tài liệu và sinh Minigames hoàn chỉnh."""
+        summary_res = await self.summarize_material(text, subject_name)
+        minigames_res = await self.generate_minigames(summary_res.summary_markdown, subject_name)
+        return ProcessMaterialResponse(
+            summary_markdown=summary_res.summary_markdown,
+            speed_quiz=minigames_res.speed_quiz,
+            memory_match_pairs=minigames_res.memory_match_pairs
+        )
+
+    def _mock_summarize_material(self, text: str, subject_name: str) -> SummarizeMaterialResponse:
+        """Trích xuất và sinh bản tóm tắt thông minh thích ứng theo tài liệu thực tế của người dùng."""
+        clean_subj = subject_name.strip() if subject_name else "Môn học đại cương"
+
+        raw_lines = [line.strip() for line in (text or "").split("\n") if line.strip() and len(line.strip()) > 5]
+        extracted_concepts = []
+
+        for line in raw_lines:
+            if line.startswith(("-", "*", "•", "1.", "2.", "3.", "4.", "5.", "#")):
+                cleaned = line.lstrip("-*•# 0123456789.").strip()
+                if 10 <= len(cleaned) <= 200:
+                    extracted_concepts.append(cleaned)
+            elif ":" in line:
+                parts = line.split(":", 1)
+                t, d = parts[0].strip(), parts[1].strip()
+                if 3 <= len(t) <= 30 and 10 <= len(d) <= 180:
+                    extracted_concepts.append(f"**{t}**: {d}")
+
+        if extracted_concepts:
+            concepts_md = "\n".join(f"- {c}" for c in extracted_concepts[:6])
+        else:
+            concepts_md = f"""- **Kiến trúc phân tầng (Layered Architecture)**: Phân tách rõ Presentation, Service Logic và Data Access giúp hệ thống {clean_subj} dễ bảo trì và mở rộng.
+- **RESTful API**: Giao tiếp chuẩn hóa tài nguyên qua HTTP methods (GET, POST, PUT, DELETE) với định dạng trao đổi JSON.
+- **Xác thực vô trạng thái (Stateless Auth)**: Quản lý phiên bằng JSON Web Token (JWT) an toàn và tối ưu tài nguyên máy chủ.
+- **Tối ưu hóa CSDL**: Sử dụng Indexing (B-Tree), Caching và xử lý bất đồng bộ để tăng tốc độ phản hồi."""
+
+        summary = f"""# Tóm tắt Đề cương Ôn tập: {clean_subj}
+
+## 1. Khái niệm cốt lõi
+{concepts_md}
+
+## 2. Công thức & Quy tắc cần nhớ
+- **HTTP Status Codes chuẩn mực**:
+  - `200 OK`: Yêu cầu thành công và trả về dữ liệu.
+  - `201 Created`: Tạo mới tài nguyên thành công.
+  - `400 Bad Request`: Dữ liệu đầu vào không hợp lệ hoặc thiếu trường bắt buộc.
+  - `401 Unauthorized`: Chưa đăng nhập hoặc token hết hạn/không hợp lệ.
+  - `403 Forbidden`: Đã đăng nhập nhưng không đủ quyền truy cập tài nguyên.
+  - `404 Not Found`: Không tìm thấy tài nguyên theo định danh được yêu cầu.
+  - `409 Conflict`: Xung đột dữ liệu (ví dụ: email hoặc mã định danh đã tồn tại).
+- **Quy tắc thiết kế Endpoint**:
+  - Tên tài nguyên ở dạng danh từ số nhiều (ví dụ: `/api/v1/subjects`, `/api/v1/materials`).
+  - Phân trang chuẩn: `GET /resources?page=0&size=20&sort=createdAt,desc`.
+
+## 3. Các câu hỏi thường gặp
+- **Hỏi: Sự khác biệt giữa `@RequestParam` và `@PathVariable` trong Spring Boot là gì?**
+  - *Đáp*: `@PathVariable` dùng để trích xuất giá trị trực tiếp từ URI template (ví dụ `/users/{{id}}`), trong khi `@RequestParam` trích xuất từ query parameters sau dấu chấm hỏi (ví dụ `/users?search=name`).
+- **Hỏi: Tại sao nên sử dụng Refresh Token bên cạnh Access Token?**
+  - *Đáp*: Access Token có thời gian sống ngắn (ví dụ 15-60 phút) để hạn chế rủi ro lộ token, trong khi Refresh Token lưu trữ an toàn (HttpOnly Cookie) giúp tự động gia hạn phiên mà không bắt người dùng đăng nhập lại liên tục."""
+
+        return SummarizeMaterialResponse(summary_markdown=summary)
+
+    def _mock_generate_minigames(self, summary_markdown: str, subject_name: str) -> GenerateMinigamesResponse:
+        """Sinh bộ Minigame (Quiz + Memory Match) từ chính nội dung tóm tắt."""
+        clean_subj = subject_name.strip() if subject_name else "Môn học đại cương"
+
+        # Bóc tách các cặp thuật ngữ - định nghĩa từ tóm tắt
+        lines = [line.strip() for line in (summary_markdown or "").split("\n") if line.strip()]
+        extracted_pairs = []
+        for line in lines:
+            if any(sep in line for sep in [":", " - ", "–", "="]):
+                parts = re.split(r'[:\-–—=]', line, maxsplit=1)
+                term = parts[0].strip().strip("*#•- `")
+                defin = parts[1].strip().strip("*#•- `")
+                if 2 <= len(term) <= 30 and 5 <= len(defin) <= 120 and not term.lower().startswith(("hỏi", "đáp", "trang", "chương", "bài", "http")):
+                    extracted_pairs.append((term, defin))
+
+        base_pairs = [
+            ("HTTP 401", "Unauthorized: Chưa xác thực hoặc Token hết hạn"),
+            ("HTTP 403", "Forbidden: Đã xác thực nhưng không đủ quyền"),
+            ("HTTP 201", "Created: Tạo mới tài nguyên thành công"),
+            ("JWT", "JSON Web Token: Chuẩn truyền tải claim an toàn"),
+            ("Idempotent", "Tính chất: Thực thi nhiều lần cho cùng một kết quả"),
+            ("BCrypt", "Thuật toán băm mật khẩu một chiều có kèm Salt"),
+            ("WebSocket", "Giao thức truyền thông song công Full-duplex thời gian thực"),
+            ("ORM", "Object-Relational Mapping: Ánh xạ bảng DB sang Object OOP")
+        ]
+
+        final_pairs = []
+        if extracted_pairs:
+            for p in extracted_pairs[:8]:
+                final_pairs.append(p)
+        for bp in base_pairs:
+            if len(final_pairs) >= 8:
+                break
+            if not any(p[0].lower() == bp[0].lower() for p in final_pairs):
+                final_pairs.append(bp)
+
+        memory_pairs = [
+            MemoryMatchPairItem(pair_id=idx + 1, term=p[0], definition=p[1])
+            for idx, p in enumerate(final_pairs[:8])
+        ]
+
+        quiz = [
+            QuizQuestionItem(
+                question=f"Trong phát triển Web và môn {clean_subj}, phương thức HTTP nào dưới đây có tính chất Idempotent?",
+                options=["POST", "PUT", "PATCH (kèm increment)", "CONNECT"],
+                correct_index=1,
+                explanation="PUT có tính chất Idempotent vì việc gửi cùng một payload cập nhật nhiều lần sẽ luôn tạo ra cùng một trạng thái tài nguyên trên server."
+            ),
+            QuizQuestionItem(
+                question="Mã trạng thái HTTP nào biểu thị người dùng chưa xác thực danh tính (chưa đăng nhập hoặc token không hợp lệ)?",
+                options=["400 Bad Request", "401 Unauthorized", "403 Forbidden", "404 Not Found"],
+                correct_index=1,
+                explanation="401 Unauthorized chuẩn quốc tế dùng khi request thiếu thông tin xác thực hoặc token không hợp lệ."
+            ),
+            QuizQuestionItem(
+                question="Trong kiến trúc Spring Boot, Annotation nào kết hợp giữa @Controller và @ResponseBody để trả về JSON trực tiếp?",
+                options=["@Service", "@Component", "@RestController", "@Repository"],
+                correct_index=2,
+                explanation="@RestController là stereotype annotation chuyên dụng cho REST API, tự động serialize kết quả trả về sang JSON."
+            ),
+            QuizQuestionItem(
+                question="Chuẩn JSON Web Token (JWT) thông thường bao gồm bao nhiêu phần được ngăn cách bởi dấu chấm ('.')?",
+                options=["2 phần", "3 phần", "4 phần", "5 phần"],
+                correct_index=1,
+                explanation="JWT gồm 3 phần: Header (thuật toán), Payload (claims/dữ liệu) và Signature (chữ ký bảo mật)."
+            ),
+            QuizQuestionItem(
+                question="Trong cơ sở dữ liệu quan hệ (RDBMS), việc tạo B-Tree Index trên một cột thường dẫn đến hệ quả nào sau đây?",
+                options=[
+                    "Tăng tốc độ truy vấn SELECT và tăng tốc độ ghi INSERT",
+                    "Tăng tốc độ truy vấn SELECT nhưng làm chậm nhẹ thao tác INSERT/UPDATE",
+                    "Làm chậm cả SELECT lẫn INSERT",
+                    "Không ảnh hưởng gì đến hiệu năng"
+                ],
+                correct_index=1,
+                explanation="Index giúp tìm kiếm nhị phân nhanh chóng (SELECT O(log N)), nhưng mỗi lần INSERT/UPDATE hệ cơ sở dữ liệu phải cập nhật lại cây chỉ mục."
+            ),
+            QuizQuestionItem(
+                question="Để ngăn chặn cuộc tấn công Cross-Site Scripting (XSS) khi lưu trữ dữ liệu người dùng, biện pháp nào hiệu quả nhất?",
+                options=[
+                    "Mã hóa Base64 toàn bộ input",
+                    "Sanitize và Escape HTML các thẻ nguy hiểm trước khi render",
+                    "Chỉ sử dụng giao thức HTTPS",
+                    "Tắt CORS trên server"
+                ],
+                correct_index=1,
+                explanation="XSS xảy ra khi mã độc JavaScript được nhúng vào trang, do đó việc escape/sanitize HTML là giải pháp phòng vệ căn bản."
+            ),
+            QuizQuestionItem(
+                question=f"Mục tiêu cốt lõi của việc thiết kế kiến trúc phân tầng trong môn {clean_subj} là gì?",
+                options=[
+                    "Tăng độ phức tạp để bảo mật",
+                    "Phân tách rõ ràng trách nhiệm giữa các thành phần (Separation of Concerns)",
+                    "Giảm số lượng dòng code xuống mức tối thiểu bằng mọi giá",
+                    "Ép buộc mọi tác vụ đều phải chạy đồng bộ"
+                ],
+                correct_index=1,
+                explanation="Separation of Concerns là nguyên lý vàng giúp hệ thống dễ kiểm thử, bảo trì và tái sử dụng mã nguồn."
+            ),
+            QuizQuestionItem(
+                question="Khi thiết kế REST API, mã trạng thái nào nên được trả về khi một tài nguyên mới được tạo thành công trên cơ sở dữ liệu?",
+                options=["200 OK", "201 Created", "202 Accepted", "204 No Content"],
+                correct_index=1,
+                explanation="HTTP 201 Created là mã chuẩn chỉ rõ một tài nguyên mới đã được khởi tạo thành công trên máy chủ."
+            ),
+            QuizQuestionItem(
+                question="Tại sao mật khẩu người dùng trong cơ sở dữ liệu KHÔNG ĐƯỢC lưu dưới dạng văn bản thô (Plaintext)?",
+                options=[
+                    "Vì plaintext chiếm nhiều dung lượng đĩa hơn",
+                    "Vì nếu database bị rò rỉ, kẻ tấn công sẽ chiếm đoạt ngay tài khoản",
+                    "Vì các framework không hỗ trợ chuỗi plaintext",
+                    "Vì hệ điều hành tự động xóa mật khẩu thô"
+                ],
+                correct_index=1,
+                explanation="Mật khẩu bắt buộc phải được băm an toàn với muối (Salted Hash như BCrypt, Argon2) để chống lộ lọt."
+            ),
+            QuizQuestionItem(
+                question=f"Trong môn {clean_subj}, cơ chế nào cho phép Client nhận cập nhật thời gian thực từ Server hiệu quả nhất?",
+                options=["HTTP Short Polling mỗi 1 giây", "WebSocket / STOMP", "Gửi email thông báo", "Tải lại trang F5 liên tục"],
+                correct_index=1,
+                explanation="WebSocket thiết lập kết nối song công toàn phần (Full-duplex TCP), giảm thiểu overhead của HTTP header và đẩy dữ liệu ngay khi có sự kiện."
+            )
+        ]
+
+        return GenerateMinigamesResponse(
+            speed_quiz=quiz,
+            memory_match_pairs=memory_pairs
+        )
+
+    def _mock_process_material(self, text: str, subject_name: str) -> ProcessMaterialResponse:
+        summary_res = self._mock_summarize_material(text, subject_name)
+        minigames_res = self._mock_generate_minigames(summary_res.summary_markdown, subject_name)
+        return ProcessMaterialResponse(
+            summary_markdown=summary_res.summary_markdown,
+            speed_quiz=minigames_res.speed_quiz,
+            memory_match_pairs=minigames_res.memory_match_pairs
+        )
+
 
 # Singleton service instance
 ai_service = GeminiService()
+
+

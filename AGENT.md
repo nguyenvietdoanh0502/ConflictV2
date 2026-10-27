@@ -40,7 +40,7 @@ UniSync. Tên thư mục/package cũ (`ConflictV2`, `com.conflict.be`, `conflict
 | Môn học / Thời khóa biểu / FullCalendar | 🔄 Đang triển khai (DB Migration V8, V9, Entity, Repository xong) | `modules/subject`, `modules/schedule`, `modules/zalo` |
 | AI Engine (Python FastAPI + Gemini) | 🔄 Đang triển khai (Bóc tách tin nhắn Zalo, 16 tiết học, Mock Mode, Auth) | `ai/` |
 | Zalo Bridge (Node + zca-js) + Demo Simulator | ❌ Chưa | `zalo-bridge/` (sẽ tạo) |
-| Đề cương + Minigame + điểm | ❌ Chưa | — |
+| Đề cương + Minigame + điểm | ✅ Xong (V11, AI bóc tách PDF/DOCX/TXT, Cheatsheet, Speed Quiz, Memory Match, Leaderboard) | `backend/.../modules/material`, `ai/app`, `frontend/.../features/study` |
 | Reminder engine (`@Scheduled` + mail + WS) | ❌ Chưa | — |
 | Dashboard thay trang chủ feed tĩnh | ❌ Chưa (`pages/HomePage.jsx` là mock, sẽ xóa) | — |
 | Docker/CI cấp monorepo | ❌ Chưa | — |

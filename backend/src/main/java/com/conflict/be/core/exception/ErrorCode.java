@@ -224,7 +224,17 @@ public enum ErrorCode {
     SCHEDULE_EVENT_NOT_FOUND("SCHEDULE_EVENT_NOT_FOUND", "Schedule event was not found", 404),
     SCHEDULE_EVENT_FORBIDDEN("SCHEDULE_EVENT_FORBIDDEN", "You do not have permission to access this schedule event", 403),
     INVALID_SCHEDULE_TIME("INVALID_SCHEDULE_TIME", "End time must be after or equal to start time", 400),
-    AI_SERVICE_UNAVAILABLE("AI_SERVICE_UNAVAILABLE", "AI processing service is temporarily unavailable", 503);
+    AI_SERVICE_UNAVAILABLE("AI_SERVICE_UNAVAILABLE", "AI processing service is temporarily unavailable", 503),
+
+    // ==========================================
+    // STUDY MATERIAL & MINIGAME ERRORS
+    // ==========================================
+    MATERIAL_NOT_FOUND("MATERIAL_NOT_FOUND", "Study material was not found", 404),
+    MATERIAL_FORBIDDEN("MATERIAL_FORBIDDEN", "You do not have permission to access this material", 403),
+    INVALID_MATERIAL_FILE("INVALID_MATERIAL_FILE", "Only PDF, DOCX, and TXT files under 20MB are supported", 400),
+    MATERIAL_PARSE_FAILED("MATERIAL_PARSE_FAILED", "Could not extract text from document (file may be empty or scanned images)", 422),
+    MATERIAL_PROCESSING_FAILED("MATERIAL_PROCESSING_FAILED", "Failed to generate study materials via AI", 500),
+    INVALID_GAME_TYPE("INVALID_GAME_TYPE", "Game type must be SPEED_QUIZ or MEMORY_MATCH", 400);
 
     private final String code;
     private final String message;

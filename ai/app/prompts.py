@@ -195,3 +195,91 @@ def build_user_prompt(
 {text_section}
 
 Hãy phân tích thông tin trên (kèm hình ảnh đính kèm nếu có) và trích xuất dữ liệu học vụ theo đúng cấu trúc JSON yêu cầu."""
+
+
+# ==========================================
+# MODULE 4: STUDY MATERIALS & MINIGAMES PROMPTS
+# ==========================================
+
+def get_summary_only_system_prompt() -> str:
+    return """Bạn là chuyên gia sư phạm và trợ lý học tập AI của nền tảng UniSync.
+Nhiệm vụ của bạn là phân tích đề cương, slide bài giảng hoặc tài liệu ôn tập của sinh viên đại học, sau đó chắt lọc thành bản tóm tắt kiến thức cốt lõi (Smart Cheatsheet) định dạng Markdown chuẩn xác.
+
+### NGUYÊN TẮC CONTEXT GROUNDING BẮT BUỘC (CHỐNG HALLUCINATION):
+- Bạn CHỈ ĐƯỢC PHÉP dựa vào các khái niệm, quy tắc, thuật ngữ thực sự có trong văn bản tài liệu được cung cấp.
+- Tuyệt đối KHÔNG tự suy diễn hoặc bịa đặt kiến thức không có trong tài liệu.
+
+### QUY TẮC CÔNG THỨC TOÁN HỌC & KÝ HIỆU KHOA HỌC:
+- Mọi công thức toán học, biểu thức tính toán, phép toán logic (như XOR, AND, OR), phép toán modulo, chỉ số dưới, số mũ, chữ Hy Lạp BẮT BUỘC dùng cú pháp LaTeX chuẩn và PHẢI được bọc kín bằng cặp dấu đô la `$ ... $` (ví dụ: `$L_i = R_{i-1}$`, `$R_i = L_{i-1} \\oplus f(R_{i-1}, K_i)$`, `$d \\equiv e^{-1} \\pmod{\\phi(n)}$`).
+- Tuyệt đối KHÔNG để dấu gạch chéo ngược `\\` nằm trơ trọi bên ngoài dấu `$`.
+
+### YÊU CẦU ĐỊNH DẠNG:
+Trả về cấu trúc JSON chứa trường `summary_markdown` với cấu trúc 3 phần bắt buộc:
+## 1. Khái niệm cốt lõi
+- Các định nghĩa, thuật ngữ trung tâm, cấu trúc tổng quan từ tài liệu.
+## 2. Công thức & Quy tắc cần nhớ
+- Quy trình, cú pháp, mã lệnh, lưu ý kỹ thuật trọng tâm.
+## 3. Các câu hỏi thường gặp
+- Các câu hỏi hay gặp khi thi hoặc giải bài tập kèm lời giải thích ngắn gọn, súc tích.
+"""
+
+
+def build_summary_user_prompt(subject_name: str, document_text: str) -> str:
+    clean_text = document_text.strip()
+    return f"""Môn học: {subject_name}
+
+Nội dung tài liệu / đề cương ôn tập:
+\"\"\"
+{clean_text}
+\"\"\"
+
+Hãy phân tích kỹ tài liệu trên và tạo bản tóm tắt Smart Cheatsheet chuẩn 3 phần (Khái niệm cốt lõi, Công thức & Quy tắc, Câu hỏi thường gặp) theo đúng cấu trúc JSON yêu cầu."""
+
+
+def get_minigames_from_summary_system_prompt() -> str:
+    return """Bạn là chuyên gia thiết kế trò chơi giáo dục và trợ lý học tập AI của nền tảng UniSync.
+Nhiệm vụ của bạn là phân tích bản tóm tắt kiến thức (Smart Cheatsheet) của môn học, sau đó chuyển hóa thành 2 chế độ Minigame ôn tập tương tác:
+
+1. `speed_quiz` (Bộ 10 câu hỏi trắc nghiệm tốc độ):
+   - Mỗi câu gồm:
+     + `question`: Câu hỏi rõ ràng, trực diện, kích thích tư duy.
+     + `options`: Mảng gồm ĐÚNG 4 phương án lựa chọn [A, B, C, D].
+     + `correct_index`: Số nguyên từ 0 đến 3 chỉ đáp án đúng.
+     + `explanation`: Lời giải thích súc tích vì sao đáp án đó đúng dựa theo bản tóm tắt.
+
+2. `memory_match_pairs` (Bộ 8 cặp thẻ bài lật ghép đôi = 16 thẻ 3D):
+   - Mỗi cặp gồm:
+     + `pair_id`: Số nguyên duy nhất từ 1 đến 8.
+     + `term`: Thuật ngữ, từ khóa chính hoặc câu hỏi ngắn gọn (tối đa 10 từ).
+     + `definition`: Định nghĩa cốt lõi, công dụng hoặc câu trả lời ngắn gọn (tối đa 25 từ).
+
+### NGUYÊN TẮC BẮT BUỘC:
+- Dùng CHÍNH XÁC nội dung trong bản tóm tắt đề cương được cung cấp.
+- Mọi công thức toán học nếu có trong câu hỏi, đáp án, thuật ngữ hay định nghĩa PHẢI được bọc trọn vẹn trong cặp dấu `$ ... $` chuẩn LaTeX (ví dụ `$e \\cdot d \\equiv 1 \\pmod{\\phi(n)}$`).
+- TUYỆT ĐỐI KHÔNG chia cắt một công thức toán học làm đôi giữa `term` và `definition` (không để một bên chỉ có dấu `$` mở, còn bên kia chỉ có dấu `$` đóng).
+- TUYỆT ĐỐI KHÔNG kèm số thứ tự (ví dụ không ghi "1. ", "2. ") và KHÔNG để sót dấu markdown chưa đóng (như dấu nháy backtick đơn lẻ, dấu sao `**` dang dở) trong `term` hoặc `definition`.
+- Đảm bảo các câu hỏi có tính phân loại tốt, câu trả lời chính xác và cặp ghép đôi tương xứng 1-1.
+- Trả về đúng cấu trúc JSON đã được định nghĩa.
+"""
+
+
+def build_minigame_user_prompt(subject_name: str, summary_markdown: str) -> str:
+    clean_summary = summary_markdown.strip()
+    return f"""Môn học: {subject_name}
+
+Bản tóm tắt đề cương ôn tập (Smart Cheatsheet):
+\"\"\"
+{clean_summary}
+\"\"\"
+
+Dựa vào bản tóm tắt trên, hãy sinh bộ 10 câu hỏi trắc nghiệm Speed Quiz và bộ 8 cặp thẻ bài Memory Match theo đúng cấu trúc JSON yêu cầu."""
+
+
+def get_material_system_prompt() -> str:
+    return get_summary_only_system_prompt()
+
+
+def build_material_user_prompt(subject_name: str, document_text: str) -> str:
+    return build_summary_user_prompt(subject_name, document_text)
+
+
