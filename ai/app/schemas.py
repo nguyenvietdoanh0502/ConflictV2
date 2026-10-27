@@ -111,3 +111,102 @@ class AnalyzeMessageResponse(BaseModel):
 class ErrorResponse(BaseModel):
     error_code: str
     message: str
+
+
+# ==========================================
+# MODULE 4: STUDY MATERIALS & MINIGAMES SCHEMAS
+# ==========================================
+
+class QuizQuestionItem(BaseModel):
+    question: str = Field(
+        ...,
+        description="Nội dung câu hỏi trắc nghiệm kiểm tra kiến thức trọng tâm từ tài liệu"
+    )
+    options: List[str] = Field(
+        ...,
+        min_length=4,
+        max_length=4,
+        description="Chính xác 4 phương án trả lời tương ứng A, B, C, D"
+    )
+    correct_index: int = Field(
+        ...,
+        ge=0,
+        le=3,
+        description="Chỉ số index của đáp án chính xác (0: A, 1: B, 2: C, 3: D)"
+    )
+    explanation: str = Field(
+        ...,
+        description="Giải thích ngắn gọn, súc tích vì sao đáp án này đúng dựa trên nội dung tài liệu"
+    )
+
+
+class MemoryMatchPairItem(BaseModel):
+    pair_id: int = Field(
+        ...,
+        description="Mã số định danh cặp ghép đôi (ví dụ: 1, 2, 3...)"
+    )
+    term: str = Field(
+        ...,
+        description="Thuật ngữ, khái niệm hoặc câu hỏi ngắn gọn (tối đa 10 từ) để in trên mặt thẻ bài"
+    )
+    definition: str = Field(
+        ...,
+        description="Định nghĩa hoặc câu trả lời tương ứng (tối đa 25 từ) để in trên mặt thẻ bài đối ứng"
+    )
+
+
+class SummarizeMaterialResponse(BaseModel):
+    summary_markdown: str = Field(
+        ...,
+        description="Bản tóm tắt đề cương dạng Markdown chuẩn 3 phần: ## 1. Khái niệm cốt lõi, ## 2. Công thức & Quy tắc cần nhớ, ## 3. Các câu hỏi thường gặp"
+    )
+
+
+class GenerateMinigamesRequest(BaseModel):
+    summary_markdown: str = Field(
+        ...,
+        min_length=20,
+        description="Nội dung tóm tắt đề cương hoặc Smart Cheatsheet"
+    )
+    subject_name: str = Field(
+        ...,
+        description="Tên môn học"
+    )
+
+
+class GenerateMinigamesResponse(BaseModel):
+    speed_quiz: List[QuizQuestionItem] = Field(
+        ...,
+        min_length=5,
+        max_length=15,
+        description="Bộ 10 câu hỏi trắc nghiệm 4 đáp án cho Đấu trường Trắc nghiệm"
+    )
+    memory_match_pairs: List[MemoryMatchPairItem] = Field(
+        ...,
+        min_length=6,
+        max_length=8,
+        description="Bộ 8 cặp thuật ngữ - định nghĩa cho trò chơi Lật thẻ Ghép cặp (16 thẻ bài 3D)"
+    )
+
+
+class ProcessMaterialResponse(BaseModel):
+    summary_markdown: str = Field(
+        ...,
+        description="Bản tóm tắt đề cương dạng Markdown chuẩn 3 phần: ## 1. Khái niệm cốt lõi, ## 2. Công thức & Quy tắc cần nhớ, ## 3. Các câu hỏi thường gặp"
+    )
+    speed_quiz: List[QuizQuestionItem] = Field(
+        default_factory=list,
+        description="Bộ câu hỏi trắc nghiệm 4 đáp án cho Đấu trường Trắc nghiệm (tùy chọn hoặc sinh theo yêu cầu)"
+    )
+    memory_match_pairs: List[MemoryMatchPairItem] = Field(
+        default_factory=list,
+        description="Bộ cặp thuật ngữ - định nghĩa cho trò chơi Lật thẻ Ghép cặp (tùy chọn hoặc sinh theo yêu cầu)"
+    )
+
+
+class ExtractTextResponse(BaseModel):
+    text: str
+    char_count: int
+    page_count: int
+
+

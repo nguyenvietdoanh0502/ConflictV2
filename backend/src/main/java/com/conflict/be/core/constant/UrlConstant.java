@@ -49,4 +49,13 @@ public class UrlConstant {
         public static final String CONFIRM_EVENT = "/schedule/events/{id}/confirm";
         public static final String REJECT_EVENT = "/schedule/events/{id}/reject";
     }
+
+    public static class Material {
+        public static final String BASE = "/materials";
+        public static final String BY_ID = "/materials/{id}";
+        public static final String REGENERATE = "/materials/{id}/regenerate";
+        public static final String GENERATE_MINIGAMES = "/materials/{id}/generate-minigames";
+        public static final String SCORES = "/materials/{id}/scores";
+        public static final String LEADERBOARD = "/materials/{id}/leaderboard";
+    }
 }

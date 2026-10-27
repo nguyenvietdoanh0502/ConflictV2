@@ -1,13 +1,23 @@
 import logging
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Header, HTTPException, Request, status
+from fastapi import FastAPI, File, Form, Header, HTTPException, Request, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse
+from pydantic import BaseModel, Field
 
 from app.config import settings
 from app.errors import AIEngineError
 from app.playground import get_playground_html
-from app.schemas import AnalyzeMessageRequest, AnalyzeMessageResponse, ErrorResponse
+from app.schemas import (
+    AnalyzeMessageRequest,
+    AnalyzeMessageResponse,
+    ErrorResponse,
+    GenerateMinigamesRequest,
+    GenerateMinigamesResponse,
+    ProcessMaterialResponse,
+    SummarizeMaterialResponse,
+)
+from app.services.extractor_service import extract_text_from_file
 from app.services.gemini_service import ai_service
 
 # Thiết lập logging
@@ -133,6 +143,95 @@ async def parse_zalo_message_alias(
     x_internal_api_key: str | None = Header(None, alias="X-Internal-Api-Key")
 ):
     return await analyze_zalo_message(request, x_internal_api_key)
+
+
+class ProcessTextRequest(BaseModel):
+    subject_name: str = Field(..., description="Tên môn học")
+    text: str = Field(..., min_length=30, description="Nội dung văn bản đề cương")
+
+
+@app.post(
+    "/v1/materials/summarize",
+    response_model=SummarizeMaterialResponse,
+    responses={
+        400: {"model": ErrorResponse},
+        422: {"model": ErrorResponse},
+        500: {"model": ErrorResponse},
+        502: {"model": ErrorResponse},
+    },
+    tags=["Module 4: Study Materials & Minigames"],
+    summary="Bóc tách file đề cương (.pdf, .docx, .txt) và chỉ tóm tắt Smart Cheatsheet (Giai đoạn 1)"
+)
+async def summarize_material_file(
+    file: UploadFile = File(..., description="File đề cương, bài giảng hoặc ghi chú ôn tập (.pdf, .docx, .txt)"),
+    subject_name: str = Form(..., description="Tên môn học tương ứng"),
+    x_internal_api_key: str | None = Header(None, alias="X-Internal-Api-Key")
+):
+    verify_internal_api_key(x_internal_api_key)
+    file_bytes = await file.read()
+    extracted = extract_text_from_file(file_bytes, file.filename or "unknown.txt")
+    return await ai_service.summarize_material(extracted.text, subject_name)
+
+
+@app.post(
+    "/v1/materials/generate-minigames",
+    response_model=GenerateMinigamesResponse,
+    responses={
+        400: {"model": ErrorResponse},
+        500: {"model": ErrorResponse},
+        502: {"model": ErrorResponse},
+    },
+    tags=["Module 4: Study Materials & Minigames"],
+    summary="Sinh bộ câu hỏi Quiz & Ghép thẻ từ bản tóm tắt đề cương (Giai đoạn 2)"
+)
+async def generate_minigames_from_summary(
+    request: GenerateMinigamesRequest,
+    x_internal_api_key: str | None = Header(None, alias="X-Internal-Api-Key")
+):
+    verify_internal_api_key(x_internal_api_key)
+    return await ai_service.generate_minigames(request.summary_markdown, request.subject_name)
+
+
+@app.post(
+    "/v1/materials/process",
+    response_model=ProcessMaterialResponse,
+    responses={
+        400: {"model": ErrorResponse},
+        422: {"model": ErrorResponse},
+        500: {"model": ErrorResponse},
+        502: {"model": ErrorResponse},
+    },
+    tags=["Module 4: Study Materials & Minigames"],
+    summary="Bóc tách file đề cương (.pdf, .docx, .txt) và sinh Cheatsheet"
+)
+async def process_material_file(
+    file: UploadFile = File(..., description="File đề cương, bài giảng hoặc ghi chú ôn tập (.pdf, .docx, .txt)"),
+    subject_name: str = Form(..., description="Tên môn học tương ứng"),
+    x_internal_api_key: str | None = Header(None, alias="X-Internal-Api-Key")
+):
+    verify_internal_api_key(x_internal_api_key)
+    file_bytes = await file.read()
+    extracted = extract_text_from_file(file_bytes, file.filename or "unknown.txt")
+    return await ai_service.process_material(extracted.text, subject_name)
+
+
+@app.post(
+    "/v1/materials/process-text",
+    response_model=ProcessMaterialResponse,
+    responses={
+        400: {"model": ErrorResponse},
+        500: {"model": ErrorResponse},
+        502: {"model": ErrorResponse},
+    },
+    tags=["Module 4: Study Materials & Minigames"],
+    summary="Sinh lại Cheatsheet + Minigame từ văn bản đề cương đã bóc tách"
+)
+async def process_material_text(
+    request: ProcessTextRequest,
+    x_internal_api_key: str | None = Header(None, alias="X-Internal-Api-Key")
+):
+    verify_internal_api_key(x_internal_api_key)
+    return await ai_service.process_material(request.text, request.subject_name)
 
 
 if __name__ == "__main__":

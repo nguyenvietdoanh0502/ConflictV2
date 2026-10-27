@@ -44,8 +44,8 @@ spring:
 
   servlet:
     multipart:
-      max-file-size: 5MB
-      max-request-size: 6MB
+      max-file-size: 20MB
+      max-request-size: 25MB
 
 conflict:
   jwt:
@@ -74,6 +74,6 @@ unisync:
   ai:
     service-url: ${AI_SERVICE_URL:http://localhost:8000}
     internal-api-key: ${INTERNAL_API_KEY:unisync_internal_secret_key_2026}
-    timeout-seconds: ${AI_TIMEOUT_SECONDS:15}
+    timeout-seconds: ${AI_TIMEOUT_SECONDS:120}
 
 

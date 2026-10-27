@@ -19,7 +19,7 @@ public class AiConfig {
     @Value("${unisync.ai.internal-api-key:unisync_internal_secret_key_2026}")
     private String internalApiKey;
 
-    @Value("${unisync.ai.timeout-seconds:15}")
+    @Value("${unisync.ai.timeout-seconds:120}")
     private int timeoutSeconds;
 
     @Bean
