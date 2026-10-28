@@ -15,6 +15,8 @@ import com.conflict.be.modules.subject.repository.SubjectRepository;
 import com.conflict.be.modules.user.entity.User;
 import com.conflict.be.modules.user.enums.AccountStatus;
 import com.conflict.be.modules.user.repository.UserRepository;
+import com.conflict.be.modules.notification.enums.NotificationType;
+import com.conflict.be.modules.notification.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -33,6 +35,7 @@ public class ScheduleEventService {
     private final ScheduleEventRepository scheduleEventRepository;
     private final SubjectRepository subjectRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     private User requireActiveUser(String email) {
         User user = userRepository.findByEmail(email)
@@ -105,6 +108,21 @@ public class ScheduleEventService {
 
         ScheduleEvent saved = scheduleEventRepository.save(event);
         log.info("Created manual schedule event '{}' ({}) for user {}", saved.getTitle(), saved.getEventType(), user.getEmail());
+
+        try {
+            String metadataJson = "{\"eventId\":\"" + saved.getId() + "\",\"eventType\":\"" + saved.getEventType() + "\"}";
+            notificationService.createAndSendNotification(
+                    user,
+                    NotificationType.NEW_SCHEDULE_EVENT,
+                    "Đã thêm sự kiện TKB mới",
+                    "Sự kiện \"" + saved.getTitle() + "\" đã được thêm vào thời khóa biểu.",
+                    "/timetable",
+                    metadataJson
+            );
+        } catch (Exception ex) {
+            log.warn("Failed to create notification for manual event: {}", ex.getMessage());
+        }
+
         return ScheduleEventResponse.fromEntity(saved);
     }
 

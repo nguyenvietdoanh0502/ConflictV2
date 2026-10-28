@@ -44,6 +44,9 @@ class ScheduleEventServiceTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private com.conflict.be.modules.notification.service.NotificationService notificationService;
+
     @InjectMocks
     private ScheduleEventService scheduleEventService;
 

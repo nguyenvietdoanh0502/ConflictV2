@@ -58,4 +58,13 @@ public class UrlConstant {
         public static final String SCORES = "/materials/{id}/scores";
         public static final String LEADERBOARD = "/materials/{id}/leaderboard";
     }
+
+    public static class Notification {
+        public static final String BASE = "/notifications";
+        public static final String UNREAD_COUNT = "/notifications/unread-count";
+        public static final String READ = "/notifications/{id}/read";
+        public static final String READ_ALL = "/notifications/read-all";
+        public static final String BY_ID = "/notifications/{id}";
+        public static final String TRIGGER_TODAY = "/notifications/trigger-today";
+    }
 }

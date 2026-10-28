@@ -11,6 +11,9 @@ import {
   selectTotalUnreadCount,
 } from "../features/chat/chatSlice";
 import MessengerDropdown from "../features/chat/components/MessengerDropdown";
+import NotificationDropdown from "../features/notification/components/NotificationDropdown";
+import { useGetUnreadCountQuery } from "../features/notification/notificationApi";
+import { realtimeService } from "../services/realtime";
 
 function HomeIcon() {
   return (
@@ -167,27 +170,50 @@ export default function Header() {
   const visibleNavItems = navItems.filter((item) => !item.protected || isAuthenticated);
 
   const [isMessengerOpen, setIsMessengerOpen] = useState(false);
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const messengerRef = useRef(null);
+  const notificationRef = useRef(null);
   const location = useLocation();
 
-  // Close dropdown on route change
+  const { data: notificationUnreadCount = 0, refetch: refetchUnreadCount } =
+    useGetUnreadCountQuery(undefined, {
+      skip: !isAuthenticated,
+    });
+
+  // Listen to realtime notifications to update unread badge
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const unsubscribe = realtimeService.onNotification(() => {
+      refetchUnreadCount();
+    });
+    return unsubscribe;
+  }, [isAuthenticated, refetchUnreadCount]);
+
+  // Close dropdowns on route change
   useEffect(() => {
     setIsMessengerOpen(false);
+    setIsNotificationOpen(false);
   }, [location.pathname]);
 
-  // Close dropdown when clicking outside
+  // Close dropdowns when clicking outside
   useEffect(() => {
-    if (!isMessengerOpen) return;
+    if (!isMessengerOpen && !isNotificationOpen) return;
     function handleClickOutside(event) {
       if (messengerRef.current && !messengerRef.current.contains(event.target)) {
         setIsMessengerOpen(false);
+      }
+      if (
+        notificationRef.current &&
+        !notificationRef.current.contains(event.target)
+      ) {
+        setIsNotificationOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [isMessengerOpen]);
+  }, [isMessengerOpen, isNotificationOpen]);
 
   return (
     <header className="sticky top-0 z-50 h-16 w-full border-b border-[#E5E2EC] bg-white shadow-[0_2px_10px_rgba(47,42,69,0.07)]">
@@ -295,16 +321,33 @@ export default function Header() {
                 )}
               </div>
 
-              <button
-                type="button"
-                disabled
-                className={`${roundButtonClass} relative`}
-                aria-label="Thông báo mới"
-                title="Tính năng thông báo đang được hoàn thiện"
-              >
-                <BellIcon />
-                <span className="absolute right-0.5 top-0.5 h-3 w-3 rounded-full border-2 border-white bg-social-pink" aria-hidden="true" />
-              </button>
+              <div className="relative" ref={notificationRef}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsNotificationOpen((prev) => !prev);
+                    setIsMessengerOpen(false);
+                  }}
+                  className={`${roundButtonClass} relative ${
+                    isNotificationOpen ? "bg-[#EAE6FF] text-social-violet" : ""
+                  }`}
+                  aria-label="Thông báo mới"
+                  title="Thông báo"
+                  aria-expanded={isNotificationOpen}
+                  aria-haspopup="dialog"
+                >
+                  <BellIcon />
+                  {notificationUnreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 grid h-5 min-w-[20px] place-items-center rounded-full bg-[#E41E3F] px-1 text-[10px] font-extrabold text-white ring-2 ring-white animate-pulse">
+                      {notificationUnreadCount > 99 ? "99+" : notificationUnreadCount}
+                    </span>
+                  )}
+                </button>
+
+                {isNotificationOpen && (
+                  <NotificationDropdown onClose={() => setIsNotificationOpen(false)} />
+                )}
+              </div>
 
               <Link
                 to="/profile"

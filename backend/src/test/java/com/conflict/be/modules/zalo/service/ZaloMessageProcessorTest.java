@@ -52,6 +52,9 @@ class ZaloMessageProcessorTest {
     @Mock
     private SimpMessagingTemplate messagingTemplate;
 
+    @Mock
+    private com.conflict.be.modules.notification.service.NotificationService notificationService;
+
     @InjectMocks
     private ZaloMessageProcessor messageProcessor;
 

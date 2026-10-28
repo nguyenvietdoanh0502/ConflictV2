@@ -9,10 +9,13 @@ import com.conflict.be.modules.chat.entity.ChatMessage;
 import com.conflict.be.modules.chat.repository.ChatMessageRepository;
 import com.conflict.be.modules.friendship.enums.FriendshipStatus;
 import com.conflict.be.modules.friendship.repository.FriendshipRepository;
+import com.conflict.be.modules.notification.enums.NotificationType;
+import com.conflict.be.modules.notification.service.NotificationService;
 import com.conflict.be.modules.user.entity.User;
 import com.conflict.be.modules.user.enums.AccountStatus;
 import com.conflict.be.modules.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
@@ -20,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ChatService {
@@ -27,6 +31,7 @@ public class ChatService {
     private final UserRepository userRepository;
     private final FriendshipRepository friendshipRepository;
     private final ChatMessageRepository chatMessageRepository;
+    private final NotificationService notificationService;
 
 
     private User requireActiveUser(String email){
@@ -77,6 +82,25 @@ public class ChatService {
                         .content(content)
                         .build()
         );
+
+        try {
+            String preview = content.length() > 60 ? content.substring(0, 57) + "..." : content;
+            String senderAvatar = sender.getAvatarUrl() != null ? sender.getAvatarUrl() : "";
+            String metadataJson = "{\"senderId\":\"" + sender.getId() + "\",\"senderName\":\""
+                    + sender.getFullName() + "\",\"avatarUrl\":\"" + senderAvatar + "\"}";
+
+            notificationService.createAndSendNotification(
+                    recipient,
+                    NotificationType.NEW_MESSAGE,
+                    sender.getFullName(),
+                    preview,
+                    "/friends",
+                    metadataJson
+            );
+        } catch (Exception ex) {
+            log.warn("Failed to create message notification: {}", ex.getMessage());
+        }
+
         return new MessageDelivery(
                 mapToDTO(saved),
                 recipient.getEmail()

@@ -17,6 +17,8 @@ import com.conflict.be.modules.zalo.dto.ai.AiDetectedEvent;
 import com.conflict.be.modules.zalo.entity.ZaloGroupMapping;
 import com.conflict.be.modules.zalo.filter.ZaloKeywordFilter;
 import com.conflict.be.modules.zalo.repository.ZaloGroupMappingRepository;
+import com.conflict.be.modules.notification.enums.NotificationType;
+import com.conflict.be.modules.notification.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -43,6 +45,7 @@ public class ZaloMessageProcessor {
     private final ScheduleEventRepository scheduleEventRepository;
     private final AiEngineClient aiEngineClient;
     private final SimpMessagingTemplate messagingTemplate;
+    private final NotificationService notificationService;
 
     private static final Pattern CA1_PATTERN = Pattern.compile("(?iu)(?:^|\\s|[(\\[])(ca\\s*1|kíp\\s*1|nhóm\\s*1)(?:$|\\s|[)\\]:,.-])");
     private static final Pattern CA2_PATTERN = Pattern.compile("(?iu)(?:^|\\s|[(\\[])(ca\\s*2|kíp\\s*2|nhóm\\s*2)(?:$|\\s|[)\\]:,.-])");
@@ -349,6 +352,25 @@ public class ZaloMessageProcessor {
                     log.info("Sent WebSocket notification to user {} at /user/queue/schedule", user.getEmail());
                 } catch (Exception wsEx) {
                     log.warn("Failed to push WebSocket notification to user {}: {}", user.getEmail(), wsEx.getMessage());
+                }
+
+                try {
+                    String notifTitle = "Sự kiện TKB mới từ Zalo AI";
+                    String notifContent = "Phát hiện " + userCreatedEvents.size() + " sự kiện học vụ mới từ nhóm "
+                            + mapping.getZaloGroupName() + " (" + mapping.getSubject().getName() + ")";
+                    String metadataJson = "{\"zaloGroupId\":\"" + mapping.getZaloGroupId() + "\",\"subjectName\":\""
+                            + mapping.getSubject().getName() + "\",\"eventCount\":" + userCreatedEvents.size() + "}";
+
+                    notificationService.createAndSendNotification(
+                            user,
+                            NotificationType.NEW_SCHEDULE_EVENT,
+                            notifTitle,
+                            notifContent,
+                            "/timetable",
+                            metadataJson
+                    );
+                } catch (Exception notifEx) {
+                    log.warn("Failed to create notification for user {}: {}", user.getEmail(), notifEx.getMessage());
                 }
             }
         }

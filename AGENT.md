@@ -41,6 +41,7 @@ UniSync. Tên thư mục/package cũ (`ConflictV2`, `com.conflict.be`, `conflict
 | AI Engine (Python FastAPI + Gemini) | 🔄 Đang triển khai (Bóc tách tin nhắn Zalo, 16 tiết học, Mock Mode, Auth) | `ai/` |
 | Zalo Bridge (Node + zca-js) + Demo Simulator | ❌ Chưa | `zalo-bridge/` (sẽ tạo) |
 | Đề cương + Minigame + điểm | ✅ Xong (V11, AI bóc tách PDF/DOCX/TXT, Cheatsheet, Speed Quiz, Memory Match, Leaderboard) | `backend/.../modules/material`, `ai/app`, `frontend/.../features/study` |
+| Thông báo & Dropdown Facebook (TKB mới, Lịch học hôm nay, Tin nhắn) | ✅ Xong (V12, WS `/user/queue/notifications`, Dropdown UI) | `backend/.../modules/notification`, `frontend/.../features/notification` |
 | Reminder engine (`@Scheduled` + mail + WS) | ❌ Chưa | — |
 | Dashboard thay trang chủ feed tĩnh | ❌ Chưa (`pages/HomePage.jsx` là mock, sẽ xóa) | — |
 | Docker/CI cấp monorepo | ❌ Chưa | — |
@@ -237,6 +238,12 @@ POST   /zalo/simulate                         Demo Simulator (FR-2.4)
 GET|POST /materials  GET|DELETE /materials/{id}  POST /materials/{id}/regenerate
 POST   /materials/{id}/scores   GET /materials/{id}/leaderboard?scope=global|friends
 GET|PUT /users/me/reminder-settings
+GET    /notifications?page&size&unreadOnly    lấy danh sách thông báo
+GET    /notifications/unread-count            lấy số lượng chưa đọc
+PATCH  /notifications/{id}/read               đánh dấu đã đọc
+POST   /notifications/read-all                đánh dấu tất cả đã đọc
+DELETE /notifications/{id}                    xóa thông báo
+POST   /notifications/trigger-today           sinh tóm tắt lịch hôm nay
 POST   /internal/zalo/messages                chỉ cho bridge, header X-Internal-Api-Key
 ```
 
@@ -244,8 +251,8 @@ POST   /internal/zalo/messages                chỉ cho bridge, header X-Interna
 
 - Endpoint `/ws` (WebSocket thuần, chưa bật SockJS). Header `Authorization: Bearer <accessToken>` gửi trong frame CONNECT.
 - Prefix: app `/app`, user `/user`, broker `/queue`.
-- **Hiện có:** SEND `/app/chat.send` `{recipientId, content}`. SUBSCRIBE `/user/queue/messages`, `/user/queue/errors`.
-- **Dự kiến:** `/user/queue/schedule` (sự kiện AI mới/cập nhật), `/user/queue/notifications` (nhắc lịch), `/user/queue/presence` (bạn bè online/offline). Chat có thêm `sharedMaterialId`.
+- **Hiện có:** SEND `/app/chat.send` `{recipientId, content}`. SUBSCRIBE `/user/queue/messages`, `/user/queue/errors`, `/user/queue/schedule`, `/user/queue/notifications`.
+- **Dự kiến:** `/user/queue/presence` (bạn bè online/offline). Chat có thêm `sharedMaterialId`.
 - `WebSocketAuthChannelInterceptor` **whitelist cứng** các destination. Thêm destination mới thì phải sửa ở đó và viết test.
 - Payload đẩy qua WS cũng bọc `ApiResponse`.
 

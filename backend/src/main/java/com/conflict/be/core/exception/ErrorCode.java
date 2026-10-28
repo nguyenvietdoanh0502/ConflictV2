@@ -234,7 +234,13 @@ public enum ErrorCode {
     INVALID_MATERIAL_FILE("INVALID_MATERIAL_FILE", "Only PDF, DOCX, and TXT files under 20MB are supported", 400),
     MATERIAL_PARSE_FAILED("MATERIAL_PARSE_FAILED", "Could not extract text from document (file may be empty or scanned images)", 422),
     MATERIAL_PROCESSING_FAILED("MATERIAL_PROCESSING_FAILED", "Failed to generate study materials via AI", 500),
-    INVALID_GAME_TYPE("INVALID_GAME_TYPE", "Game type must be SPEED_QUIZ or MEMORY_MATCH", 400);
+    INVALID_GAME_TYPE("INVALID_GAME_TYPE", "Game type must be SPEED_QUIZ or MEMORY_MATCH", 400),
+
+    // ==========================================
+    // NOTIFICATION ERRORS
+    // ==========================================
+    NOTIFICATION_NOT_FOUND("NOTIFICATION_NOT_FOUND", "Notification was not found", 404),
+    NOTIFICATION_FORBIDDEN("NOTIFICATION_FORBIDDEN", "You do not have permission to access this notification", 403);
 
     private final String code;
     private final String message;

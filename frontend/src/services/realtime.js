@@ -21,10 +21,12 @@ class RealtimeService {
     this.currentAccessToken = null;
     this.messageListeners = new Set();
     this.scheduleListeners = new Set();
+    this.notificationListeners = new Set();
     this.statusListeners = new Set();
     this.status = "disconnected"; // "connecting" | "connected" | "disconnected" | "error"
     this.messageSubscription = null;
     this.scheduleSubscription = null;
+    this.notificationSubscription = null;
   }
 
   updateStatus(newStatus) {
@@ -109,6 +111,24 @@ class RealtimeService {
         } catch (err) {
           console.error("Failed to subscribe to /user/queue/schedule:", err);
         }
+
+        // Subscribe to real-time User notifications (All types: schedule, today briefing, chat)
+        try {
+          this.notificationSubscription = this.client.subscribe(
+            "/user/queue/notifications",
+            (message) => {
+              try {
+                const parsed = JSON.parse(message.body);
+                const data = parsed.data || parsed;
+                this.notifyNotificationListeners(data);
+              } catch (err) {
+                console.error("Failed to parse incoming User notification:", err);
+              }
+            }
+          );
+        } catch (err) {
+          console.error("Failed to subscribe to /user/queue/notifications:", err);
+        }
       },
       onDisconnect: () => {
         this.updateStatus("disconnected");
@@ -149,6 +169,15 @@ class RealtimeService {
         // ignore
       }
       this.scheduleSubscription = null;
+    }
+
+    if (this.notificationSubscription) {
+      try {
+        this.notificationSubscription.unsubscribe();
+      } catch {
+        // ignore
+      }
+      this.notificationSubscription = null;
     }
 
     if (this.client) {
@@ -198,6 +227,16 @@ class RealtimeService {
     });
   }
 
+  notifyNotificationListeners(notification) {
+    this.notificationListeners.forEach((listener) => {
+      try {
+        listener(notification);
+      } catch (err) {
+        console.error("Error in notification listener:", err);
+      }
+    });
+  }
+
   onMessage(callback) {
     this.messageListeners.add(callback);
     return () => {
@@ -209,6 +248,13 @@ class RealtimeService {
     this.scheduleListeners.add(callback);
     return () => {
       this.scheduleListeners.delete(callback);
+    };
+  }
+
+  onNotification(callback) {
+    this.notificationListeners.add(callback);
+    return () => {
+      this.notificationListeners.delete(callback);
     };
   }
 

@@ -74,7 +74,8 @@ public class WebSocketAuthChannelInterceptor
                     "/user/queue/messages",
                     "/user/queue/errors",
                     "/user/queue/schedule",
-                    "/user/queue/schedule-events"
+                    "/user/queue/schedule-events",
+                    "/user/queue/notifications"
             ).contains(destination)) {
                 throw new AccessDeniedException(
                         "Unsupported subscription"

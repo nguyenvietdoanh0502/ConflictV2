@@ -8,10 +8,13 @@ import com.conflict.be.modules.friendship.dto.*;
 import com.conflict.be.modules.friendship.entity.Friendship;
 import com.conflict.be.modules.friendship.enums.FriendshipStatus;
 import com.conflict.be.modules.friendship.repository.FriendshipRepository;
+import com.conflict.be.modules.notification.enums.NotificationType;
+import com.conflict.be.modules.notification.service.NotificationService;
 import com.conflict.be.modules.user.entity.User;
 import com.conflict.be.modules.user.enums.AccountStatus;
 import com.conflict.be.modules.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,11 +25,13 @@ import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class FriendshipService {
     private final UserRepository userRepository;
     private final FriendshipRepository friendshipRepository;
+    private final NotificationService notificationService;
     private record FriendPair(User lowUser, User highUser){
 
     }
@@ -147,6 +152,23 @@ public class FriendshipService {
                 .build();
         try{
             Friendship saveFriendship = friendshipRepository.saveAndFlush(friendship);
+
+            try {
+                String avatar = sender.getAvatarUrl() != null ? sender.getAvatarUrl() : "";
+                String metadata = "{\"senderId\":\"" + sender.getId() + "\",\"senderName\":\""
+                        + sender.getFullName() + "\",\"avatarUrl\":\"" + avatar + "\"}";
+                notificationService.createAndSendNotification(
+                        receiver,
+                        NotificationType.FRIEND_REQUEST_RECEIVED,
+                        sender.getFullName(),
+                        "đã gửi cho bạn một lời mời kết bạn.",
+                        "/friends",
+                        metadata
+                );
+            } catch (Exception ex) {
+                log.warn("Failed to create friend request notification: {}", ex.getMessage());
+            }
+
             return mapToFriendRequestDTO(saveFriendship,sender.getId());
         }catch (DataIntegrityViolationException exception){
             throw new AppException(ErrorCode.FRIEND_REQUEST_ALREADY_EXISTS);
@@ -176,6 +198,24 @@ public class FriendshipService {
         friendship.setStatus(FriendshipStatus.ACCEPTED);
         friendship.setAcceptedAt(Instant.now());
         Friendship savedFriendship = friendshipRepository.save(friendship);
+
+        try {
+            User requester = friendship.getRequestedBy();
+            String avatar = currentUser.getAvatarUrl() != null ? currentUser.getAvatarUrl() : "";
+            String metadata = "{\"userId\":\"" + currentUser.getId() + "\",\"fullName\":\""
+                    + currentUser.getFullName() + "\",\"avatarUrl\":\"" + avatar + "\"}";
+            notificationService.createAndSendNotification(
+                    requester,
+                    NotificationType.FRIEND_REQUEST_ACCEPTED,
+                    currentUser.getFullName(),
+                    "đã chấp nhận lời mời kết bạn của bạn.",
+                    "/friends",
+                    metadata
+            );
+        } catch (Exception ex) {
+            log.warn("Failed to create friend accepted notification: {}", ex.getMessage());
+        }
+
         return mapToFriendDTO(
                 savedFriendship,
                 currentUser.getId()
