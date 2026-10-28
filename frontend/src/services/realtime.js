@@ -1,17 +1,20 @@
 import { Client } from "@stomp/stompjs";
+import SockJS from "sockjs-client";
 
-function getWebSocketUrl() {
-  if (import.meta.env.VITE_WS_URL) {
-    return import.meta.env.VITE_WS_URL;
-  }
-
+function getSockJsUrl() {
   const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8080/api";
   try {
     const url = new URL(apiUrl);
-    const wsProto = url.protocol === "https:" ? "wss:" : "ws:";
-    return `${wsProto}//${url.host}/ws`;
+    const httpProto = url.protocol === "https:" ? "https:" : "http:";
+    return `${httpProto}//${url.host}/ws-sockjs`;
   } catch {
-    return "ws://localhost:8080/ws";
+    if (import.meta.env.VITE_WS_URL) {
+      return import.meta.env.VITE_WS_URL
+        .replace(/^wss:/i, "https:")
+        .replace(/^ws:/i, "http:")
+        .replace(/\/ws\/?$/, "/ws-sockjs");
+    }
+    return "http://localhost:8080/ws-sockjs";
   }
 }
 
@@ -59,14 +62,17 @@ class RealtimeService {
       this.client.deactivate();
     }
 
-    const brokerURL = getWebSocketUrl();
+    const sockJsUrl = getSockJsUrl();
 
     this.client = new Client({
-      brokerURL,
+      webSocketFactory: () =>
+        new SockJS(sockJsUrl, null, {
+          transports: ["websocket", "xhr-streaming", "xhr-polling"],
+        }),
       connectHeaders: {
         Authorization: `Bearer ${accessToken}`,
       },
-      reconnectDelay: 4000,
+      reconnectDelay: 5000,
       heartbeatIncoming: 10000,
       heartbeatOutgoing: 10000,
       debug: () => {

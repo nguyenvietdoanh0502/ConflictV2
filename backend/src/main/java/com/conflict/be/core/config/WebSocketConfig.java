@@ -23,17 +23,21 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         registry.addEndpoint("/ws")
                 .setAllowedOriginPatterns("*");
 
-        registry.setPreserveReceiveOrder(true);
+        registry.addEndpoint("/ws-sockjs")
+                .setAllowedOriginPatterns("*")
+                .withSockJS()
+                .setSessionCookieNeeded(false);
     }
+
     @Override
     public void configureMessageBroker(
             MessageBrokerRegistry registry
-    ){
+    ) {
         registry.setApplicationDestinationPrefixes("/app");
         registry.setUserDestinationPrefix("/user");
         registry.enableSimpleBroker("/queue");
-        registry.setPreservePublishOrder(true);
     }
+
     @Override
     public void configureClientInboundChannel(
             ChannelRegistration registration
@@ -45,7 +49,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     public void configureWebSocketTransport(
             WebSocketTransportRegistration registration
     ) {
-        registration.setMessageSizeLimit(16 * 1024);
-        registration.setTimeToFirstMessage(10_000);
+        registration.setMessageSizeLimit(64 * 1024);
+        registration.setTimeToFirstMessage(30_000);
     }
 }
