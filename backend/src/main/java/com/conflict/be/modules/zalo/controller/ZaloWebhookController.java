@@ -46,17 +46,21 @@ public class ZaloWebhookController {
             @Valid @RequestBody ZaloSimulateRequest request
     ) {
         String targetGroupId = request.getZaloGroupId();
+        String targetUserId = null;
 
-        // Nếu người dùng đã đăng nhập và chưa chỉ định nhóm, tự động chọn nhóm active đầu tiên của họ
-        if ((targetGroupId == null || targetGroupId.isBlank()) && authentication != null) {
+        if (authentication != null) {
             User user = userRepository.findByEmail(authentication.getName()).orElse(null);
             if (user != null) {
-                List<ZaloGroupMapping> mappings = mappingRepository.findByUserIdWithSubject(user.getId());
-                targetGroupId = mappings.stream()
-                        .filter(ZaloGroupMapping::isActive)
-                        .map(ZaloGroupMapping::getZaloGroupId)
-                        .findFirst()
-                        .orElse(null);
+                targetUserId = user.getId().toString();
+                // Nếu người dùng đã đăng nhập và chưa chỉ định nhóm, tự động chọn nhóm active đầu tiên của họ
+                if (targetGroupId == null || targetGroupId.isBlank()) {
+                    List<ZaloGroupMapping> mappings = mappingRepository.findByUserIdWithSubject(user.getId());
+                    targetGroupId = mappings.stream()
+                            .filter(ZaloGroupMapping::isActive)
+                            .map(ZaloGroupMapping::getZaloGroupId)
+                            .findFirst()
+                            .orElse(null);
+                }
             }
         }
 
@@ -68,6 +72,7 @@ public class ZaloWebhookController {
 
         String messageId = "sim-" + UUID.randomUUID().toString().substring(0, 8);
         ZaloProcessResultDTO result = messageProcessor.processMessage(
+                targetUserId,
                 targetGroupId,
                 messageId,
                 request.getSenderName() != null ? request.getSenderName() : "Lớp trưởng",
@@ -110,6 +115,7 @@ public class ZaloWebhookController {
         }
 
         ZaloProcessResultDTO result = messageProcessor.processMessage(
+                messageDTO.getUserId(),
                 messageDTO.getZaloGroupId(),
                 messageDTO.getMessageId(),
                 messageDTO.getSenderName() != null ? messageDTO.getSenderName() : "Thành viên Zalo",

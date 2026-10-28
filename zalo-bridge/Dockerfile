@@ -11,8 +11,8 @@ COPY package*.json ./
 RUN npm ci --omit=dev || npm install --omit=dev
 
 COPY src ./src
-# Create placeholder for session file if needed
-RUN touch zalo_session.json && chown -R node:node /app
+# Create placeholder directory for multi-user sessions
+RUN mkdir -p /app/data/sessions && chown -R node:node /app
 
 USER node
 

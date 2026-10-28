@@ -1,79 +1,118 @@
-function getBridgeBaseUrl() {
-  if (import.meta.env.VITE_ZALO_BRIDGE_URL) {
-    return import.meta.env.VITE_ZALO_BRIDGE_URL;
-  }
-  const apiUrl = import.meta.env.VITE_API_URL;
-  if (apiUrl && !apiUrl.includes("localhost") && !apiUrl.includes("127.0.0.1")) {
-    try {
-      const url = new URL(apiUrl);
-      return url.origin;
-    } catch {
-      // ignore
-    }
-  }
-  return "http://localhost:3001";
-}
+/**
+ * zaloBridgeApi.js
+ *
+ * RTK Query endpoints và helper wrappers cho Zalo Bridge — gọi qua Backend (authenticated).
+ * Mọi request đều đi qua /api/v1/zalo/bridge/* với JWT authentication.
+ */
 
-const BRIDGE_URL = getBridgeBaseUrl();
+import { baseApi } from "../../../services/baseApi";
+import { store } from "../../../app/store";
 
+export const zaloBridgeApi = baseApi.injectEndpoints({
+  endpoints: (builder) => ({
+    // GET /api/v1/zalo/bridge/status
+    getBridgeStatus: builder.query({
+      query: () => "/v1/zalo/bridge/status",
+      transformResponse: (response) => response.data,
+      providesTags: ["ZaloBridgeStatus"],
+    }),
+
+    // POST /api/v1/zalo/bridge/qr/generate
+    generateBridgeQr: builder.mutation({
+      query: () => ({
+        url: "/v1/zalo/bridge/qr/generate",
+        method: "POST",
+      }),
+      transformResponse: (response) => response.data,
+      invalidatesTags: ["ZaloBridgeStatus"],
+    }),
+
+    // POST /api/v1/zalo/bridge/logout
+    logoutBridge: builder.mutation({
+      query: () => ({
+        url: "/v1/zalo/bridge/logout",
+        method: "POST",
+      }),
+      invalidatesTags: ["ZaloBridgeStatus", "ZaloBridgeGroups"],
+    }),
+
+    // GET /api/v1/zalo/bridge/groups
+    getBridgeGroups: builder.query({
+      query: () => "/v1/zalo/bridge/groups",
+      transformResponse: (response) => response.data || [],
+      providesTags: ["ZaloBridgeGroups"],
+    }),
+
+    // POST /api/v1/zalo/bridge/groups/refresh
+    refreshBridgeGroups: builder.mutation({
+      query: () => ({
+        url: "/v1/zalo/bridge/groups/refresh",
+        method: "POST",
+      }),
+      transformResponse: (response) => response.data || [],
+      invalidatesTags: ["ZaloBridgeGroups"],
+    }),
+  }),
+  overrideExisting: false,
+});
+
+export const {
+  useGetBridgeStatusQuery,
+  useGenerateBridgeQrMutation,
+  useLogoutBridgeMutation,
+  useGetBridgeGroupsQuery,
+  useRefreshBridgeGroupsMutation,
+} = zaloBridgeApi;
+
+// Compatibility functions for components calling promise-based functions directly (e.g. WhitelistManager)
 export async function fetchBridgeStatus() {
   try {
-    const res = await fetch(`${BRIDGE_URL}/zalo/status`);
-    if (!res.ok) throw new Error(`HTTP error ${res.status}`);
-    const json = await res.json();
-    return json.data;
+    const result = await store.dispatch(
+      zaloBridgeApi.endpoints.getBridgeStatus.initiate(undefined, { forceRefetch: true })
+    ).unwrap();
+    return result;
   } catch (err) {
-    console.warn("[ZaloBridgeApi] Status check failed:", err.message);
+    console.warn("[ZaloBridgeApi] Status check failed:", err);
     return null;
   }
 }
 
-export async function switchBridgeMode(mode) {
-  const res = await fetch(`${BRIDGE_URL}/zalo/mode`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ mode }),
-  });
-  const json = await res.json();
-  if (!res.ok) throw new Error(json.message || "Không thể chuyển chế độ");
-  return json.data;
-}
-
-export async function generateBridgeQr() {
-  const res = await fetch(`${BRIDGE_URL}/zalo/qr/generate`, {
-    method: "POST",
-  });
-  const json = await res.json();
-  if (!res.ok) throw new Error(json.message || "Không thể tạo mã QR");
-  return json.data;
-}
-
-export async function logoutBridge() {
-  const res = await fetch(`${BRIDGE_URL}/zalo/logout`, {
-    method: "POST",
-  });
-  const json = await res.json();
-  if (!res.ok) throw new Error(json.message || "Lỗi khi đăng xuất");
-  return json.data;
-}
-
 export async function fetchBridgeGroups() {
   try {
-    const res = await fetch(`${BRIDGE_URL}/zalo/groups`);
-    if (!res.ok) throw new Error(`HTTP error ${res.status}`);
-    const json = await res.json();
-    return json.data || [];
+    const result = await store.dispatch(
+      zaloBridgeApi.endpoints.getBridgeGroups.initiate(undefined, { forceRefetch: true })
+    ).unwrap();
+    return result || [];
   } catch (err) {
-    console.warn("[ZaloBridgeApi] Failed to fetch groups:", err.message);
+    console.warn("[ZaloBridgeApi] Fetch groups failed:", err);
     return [];
   }
 }
 
 export async function refreshBridgeGroups() {
-  const res = await fetch(`${BRIDGE_URL}/zalo/groups/refresh`, {
-    method: "POST",
-  });
-  const json = await res.json();
-  if (!res.ok) throw new Error(json.message || "Lỗi khi làm mới danh sách nhóm");
-  return json.data || [];
+  try {
+    const result = await store.dispatch(
+      zaloBridgeApi.endpoints.refreshBridgeGroups.initiate()
+    ).unwrap();
+    return result || [];
+  } catch (err) {
+    console.warn("[ZaloBridgeApi] Refresh groups failed:", err);
+    return [];
+  }
+}
+
+export async function generateBridgeQr() {
+  return await store.dispatch(
+    zaloBridgeApi.endpoints.generateBridgeQr.initiate()
+  ).unwrap();
+}
+
+export async function logoutBridge() {
+  return await store.dispatch(
+    zaloBridgeApi.endpoints.logoutBridge.initiate()
+  ).unwrap();
+}
+
+export async function switchBridgeMode() {
+  return fetchBridgeStatus();
 }

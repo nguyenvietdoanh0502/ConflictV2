@@ -30,6 +30,7 @@ services:
       - AI_SERVICE_URL=http://ai-engine:8000
       - INTERNAL_API_KEY=${INTERNAL_API_KEY:-unisync_internal_secret_key_2026}
       - AI_TIMEOUT_SECONDS=120
+      - ZALO_BRIDGE_URL=http://zalo-bridge:3001
     depends_on:
       redis:
         condition: service_started
@@ -72,14 +73,13 @@ services:
       - PORT=3001
       - BACKEND_URL=http://backend:8080/api/v1/internal/zalo/messages
       - INTERNAL_API_KEY=${INTERNAL_API_KEY:-unisync_internal_secret_key_2026}
-      - ZALO_MODE=real
-      - SESSION_FILE_PATH=/app/data/zalo_session.json
+      - SESSIONS_DIR=/app/data/sessions
     volumes:
       - zalo_data:/app/data
     deploy:
       resources:
         limits:
-          memory: 96M
+          memory: 256M
     networks:
       - unisync-net
 

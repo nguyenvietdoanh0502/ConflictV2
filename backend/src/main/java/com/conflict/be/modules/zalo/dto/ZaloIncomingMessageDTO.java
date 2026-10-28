@@ -16,6 +16,9 @@ import java.time.Instant;
 @AllArgsConstructor
 public class ZaloIncomingMessageDTO {
 
+    @JsonProperty("user_id")
+    private String userId;
+
     @NotBlank(message = "zaloGroupId không được để trống")
     @JsonProperty("zalo_group_id")
     private String zaloGroupId;

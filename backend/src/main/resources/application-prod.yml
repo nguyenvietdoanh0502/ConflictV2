@@ -79,6 +79,8 @@ unisync:
     service-url: ${AI_SERVICE_URL:http://ai-engine:8000}
     internal-api-key: ${INTERNAL_API_KEY:unisync_internal_secret_key_2026}
     timeout-seconds: ${AI_TIMEOUT_SECONDS:120}
+  zalo:
+    bridge-url: ${ZALO_BRIDGE_URL:http://zalo-bridge:3001}
 
 logging:
   level:

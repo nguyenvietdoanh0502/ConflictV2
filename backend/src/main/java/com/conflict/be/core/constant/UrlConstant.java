@@ -41,6 +41,12 @@ public class UrlConstant {
         public static final String SIMULATE = "/zalo/simulate";
         public static final String INTERNAL_MESSAGES = "/internal/zalo/messages";
         public static final String MOCK_WEBHOOK = "/webhook/mock-zalo";
+        // Bridge proxy endpoints (authenticated, calls zalo-bridge per user session)
+        public static final String BRIDGE_STATUS = "/zalo/bridge/status";
+        public static final String BRIDGE_QR_GENERATE = "/zalo/bridge/qr/generate";
+        public static final String BRIDGE_LOGOUT = "/zalo/bridge/logout";
+        public static final String BRIDGE_GROUPS = "/zalo/bridge/groups";
+        public static final String BRIDGE_GROUPS_REFRESH = "/zalo/bridge/groups/refresh";
     }
 
     public static class Schedule {

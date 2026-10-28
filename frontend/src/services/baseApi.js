@@ -91,7 +91,7 @@ const baseQueryWithReauth = async(
 export const baseApi = createApi({
     reducerPath: "baseApi",
     baseQuery: baseQueryWithReauth,
-    tagTypes: ["CurrentUser", "Friend", "FriendRequest", "ChatHistory", "Subject", "ZaloMapping", "ScheduleEvent", "Material", "GameScore", "Notification", "NotificationUnreadCount"],
+    tagTypes: ["CurrentUser", "Friend", "FriendRequest", "ChatHistory", "Subject", "ZaloMapping", "ScheduleEvent", "Material", "GameScore", "Notification", "NotificationUnreadCount", "ZaloBridgeStatus", "ZaloBridgeGroups"],
     endpoints: ()=>({}),
 })
 

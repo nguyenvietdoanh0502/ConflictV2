@@ -58,7 +58,7 @@ public class ZaloMessageProcessor {
             String messageText,
             Instant currentDatetime
     ) {
-        return processMessage(zaloGroupId, messageId, senderName, messageText, null, null, null, currentDatetime);
+        return processMessage(null, zaloGroupId, messageId, senderName, messageText, null, null, null, currentDatetime);
     }
 
     @Transactional
@@ -72,8 +72,23 @@ public class ZaloMessageProcessor {
             String imageMimeType,
             Instant currentDatetime
     ) {
-        log.info("Processing incoming Zalo message for group '{}', sender '{}', hasImage={}",
-                zaloGroupId, senderName, (imageBase64 != null || imageUrl != null));
+        return processMessage(null, zaloGroupId, messageId, senderName, messageText, imageUrl, imageBase64, imageMimeType, currentDatetime);
+    }
+
+    @Transactional
+    public ZaloProcessResultDTO processMessage(
+            String targetUserId,
+            String zaloGroupId,
+            String messageId,
+            String senderName,
+            String messageText,
+            String imageUrl,
+            String imageBase64,
+            String imageMimeType,
+            Instant currentDatetime
+    ) {
+        log.info("Processing incoming Zalo message for user '{}', group '{}', sender '{}', hasImage={}",
+                targetUserId, zaloGroupId, senderName, (imageBase64 != null || imageUrl != null));
 
         boolean hasImage = (imageBase64 != null && !imageBase64.isBlank()) || (imageUrl != null && !imageUrl.isBlank());
 
@@ -94,8 +109,15 @@ public class ZaloMessageProcessor {
         List<ZaloGroupMapping> activeMappings =
                 mappingRepository.findAllActiveByZaloGroupIdWithSubjectAndUser(zaloGroupId);
 
+        if (targetUserId != null && !targetUserId.isBlank()) {
+            activeMappings = activeMappings.stream()
+                    .filter(m -> m.getUser() != null && m.getUser().getId() != null
+                            && targetUserId.equalsIgnoreCase(m.getUser().getId().toString()))
+                    .toList();
+        }
+
         if (activeMappings.isEmpty()) {
-            log.info("No active whitelist mapping found for group '{}'", zaloGroupId);
+            log.info("No active whitelist mapping found for group '{}' (user='{}')", zaloGroupId, targetUserId);
             return ZaloProcessResultDTO.builder()
                     .zaloGroupId(zaloGroupId)
                     .matchedFilter(true)

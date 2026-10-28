@@ -3,18 +3,11 @@ import path from "path";
 import axios from "axios";
 import { config } from "./config.js";
 
-// Sample group data for mock mode or development
-export const MOCK_GROUPS = [
-  { id: "group-it101", name: "Lập trình Web - K64", memberCount: 65, active: true },
-  { id: "group-cs202", name: "Mạng máy tính - Lớp 2", memberCount: 72, active: true },
-  { id: "group-db301", name: "Cơ sở dữ liệu - K64", memberCount: 58, active: true },
-  { id: "group-math1", name: "Giải tích 2 - Nhóm 03", memberCount: 80, active: true },
-  { id: "group-se404", name: "Kỹ thuật phần mềm - Nhóm đồ án", memberCount: 12, active: true },
-];
-
-class ZaloClient {
-  constructor() {
-    this.mode = config.zaloMode; // "mock" | "real"
+export class ZaloUserClient {
+  constructor(userId, sessionFilePath) {
+    this.userId = userId;
+    this.sessionFilePath = sessionFilePath;
+    this.initialized = false;
     this.isConnected = false;
     this.api = null;
     this.sessionData = null;
@@ -24,56 +17,34 @@ class ZaloClient {
     this.qrStatus = "idle"; // "idle" | "generating" | "ready" | "scanned" | "expired" | "declined" | "authenticated"
     this.scannedUser = null;
     this.isQrInProgress = false;
+    this.qrAttemptId = 0;
   }
 
-  async init() {
-    const sessionPath = path.resolve(config.sessionFilePath);
+  async init(autoStartQr = true) {
+    const sessionPath = path.resolve(this.sessionFilePath);
     const hasSavedSession = fs.existsSync(sessionPath);
-    console.log(`[ZaloBridge] Initializing (Config Mode: [${this.mode.toUpperCase()}], Saved Session: ${hasSavedSession})...`);
+    console.log(`[ZaloBridge][User:${this.userId}] Initializing (Saved Session: ${hasSavedSession})...`);
 
-    if (this.mode === "real" || hasSavedSession) {
-      this.mode = "real";
-      await this.initRealZalo();
-    } else {
-      this.initMockMode();
-    }
-  }
-
-  initMockMode() {
-    this.mode = "mock";
-    this.isConnected = true;
-    this.qrStatus = "idle";
-    this.qrCode = null;
-    this.scannedUser = null;
-    this.user = {
-      userId: "mock-student-id",
-      displayName: "Tài khoản Giả lập (Mock)",
-      avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=UnisyncMock",
-    };
-    this.groups = [...MOCK_GROUPS];
-    console.log(`[ZaloBridge] Mock Mode Active: ${this.groups.length} mock groups loaded.`);
-  }
-
-  async initRealZalo() {
-    this.mode = "real";
-    this.groups = [];
-    const sessionPath = path.resolve(config.sessionFilePath);
-
-    if (fs.existsSync(sessionPath)) {
+    if (hasSavedSession) {
       try {
         const raw = fs.readFileSync(sessionPath, "utf-8");
         this.sessionData = JSON.parse(raw);
-        console.log(`[ZaloBridge] Found saved session at ${sessionPath}. Attempting auto-login...`);
+        console.log(`[ZaloBridge][User:${this.userId}] Found saved session at ${sessionPath}. Attempting auto-login...`);
         const success = await this.loginWithSavedSession(this.sessionData);
-        if (success) return;
+        if (success) {
+          this.initialized = true;
+          return;
+        }
       } catch (e) {
-        console.warn("[ZaloBridge] Failed to read or parse saved session:", e.message);
+        console.warn(`[ZaloBridge][User:${this.userId}] Failed to read or parse saved session:`, e.message);
       }
     }
 
-    // No valid session, wait for user to request QR or start QR login
-    console.log("[ZaloBridge] Real mode ready. Starting QR code generation...");
-    this.startQrLogin();
+    if (autoStartQr) {
+      console.log(`[ZaloBridge][User:${this.userId}] No valid session. Starting QR code generation...`);
+      this.initialized = true;
+      await this.startQrLogin(true);
+    }
   }
 
   async loginWithSavedSession(credentials) {
@@ -85,10 +56,10 @@ class ZaloClient {
       await this.onLoginSuccess(api, credentials);
       return true;
     } catch (err) {
-      console.warn("[ZaloBridge] Saved session login failed (possibly expired):", err.message);
+      console.warn(`[ZaloBridge][User:${this.userId}] Saved session login failed (possibly expired):`, err.message);
       // Remove invalid session file
       try {
-        const sessionPath = path.resolve(config.sessionFilePath);
+        const sessionPath = path.resolve(this.sessionFilePath);
         if (fs.existsSync(sessionPath)) fs.unlinkSync(sessionPath);
       } catch {}
       this.sessionData = null;
@@ -96,11 +67,14 @@ class ZaloClient {
     }
   }
 
-  async startQrLogin() {
-    if (this.isQrInProgress) {
-      console.log("[ZaloBridge] QR login already in progress.");
+  async startQrLogin(force = false) {
+    if (this.isQrInProgress && !force) {
+      console.log(`[ZaloBridge][User:${this.userId}] QR login already in progress.`);
       return;
     }
+
+    this.qrAttemptId += 1;
+    const currentAttempt = this.qrAttemptId;
 
     this.isQrInProgress = true;
     this.qrStatus = "generating";
@@ -113,24 +87,36 @@ class ZaloClient {
       const Zalo = zca.Zalo;
       const zalo = new Zalo({ selfListen: true, checkUpdate: false });
 
-      console.log("[ZaloBridge] Requesting new QR code from Zalo...");
+      console.log(`[ZaloBridge][User:${this.userId}] Requesting new QR code from Zalo (attempt #${currentAttempt})...`);
 
       let savedCredentials = null;
+      let resolveQrReady;
+      const qrReadyPromise = new Promise((resolve) => {
+        resolveQrReady = resolve;
+      });
+      const qrTimeout = setTimeout(() => resolveQrReady(), 8000);
 
       const apiPromise = zalo.loginQR({}, (event) => {
-        console.log(`[ZaloBridge QR Event] Type: ${event.type}`);
+        if (this.qrAttemptId !== currentAttempt) return;
+
+        console.log(`[ZaloBridge][User:${this.userId}] QR Event Type: ${event.type}`);
 
         switch (event.type) {
           case 0: { // QRCodeGenerated
             this.qrStatus = "ready";
             const img = event.data?.image || "";
             this.qrCode = img.startsWith("data:") ? img : `data:image/png;base64,${img}`;
-            console.log("[ZaloBridge] QR Code generated successfully. Ready for scan.");
+            console.log(`[ZaloBridge][User:${this.userId}] QR Code generated successfully. Ready for scan.`);
+            clearTimeout(qrTimeout);
+            resolveQrReady();
             break;
           }
           case 1: { // QRCodeExpired
             this.qrStatus = "expired";
-            console.log("[ZaloBridge] QR Code expired.");
+            this.isQrInProgress = false;
+            console.log(`[ZaloBridge][User:${this.userId}] QR Code expired.`);
+            clearTimeout(qrTimeout);
+            resolveQrReady();
             break;
           }
           case 2: { // QRCodeScanned
@@ -139,18 +125,21 @@ class ZaloClient {
               displayName: event.data?.display_name || "Người dùng Zalo",
               avatar: event.data?.avatar || null,
             };
-            console.log(`[ZaloBridge] QR scanned by: ${this.scannedUser.displayName}`);
+            console.log(`[ZaloBridge][User:${this.userId}] QR scanned by: ${this.scannedUser.displayName}`);
             break;
           }
           case 3: { // QRCodeDeclined
             this.qrStatus = "declined";
-            console.log("[ZaloBridge] QR login was declined on mobile device.");
+            this.isQrInProgress = false;
+            console.log(`[ZaloBridge][User:${this.userId}] QR login was declined on mobile device.`);
+            clearTimeout(qrTimeout);
+            resolveQrReady();
             break;
           }
           case 4: { // GotLoginInfo
             this.qrStatus = "authenticated";
             savedCredentials = event.data;
-            console.log("[ZaloBridge] Credentials received. Finalizing session...");
+            console.log(`[ZaloBridge][User:${this.userId}] Credentials received. Finalizing session...`);
             break;
           }
           default:
@@ -158,32 +147,62 @@ class ZaloClient {
         }
       });
 
-      const api = await apiPromise;
-      await this.onLoginSuccess(api, savedCredentials);
+      // Handle completion of QR scan in background so HTTP response returns immediately once QR image is ready
+      apiPromise
+        .then(async (api) => {
+          if (this.qrAttemptId !== currentAttempt) return;
+          await this.onLoginSuccess(api, savedCredentials);
+        })
+        .catch((err) => {
+          if (this.qrAttemptId !== currentAttempt) return;
+          console.error(`[ZaloBridge][User:${this.userId}] QR Login error:`, err?.message || err);
+          if (!this.isConnected) {
+            this.qrStatus = "expired";
+          }
+        })
+        .finally(() => {
+          if (this.qrAttemptId === currentAttempt) {
+            this.isQrInProgress = false;
+          }
+          clearTimeout(qrTimeout);
+          resolveQrReady();
+        });
+
+      // Wait only until the QR image is generated (or up to 8s timeout)
+      await qrReadyPromise;
     } catch (err) {
-      console.error("[ZaloBridge] QR Login error:", err.message);
-      this.qrStatus = "expired";
-    } finally {
-      this.isQrInProgress = false;
+      if (this.qrAttemptId === currentAttempt) {
+        console.error(`[ZaloBridge][User:${this.userId}] QR Setup error:`, err.message);
+        this.qrStatus = "expired";
+        this.isQrInProgress = false;
+      }
     }
   }
 
   async onLoginSuccess(api, credentials) {
+    // Stop any previous listener if present
+    try {
+      if (this.api?.listener?.stop) {
+        this.api.listener.stop();
+      }
+    } catch {}
+
     this.api = api;
     this.isConnected = true;
+    this.initialized = true;
     this.qrStatus = "authenticated";
     this.qrCode = null;
-    console.log("[ZaloBridge] Login successful! Fetching user account info and groups...");
+    console.log(`[ZaloBridge][User:${this.userId}] Login successful! Fetching user account info and groups...`);
 
     // 1. Save session credentials to disk
     if (credentials) {
       try {
-        const sessionPath = path.resolve(config.sessionFilePath);
+        const sessionPath = path.resolve(this.sessionFilePath);
         fs.writeFileSync(sessionPath, JSON.stringify(credentials, null, 2));
         this.sessionData = credentials;
-        console.log(`[ZaloBridge] Saved credentials to ${sessionPath}`);
+        console.log(`[ZaloBridge][User:${this.userId}] Saved credentials to ${sessionPath}`);
       } catch (e) {
-        console.warn("[ZaloBridge] Could not save session:", e.message);
+        console.warn(`[ZaloBridge][User:${this.userId}] Could not save session:`, e.message);
       }
     }
 
@@ -197,10 +216,10 @@ class ZaloClient {
           displayName: profile.displayName || profile.name || "Tài khoản Zalo",
           avatar: profile.avatar || profile.avatarUrl || null,
         };
-        console.log(`[ZaloBridge] Logged in as: ${this.user.displayName} (UID: ${this.user.userId})`);
+        console.log(`[ZaloBridge][User:${this.userId}] Logged in as: ${this.user.displayName} (UID: ${this.user.userId})`);
       }
     } catch (e) {
-      console.warn("[ZaloBridge] Could not fetch profile:", e.message);
+      console.warn(`[ZaloBridge][User:${this.userId}] Could not fetch profile:`, e.message);
       this.user = { displayName: "Tài khoản Zalo đã kết nối", avatar: null };
     }
 
@@ -211,23 +230,23 @@ class ZaloClient {
     try {
       if (api.listener && api.listener.on) {
         api.listener.on("connected", () => {
-          console.log("[ZaloBridge Listener] Real-time WebSocket listener connected to Zalo!");
+          console.log(`[ZaloBridge][User:${this.userId}] Real-time WebSocket listener connected to Zalo!`);
         });
         api.listener.on("closed", (code, reason) => {
-          console.warn(`[ZaloBridge Listener] WebSocket closed (code: ${code}, reason: ${reason}). Auto-retrying...`);
+          console.warn(`[ZaloBridge][User:${this.userId}] WebSocket closed (code: ${code}, reason: ${reason}). Auto-retrying...`);
         });
         api.listener.on("error", (err) => {
-          console.error("[ZaloBridge Listener] WebSocket error:", err?.message || err);
+          console.error(`[ZaloBridge][User:${this.userId}] WebSocket error:`, err?.message || err);
         });
         api.listener.on("message", (msg) => {
           this.handleIncomingZaloMessage(msg);
         });
 
         api.listener.start({ retryOnClose: true });
-        console.log("[ZaloBridge] Real-time group message listener started with auto-reconnection.");
+        console.log(`[ZaloBridge][User:${this.userId}] Real-time group message listener started with auto-reconnection.`);
       }
     } catch (e) {
-      console.warn("[ZaloBridge] Could not start listener:", e.message);
+      console.warn(`[ZaloBridge][User:${this.userId}] Could not start listener:`, e.message);
     }
   }
 
@@ -265,10 +284,10 @@ class ZaloClient {
           this.groups = [];
         }
 
-        console.log(`[ZaloBridge] Synced ${this.groups.length} real Zalo groups.`);
+        console.log(`[ZaloBridge][User:${this.userId}] Synced ${this.groups.length} real Zalo groups.`);
       }
     } catch (e) {
-      console.warn("[ZaloBridge] Error fetching groups:", e.message);
+      console.warn(`[ZaloBridge][User:${this.userId}] Error fetching groups:`, e.message);
     }
   }
 
@@ -283,14 +302,14 @@ class ZaloClient {
       Boolean(msg.data && msg.data.idTo && msg.data.idTo !== msg.data.uidFrom);
 
     if (!isGroup) {
-      console.log(`[ZaloBridge Listener] Ignored non-group message (type: ${msg.type}, threadId: ${msg.threadId})`);
+      console.log(`[ZaloBridge][User:${this.userId}] Ignored non-group message (type: ${msg.type}, threadId: ${msg.threadId})`);
       return;
     }
 
     // Extract Group ID
     const zaloGroupId = String(msg.threadId || msg.data?.idTo || msg.data?.grid || msg.groupId || "");
     if (!zaloGroupId) {
-      console.warn("[ZaloBridge Listener] Could not determine group ID from group message:", msg);
+      console.warn(`[ZaloBridge][User:${this.userId}] Could not determine group ID from group message:`, msg);
       return;
     }
 
@@ -362,7 +381,7 @@ class ZaloClient {
 
     if (imageUrl) {
       try {
-        console.log(`[ZaloBridge Listener] Image detected in group [${zaloGroupId}], downloading from: ${imageUrl.substring(0, 80)}...`);
+        console.log(`[ZaloBridge][User:${this.userId}] Image detected in group [${zaloGroupId}], downloading from: ${imageUrl.substring(0, 80)}...`);
         const imgRes = await axios.get(imageUrl, {
           responseType: "arraybuffer",
           timeout: 15000,
@@ -375,18 +394,18 @@ class ZaloClient {
         if (ct && ct.startsWith("image/")) {
           imageMimeType = ct;
         }
-        console.log(`[ZaloBridge Listener] Downloaded image (${(imageBase64.length * 0.75 / 1024).toFixed(1)} KB, type: ${imageMimeType})`);
+        console.log(`[ZaloBridge][User:${this.userId}] Downloaded image (${(imageBase64.length * 0.75 / 1024).toFixed(1)} KB, type: ${imageMimeType})`);
       } catch (err) {
-        console.warn(`[ZaloBridge Listener] Could not download image directly: ${err.message}. Forwarding imageUrl only.`);
+        console.warn(`[ZaloBridge][User:${this.userId}] Could not download image directly: ${err.message}. Forwarding imageUrl only.`);
       }
     }
 
     if (!messageText && !imageBase64 && !imageUrl) {
-      console.log(`[ZaloBridge Listener] Ignored non-text, non-image message in group [${zaloGroupId}] (sender: ${senderName})`);
+      console.log(`[ZaloBridge][User:${this.userId}] Ignored non-text, non-image message in group [${zaloGroupId}] (sender: ${senderName})`);
       return;
     }
 
-    console.log(`[ZaloBridge Real Listener] Group: [${zaloGroupId}], Sender: [${senderName}], Text: "${messageText}", HasImage: ${Boolean(imageBase64 || imageUrl)}`);
+    console.log(`[ZaloBridge][User:${this.userId}] Group: [${zaloGroupId}], Sender: [${senderName}], Text: "${messageText}", HasImage: ${Boolean(imageBase64 || imageUrl)}`);
 
     try {
       const response = await this.forwardMessageToBackend({
@@ -399,17 +418,18 @@ class ZaloClient {
         imageMimeType,
         timestamp: new Date().toISOString(),
       });
-      console.log(`[ZaloBridge Real Listener] Forwarded to backend successfully:`, response?.data?.statusMessage || response?.status || "OK");
+      console.log(`[ZaloBridge][User:${this.userId}] Forwarded to backend successfully:`, response?.data?.statusMessage || response?.status || "OK");
     } catch (err) {
-      console.error("[ZaloBridge Real Listener] Failed to forward message to backend:", err.response?.data || err.message);
+      console.error(`[ZaloBridge][User:${this.userId}] Failed to forward message to backend:`, err.response?.data || err.message);
     }
   }
 
   /**
-   * Forwards a message payload to Spring Boot Backend
+   * Forwards a message payload to Spring Boot Backend with user_id for strict per-student isolation
    */
   async forwardMessageToBackend({ zaloGroupId, messageId, senderName, messageText, imageUrl, imageBase64, imageMimeType, timestamp }) {
     const payload = {
+      user_id: this.userId,
       zalo_group_id: zaloGroupId,
       message_id: messageId || `bridge-${Date.now()}`,
       sender_name: senderName || "Thành viên nhóm",
@@ -425,31 +445,17 @@ class ZaloClient {
       "X-Internal-Api-Key": config.internalApiKey,
     };
 
-    console.log(`[ZaloBridge] Forwarding to Backend: ${config.backendUrl} (hasImage: ${Boolean(imageBase64 || imageUrl)})`);
+    console.log(`[ZaloBridge][User:${this.userId}] Forwarding to Backend: ${config.backendUrl} (hasImage: ${Boolean(imageBase64 || imageUrl)})`);
     const response = await axios.post(config.backendUrl, payload, { headers, timeout: 30000 });
-    console.log(`[ZaloBridge] Backend responded with status: ${response.status}`);
+    console.log(`[ZaloBridge][User:${this.userId}] Backend responded with status: ${response.status}`);
     return response.data;
   }
 
-  async setMode(targetMode) {
-    const m = (targetMode || "mock").toLowerCase();
-    if (m === this.mode && (this.isConnected || this.qrStatus === "ready")) {
-      return this.getStatus();
-    }
-
-    console.log(`[ZaloBridge] Switching mode from [${this.mode.toUpperCase()}] to [${m.toUpperCase()}]...`);
-
-    if (m === "mock") {
-      this.initMockMode();
-    } else if (m === "real") {
-      await this.initRealZalo();
-    }
-
-    return this.getStatus();
-  }
-
   async logout() {
-    console.log("[ZaloBridge] Logging out real Zalo session...");
+    console.log(`[ZaloBridge][User:${this.userId}] Logging out Zalo session...`);
+    this.qrAttemptId += 1;
+    this.isQrInProgress = false;
+
     try {
       if (this.api?.listener?.stop) {
         this.api.listener.stop();
@@ -457,13 +463,13 @@ class ZaloClient {
     } catch {}
 
     try {
-      const sessionPath = path.resolve(config.sessionFilePath);
+      const sessionPath = path.resolve(this.sessionFilePath);
       if (fs.existsSync(sessionPath)) {
         fs.unlinkSync(sessionPath);
-        console.log(`[ZaloBridge] Deleted session file: ${sessionPath}`);
+        console.log(`[ZaloBridge][User:${this.userId}] Deleted session file: ${sessionPath}`);
       }
     } catch (e) {
-      console.warn("[ZaloBridge] Could not delete session file:", e.message);
+      console.warn(`[ZaloBridge][User:${this.userId}] Could not delete session file:`, e.message);
     }
 
     this.api = null;
@@ -474,25 +480,22 @@ class ZaloClient {
     this.qrCode = null;
     this.qrStatus = "idle";
     this.scannedUser = null;
-
-    return this.getStatus();
+    this.initialized = false;
   }
 
   getGroups() {
-    if (this.mode === "mock") {
-      return MOCK_GROUPS;
-    }
     return this.groups;
   }
 
   getStatus() {
-    const sessionPath = path.resolve(config.sessionFilePath);
+    const sessionPath = path.resolve(this.sessionFilePath);
     const hasSavedSession = fs.existsSync(sessionPath);
 
     return {
+      userId: this.userId,
       connected: this.isConnected,
-      mode: this.mode,
-      groupCount: this.getGroups().length,
+      initialized: this.initialized,
+      groupCount: this.groups.length,
       user: this.user,
       qrCode: this.qrCode,
       qrStatus: this.qrStatus,
@@ -503,5 +506,3 @@ class ZaloClient {
     };
   }
 }
-
-export const zaloClient = new ZaloClient();

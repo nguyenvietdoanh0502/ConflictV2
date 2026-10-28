@@ -1,5 +1,4 @@
-import { getLocalizedErrorMessage } from "../../../utils/errorMessages";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import {
   QrCode,
   Smartphone,
@@ -8,103 +7,69 @@ import {
   LogOut,
   CheckCircle2,
   AlertCircle,
-  ExternalLink,
   Bot,
   UserCheck,
-  Sparkles,
-  Zap,
   ShieldCheck,
-  Layers,
   ArrowRight,
   Shield,
-  Clock
+  Zap,
+  Sparkles,
 } from "lucide-react";
 import {
-  fetchBridgeStatus,
-  switchBridgeMode,
-  generateBridgeQr,
-  logoutBridge,
-  refreshBridgeGroups,
+  useGetBridgeStatusQuery,
+  useGenerateBridgeQrMutation,
+  useLogoutBridgeMutation,
+  useRefreshBridgeGroupsMutation,
 } from "../services/zaloBridgeApi";
 import ConfirmDeleteModal from "./ConfirmDeleteModal";
 
 export default function ZaloConnectPanel({ onNavigateToWhitelist, onNavigateToSimulator }) {
-  const [status, setStatus] = useState(null);
-  const [isBridgeOnline, setIsBridgeOnline] = useState(true);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isQrRefreshing, setIsQrRefreshing] = useState(false);
-  const [actionError, setActionError] = useState("");
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [actionError, setActionError] = useState("");
 
-  const pollingRef = useRef(null);
+  // RTK Query — poll status mỗi 2 giây
+  const {
+    data: status,
+    isError: isBridgeError,
+    refetch: refetchStatus,
+  } = useGetBridgeStatusQuery(undefined, {
+    pollingInterval: 2000,
+  });
 
-  // Load status on mount
-  const loadStatus = async () => {
-    const data = await fetchBridgeStatus();
-    if (data) {
-      setStatus(data);
-      setIsBridgeOnline(true);
-    } else {
-      setIsBridgeOnline(false);
-    }
-  };
+  const [generateQr, { isLoading: isQrGenerating }] = useGenerateBridgeQrMutation();
+  const [logoutBridge, { isLoading: isLoggingOut }] = useLogoutBridgeMutation();
+  const [refreshGroups] = useRefreshBridgeGroupsMutation();
 
-  useEffect(() => {
-    loadStatus();
-
-    // Auto-switch to real mode on mount so student connects real Zalo
-    fetchBridgeStatus().then((st) => {
-      if (st && st.mode === "mock") {
-        switchBridgeMode("real").then((updated) => {
-          if (updated) setStatus(updated);
-        }).catch(() => {});
-      }
-    });
-
-    // Poll status periodically (every 2 seconds)
-    pollingRef.current = setInterval(async () => {
-      const data = await fetchBridgeStatus();
-      if (data) {
-        setStatus(data);
-        setIsBridgeOnline(true);
-      } else {
-        setIsBridgeOnline(false);
-      }
-    }, 2000);
-
-    return () => {
-      if (pollingRef.current) clearInterval(pollingRef.current);
-    };
-  }, []);
+  // Nếu bridge error thì hiện UI offline
+  const isBridgeOnline = !isBridgeError && status !== undefined;
+  const isRealConnected = Boolean(status?.connected);
 
   const handleGenerateQr = async () => {
-    setIsQrRefreshing(true);
     setActionError("");
     try {
-      const updated = await generateBridgeQr();
-      setStatus(updated);
+      await generateQr().unwrap();
     } catch (err) {
-      setActionError(getLocalizedErrorMessage(err, "Không thể tạo mã QR mới"));
-    } finally {
-      setIsQrRefreshing(false);
+      setActionError(err?.data?.message || "Không thể tạo mã QR mới. Vui lòng thử lại.");
     }
   };
 
   const handleConfirmLogout = async () => {
-    setIsLoading(true);
     setActionError("");
     try {
-      const updated = await logoutBridge();
-      setStatus(updated);
+      await logoutBridge().unwrap();
       setShowLogoutConfirm(false);
     } catch (err) {
-      setActionError(getLocalizedErrorMessage(err, "Lỗi khi đăng xuất Zalo"));
-    } finally {
-      setIsLoading(false);
+      setActionError(err?.data?.message || "Lỗi khi đăng xuất Zalo.");
     }
   };
 
-  const isRealConnected = Boolean(status?.connected && status?.mode === "real");
+  const handleRefreshGroups = async () => {
+    try {
+      await refreshGroups().unwrap();
+    } catch (err) {
+      setActionError("Không thể làm mới danh sách nhóm.");
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -114,16 +79,13 @@ export default function ZaloConnectPanel({ onNavigateToWhitelist, onNavigateToSi
           <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
           <div className="space-y-1">
             <p className="font-extrabold text-amber-900">
-              Dịch vụ Zalo Bridge (Cổng 3001) chưa phản hồi
+              Dịch vụ kết nối Zalo đang tạm thời không phản hồi
             </p>
             <p className="text-amber-700 leading-relaxed font-medium">
-              Vui lòng đảm bảo tiến trình Zalo Bridge đang chạy trên máy tính bằng lệnh:
-              <code className="mx-1.5 px-2 py-0.5 bg-amber-100/80 rounded-lg font-mono font-bold text-amber-900">
-                cd zalo-bridge && npm start
-              </code>
+              Hệ thống chưa thể kết nối đến cổng Zalo Bridge. Vui lòng thử lại sau ít phút.
             </p>
             <button
-              onClick={loadStatus}
+              onClick={refetchStatus}
               className="inline-flex items-center gap-1.5 font-bold text-indigo-700 hover:text-indigo-900 underline mt-1 cursor-pointer"
             >
               <RefreshCw className="w-3.5 h-3.5" /> Kiểm tra lại kết nối
@@ -178,13 +140,13 @@ export default function ZaloConnectPanel({ onNavigateToWhitelist, onNavigateToSi
         </div>
       </div>
 
-      {/* Main Content Area - Dạng chữ nhật ngang rộng rãi */}
+      {/* Main Content Area */}
       <div className="p-6 sm:p-8 rounded-3xl bg-white border border-slate-200/90 shadow-sm">
         {isRealConnected ? (
-          /* TRẠNG THÁI ĐÃ KẾT NỐI - BỐ CỤC NGANG 2 CỘT RỘNG */
+          /* TRẠNG THÁI ĐÃ KẾT NỐI */
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-            
-            {/* Cột trái: Thẻ User Profile Zalo */}
+
+            {/* Cột trái: User Profile Zalo */}
             <div className="lg:col-span-5 p-6 rounded-3xl bg-[#F8F7FC] border border-indigo-100/90 shadow-sm space-y-5">
               <div className="flex items-center gap-4">
                 {status?.user?.avatar ? (
@@ -224,7 +186,7 @@ export default function ZaloConnectPanel({ onNavigateToWhitelist, onNavigateToSi
                 </div>
                 <button
                   type="button"
-                  onClick={refreshBridgeGroups}
+                  onClick={handleRefreshGroups}
                   className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-bold transition cursor-pointer shadow-sm"
                   title="Đồng bộ lại danh sách nhóm từ Zalo"
                 >
@@ -245,9 +207,9 @@ export default function ZaloConnectPanel({ onNavigateToWhitelist, onNavigateToSi
               </button>
             </div>
 
-            {/* Cột phải: Trạng thái Listener & Hành động liên kết Whitelist */}
+            {/* Cột phải: Trạng thái Listener & Hành động Whitelist */}
             <div className="lg:col-span-7 space-y-5">
-              
+
               {/* Alert Realtime Listener */}
               <div className="p-6 rounded-3xl bg-emerald-50/60 border border-emerald-200/90 shadow-sm space-y-3">
                 <div className="flex items-center gap-3">
@@ -256,7 +218,7 @@ export default function ZaloConnectPanel({ onNavigateToWhitelist, onNavigateToSi
                   </div>
                   <div>
                     <h5 className="text-sm sm:text-base font-black text-emerald-950">
-                      Zalo Listener (Bộ lắng nghe thời gian thực) đang chạy!
+                      Zalo Listener đang chạy!
                     </h5>
                     <p className="text-xs text-emerald-700 font-semibold mt-0.5">
                       Sẵn sàng nhận diện mọi tin nhắn từ nhóm lớp học
@@ -293,10 +255,10 @@ export default function ZaloConnectPanel({ onNavigateToWhitelist, onNavigateToSi
 
           </div>
         ) : (
-          /* TRẠNG THÁI QUÉT MÃ QR - BỐ CỤC NGANG 2 CỘT RỘNG RÃI */
+          /* TRẠNG THÁI QUÉT MÃ QR */
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-            
-            {/* Cột trái (Lg: 7 cột): Hướng dẫn 3 bước & Lợi ích */}
+
+            {/* Cột trái: Hướng dẫn 3 bước */}
             <div className="lg:col-span-7 space-y-6">
               <div>
                 <h4 className="text-xl sm:text-2xl font-black text-slate-900">
@@ -307,7 +269,7 @@ export default function ZaloConnectPanel({ onNavigateToWhitelist, onNavigateToSi
                 </p>
               </div>
 
-              {/* 3 Bước hướng dẫn to rõ */}
+              {/* 3 Bước hướng dẫn */}
               <div className="space-y-3">
                 <div className="flex items-start gap-3.5 p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
                   <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white font-black text-sm flex items-center justify-center shrink-0 shadow-sm shadow-indigo-200">
@@ -352,26 +314,26 @@ export default function ZaloConnectPanel({ onNavigateToWhitelist, onNavigateToSi
                 </div>
               </div>
 
-              {/* Bảo mật & Tính năng */}
+              {/* Bảo mật */}
               <div className="p-4 rounded-2xl bg-indigo-50/60 border border-indigo-100 flex items-center gap-3 text-xs text-indigo-900 font-medium">
                 <Shield className="w-5 h-5 text-indigo-600 shrink-0" />
                 <span>
-                  Phiên kết nối được mã hóa an toàn cục bộ trên máy tính. Hệ thống chỉ đọc tin nhắn từ các nhóm bạn cho phép trong Whitelist.
+                  Phiên kết nối Zalo của bạn được lưu riêng biệt, an toàn. Hệ thống chỉ đọc tin nhắn từ các nhóm bạn cho phép trong Whitelist.
                 </span>
               </div>
             </div>
 
-            {/* Cột phải (Lg: 5 cột): Khung QR Code to bản sang trọng */}
+            {/* Cột phải: QR Code */}
             <div className="lg:col-span-5 flex flex-col items-center justify-center">
               <div className="w-full max-w-sm p-6 sm:p-8 rounded-3xl bg-[#F8F7FC] border border-slate-200 shadow-xl flex flex-col items-center justify-center text-center space-y-4">
-                
-                {status?.qrStatus === "generating" ? (
+
+                {status?.qrStatus === "generating" || isQrGenerating ? (
                   <div className="flex flex-col items-center gap-3 py-12 text-xs sm:text-sm text-slate-500">
                     <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
                     <span className="font-extrabold text-slate-700">Đang tạo mã QR từ máy chủ Zalo...</span>
                   </div>
                 ) : status?.qrStatus === "scanned" ? (
-                  <div className="flex flex-col items-center gap-4 py-8 text-center animate-in zoom-in duration-300">
+                  <div className="flex flex-col items-center gap-4 py-8 text-center">
                     {status?.scannedUser?.avatar ? (
                       <img
                         src={status.scannedUser.avatar}
@@ -402,10 +364,10 @@ export default function ZaloConnectPanel({ onNavigateToWhitelist, onNavigateToSi
                     <button
                       type="button"
                       onClick={handleGenerateQr}
-                      disabled={isQrRefreshing}
+                      disabled={isQrGenerating}
                       className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-black shadow-md shadow-indigo-200 transition cursor-pointer"
                     >
-                      <RefreshCw className={`w-4 h-4 ${isQrRefreshing ? "animate-spin" : ""}`} />
+                      <RefreshCw className={`w-4 h-4 ${isQrGenerating ? "animate-spin" : ""}`} />
                       <span>Lấy mã QR mới</span>
                     </button>
                   </div>
@@ -429,10 +391,10 @@ export default function ZaloConnectPanel({ onNavigateToWhitelist, onNavigateToSi
                     <button
                       type="button"
                       onClick={handleGenerateQr}
-                      disabled={isQrRefreshing}
+                      disabled={isQrGenerating}
                       className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-black shadow-md shadow-indigo-200 transition cursor-pointer"
                     >
-                      <RefreshCw className={`w-4 h-4 ${isQrRefreshing ? "animate-spin" : ""}`} />
+                      <RefreshCw className={`w-4 h-4 ${isQrGenerating ? "animate-spin" : ""}`} />
                       <span>Tạo mã QR đăng nhập</span>
                     </button>
                   </div>
@@ -443,10 +405,10 @@ export default function ZaloConnectPanel({ onNavigateToWhitelist, onNavigateToSi
                   <button
                     type="button"
                     onClick={handleGenerateQr}
-                    disabled={isQrRefreshing}
+                    disabled={isQrGenerating}
                     className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition shadow-sm cursor-pointer"
                   >
-                    <RefreshCw className={`w-3.5 h-3.5 ${isQrRefreshing ? "animate-spin" : ""}`} />
+                    <RefreshCw className={`w-3.5 h-3.5 ${isQrGenerating ? "animate-spin" : ""}`} />
                     <span>Làm mới mã QR</span>
                   </button>
                 </div>
@@ -463,7 +425,7 @@ export default function ZaloConnectPanel({ onNavigateToWhitelist, onNavigateToSi
         isOpen={showLogoutConfirm}
         onClose={() => setShowLogoutConfirm(false)}
         onConfirm={handleConfirmLogout}
-        isLoading={isLoading}
+        isLoading={isLoggingOut}
         title="Xác nhận ngắt kết nối Zalo"
         description="Bạn có chắc chắn muốn đăng xuất tài khoản Zalo cá nhân? Phiên làm việc sẽ bị xóa và hệ thống sẽ dừng lắng nghe tin nhắn từ tài khoản này."
         itemName={status?.user?.displayName || "Tài khoản Zalo"}

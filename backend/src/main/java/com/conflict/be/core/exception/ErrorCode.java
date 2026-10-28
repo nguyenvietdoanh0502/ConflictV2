@@ -217,6 +217,7 @@ public enum ErrorCode {
     ZALO_MAPPING_NOT_FOUND("ZALO_MAPPING_NOT_FOUND", "Zalo group mapping was not found", 404),
     ZALO_MAPPING_FORBIDDEN("ZALO_MAPPING_FORBIDDEN", "You do not have permission to access this mapping", 403),
     ZALO_MAPPING_ALREADY_EXISTS("ZALO_MAPPING_ALREADY_EXISTS", "Group mapping already exists for this group", 409),
+    ZALO_BRIDGE_UNAVAILABLE("ZALO_BRIDGE_UNAVAILABLE", "Zalo bridge service is temporarily unavailable", 503),
 
     // ==========================================
     // SCHEDULE EVENT ERRORS
