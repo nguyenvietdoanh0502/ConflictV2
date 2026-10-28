@@ -23,7 +23,7 @@ import {
   useToggleZaloMappingMutation,
   useDeleteZaloMappingMutation,
 } from "../services/timetableApi";
-import { fetchBridgeGroups, fetchBridgeStatus, refreshBridgeGroups } from "../services/zaloBridgeApi";
+import { useGetBridgeGroupsQuery, useGetBridgeStatusQuery } from "../services/zaloBridgeApi";
 import ConfirmDeleteModal from "./ConfirmDeleteModal";
 import ZaloGroupSelect from "./ZaloGroupSelect";
 import {
@@ -94,46 +94,24 @@ export default function WhitelistManager({ onSelectGroupForSimulator, onNavigate
   const [deleteConfirmState, setDeleteConfirmState] = useState(null);
   const [deleteError, setDeleteError] = useState("");
 
-  const [bridgeGroups, setBridgeGroups] = useState(DEFAULT_MOCK_GROUPS);
-  const [bridgeStatus, setBridgeStatus] = useState(null);
+  const { data: bridgeStatus } = useGetBridgeStatusQuery();
+  const isZaloConnected = Boolean(bridgeStatus?.connected);
+
+  const { data: fetchedGroups = [], refetch: refetchBridgeGroups } = useGetBridgeGroupsQuery(undefined, {
+    skip: !isZaloConnected,
+  });
 
   useEffect(() => {
-    fetchBridgeGroups()
-      .then((groups) => {
-        if (groups && groups.length > 0) {
-          setBridgeGroups(groups);
-        } else {
-          setBridgeGroups(DEFAULT_MOCK_GROUPS);
-        }
-      })
-      .catch(() => {
-        setBridgeGroups(DEFAULT_MOCK_GROUPS);
-      });
-    fetchBridgeStatus().then((st) => {
-      if (st) setBridgeStatus(st);
-    });
-  }, []);
-
-  const handleRefreshGroups = async () => {
-    setIsRefreshingGroups(true);
-    try {
-      const refreshed = await refreshBridgeGroups();
-      if (refreshed && refreshed.length > 0) {
-        setBridgeGroups(refreshed);
-      } else {
-        const groups = await fetchBridgeGroups();
-        if (groups && groups.length > 0) {
-          setBridgeGroups(groups);
-        } else {
-          setBridgeGroups(DEFAULT_MOCK_GROUPS);
-        }
-      }
-    } catch {
-      setBridgeGroups(DEFAULT_MOCK_GROUPS);
-    } finally {
-      setIsRefreshingGroups(false);
+    if (isZaloConnected) {
+      refetchBridgeGroups();
     }
-  };
+  }, [isZaloConnected, refetchBridgeGroups]);
+
+  const bridgeGroups = useMemo(() => {
+    return isZaloConnected && fetchedGroups && fetchedGroups.length > 0
+      ? fetchedGroups
+      : DEFAULT_MOCK_GROUPS;
+  }, [isZaloConnected, fetchedGroups]);
 
   // Sắp xếp danh sách môn học theo bảng chữ cái
   const sortedSubjects = useMemo(() => {
@@ -403,23 +381,23 @@ export default function WhitelistManager({ onSelectGroupForSimulator, onNavigate
       {/* Zalo Account Status Card */}
       <div className="p-4 rounded-2xl bg-[#F8F7FC] border border-slate-200/90 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
-          <div className={`w-3 h-3 rounded-full shrink-0 ${bridgeStatus?.connected && bridgeStatus?.mode === "real" ? "bg-emerald-500 animate-pulse shadow-sm shadow-emerald-300" : "bg-amber-400"}`} />
+          <div className={`w-3 h-3 rounded-full shrink-0 ${isZaloConnected ? "bg-emerald-500 animate-pulse shadow-sm shadow-emerald-300" : "bg-amber-400"}`} />
           <div className="min-w-0">
             <div className="text-xs sm:text-sm font-black text-slate-800 flex items-center gap-2 flex-wrap">
               <span>Trạng thái kết nối Zalo:</span>
               <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider ${
-                bridgeStatus?.connected && bridgeStatus?.mode === "real"
+                isZaloConnected
                   ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
                   : "bg-amber-100 text-amber-800 border border-amber-200"
               }`}>
-                {bridgeStatus?.connected && bridgeStatus?.mode === "real"
+                {isZaloConnected
                   ? `Đã kết nối: ${bridgeStatus?.user?.displayName || bridgeStatus?.user?.name || "Tài khoản Zalo"}`
                   : "Chưa kết nối (Cần quét QR)"}
               </span>
             </div>
             <p className="text-xs text-slate-500 truncate mt-0.5 font-medium">
-              {bridgeStatus?.connected && bridgeStatus?.mode === "real"
-                ? `${bridgeGroups.length} nhóm Zalo khả dụng để liên kết trực tiếp với môn học`
+              {isZaloConnected
+                ? `${fetchedGroups.length || bridgeStatus?.groupCount || bridgeGroups.length} nhóm Zalo khả dụng để liên kết trực tiếp với môn học`
                 : "Vui lòng quét mã QR ở mục Kết nối Zalo để lấy danh sách nhóm thực tế"}
             </p>
           </div>
@@ -432,7 +410,7 @@ export default function WhitelistManager({ onSelectGroupForSimulator, onNavigate
             className="shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-black text-indigo-700 bg-white hover:bg-indigo-50 border border-indigo-200 rounded-xl transition shadow-sm cursor-pointer self-start sm:self-auto"
           >
             <QrCode className="w-4 h-4 text-indigo-600" />
-            <span>{bridgeStatus?.connected && bridgeStatus?.mode === "real" ? "Quản lý Zalo" : "Quét mã QR"}</span>
+            <span>{isZaloConnected ? "Quản lý Zalo" : "Quét mã QR"}</span>
           </button>
         )}
       </div>
