@@ -500,8 +500,11 @@ class GeminiService:
             return self._mock_summarize_material(text, subject_name)
 
         if not settings.is_live_configured or self._client is None:
-            logger.info("Live mode chưa cấu hình, dùng Smart Fallback cho bản tóm tắt...")
-            return self._mock_summarize_material(text, subject_name)
+            raise AIEngineError(
+                error_code="AI_ENGINE_NOT_CONFIGURED",
+                message="AI Engine chưa được cấu hình GEMINI_API_KEY để chạy ở LIVE MODE.",
+                status_code=500
+            )
 
         user_prompt = build_summary_user_prompt(subject_name, text)
         config = types.GenerateContentConfig(
@@ -511,28 +514,40 @@ class GeminiService:
             temperature=0.2,
         )
 
-        try:
-            logger.info(f"Đang gọi Gemini ({settings.gemini_model}) tóm tắt tài liệu cho môn '{subject_name}'...")
-            # Cho phép thời gian chờ lên đến 60 giây theo yêu cầu người dùng
-            response = await asyncio.wait_for(
-                self._client.aio.models.generate_content(
-                    model=settings.gemini_model,
-                    contents=[user_prompt],
-                    config=config,
-                ),
-                timeout=60.0
-            )
+        last_exception = None
+        for attempt in range(1, 3):
+            try:
+                logger.info(f"Đang gọi Gemini ({settings.gemini_model}) tóm tắt tài liệu cho môn '{subject_name}' (lần {attempt})...")
+                response = await asyncio.wait_for(
+                    self._client.aio.models.generate_content(
+                        model=settings.gemini_model,
+                        contents=[user_prompt],
+                        config=config,
+                    ),
+                    timeout=60.0
+                )
 
-            if response and response.text:
-                parsed = SummarizeMaterialResponse.model_validate_json(response.text)
-                logger.info(f"Gemini API tóm tắt thành công ({len(parsed.summary_markdown)} ký tự).")
-                return parsed
-        except asyncio.TimeoutError:
-            logger.warning("Gemini API tóm tắt vượt quá 60s. Tự động kích hoạt cơ chế Smart Fallback để trả về Smart Cheatsheet ngay lập tức.")
-        except Exception as e:
-            logger.warning(f"Gemini API tóm tắt gặp sự cố ({e}). Kích hoạt Smart Fallback.")
+                if response and response.text:
+                    parsed = SummarizeMaterialResponse.model_validate_json(response.text)
+                    logger.info(f"Gemini API tóm tắt thành công ({len(parsed.summary_markdown)} ký tự).")
+                    return parsed
+            except asyncio.TimeoutError as te:
+                last_exception = te
+                logger.warning(f"Lần gọi Gemini tóm tắt thứ {attempt} vượt quá 60s.")
+                if attempt < 2:
+                    await asyncio.sleep(1.0)
+            except Exception as e:
+                last_exception = e
+                logger.warning(f"Lần gọi Gemini tóm tắt thứ {attempt} thất bại: {e}")
+                if attempt < 2:
+                    await asyncio.sleep(1.0)
 
-        return self._mock_summarize_material(text, subject_name)
+        logger.error(f"Gọi Gemini API tóm tắt thất bại hoàn toàn sau 2 lần: {last_exception}")
+        raise AIEngineError(
+            error_code="AI_ENGINE_UNAVAILABLE",
+            message=f"Lỗi khi gọi mô hình Gemini ({settings.gemini_model}) tóm tắt tài liệu: {str(last_exception)}",
+            status_code=502
+        )
 
     async def generate_minigames(self, summary_markdown: str, subject_name: str) -> GenerateMinigamesResponse:
         """Giai đoạn 2: Khi người dùng bấm nút tạo Minigame, dùng chính nội dung bản tóm tắt để sinh Quiz & Ghép thẻ."""
@@ -540,8 +555,11 @@ class GeminiService:
             return self._mock_generate_minigames(summary_markdown, subject_name)
 
         if not settings.is_live_configured or self._client is None:
-            logger.info("Live mode chưa cấu hình, dùng Smart Fallback cho Minigames...")
-            return self._mock_generate_minigames(summary_markdown, subject_name)
+            raise AIEngineError(
+                error_code="AI_ENGINE_NOT_CONFIGURED",
+                message="AI Engine chưa được cấu hình GEMINI_API_KEY để chạy ở LIVE MODE.",
+                status_code=500
+            )
 
         user_prompt = build_minigame_user_prompt(subject_name, summary_markdown)
         config = types.GenerateContentConfig(
@@ -551,31 +569,45 @@ class GeminiService:
             temperature=0.2,
         )
 
-        try:
-            logger.info(f"Đang gọi Gemini ({settings.gemini_model}) sinh Minigames từ bản tóm tắt môn '{subject_name}'...")
-            # Cho phép thời gian chờ lên đến 60 giây
-            response = await asyncio.wait_for(
-                self._client.aio.models.generate_content(
-                    model=settings.gemini_model,
-                    contents=[user_prompt],
-                    config=config,
-                ),
-                timeout=60.0
-            )
+        last_exception = None
+        for attempt in range(1, 3):
+            try:
+                logger.info(f"Đang gọi Gemini ({settings.gemini_model}) sinh Minigames từ bản tóm tắt môn '{subject_name}' (lần {attempt})...")
+                response = await asyncio.wait_for(
+                    self._client.aio.models.generate_content(
+                        model=settings.gemini_model,
+                        contents=[user_prompt],
+                        config=config,
+                    ),
+                    timeout=60.0
+                )
 
-            if response and response.text:
-                parsed = GenerateMinigamesResponse.model_validate_json(response.text)
-                logger.info(f"Gemini API sinh Minigames thành công: {len(parsed.speed_quiz)} quiz, {len(parsed.memory_match_pairs)} pairs.")
-                return parsed
-        except asyncio.TimeoutError:
-            logger.warning("Gemini API sinh Minigames vượt quá 60s. Kích hoạt Smart Fallback.")
-        except Exception as e:
-            logger.warning(f"Gemini API sinh Minigames gặp sự cố ({e}). Kích hoạt Smart Fallback.")
+                if response and response.text:
+                    parsed = GenerateMinigamesResponse.model_validate_json(response.text)
+                    logger.info(f"Gemini API sinh Minigames thành công: {len(parsed.speed_quiz)} quiz, {len(parsed.memory_match_pairs)} pairs.")
+                    return parsed
+            except asyncio.TimeoutError as te:
+                last_exception = te
+                logger.warning(f"Lần gọi Gemini sinh Minigames thứ {attempt} vượt quá 60s.")
+                if attempt < 2:
+                    await asyncio.sleep(1.0)
+            except Exception as e:
+                last_exception = e
+                logger.warning(f"Lần gọi Gemini sinh Minigames thứ {attempt} thất bại: {e}")
+                if attempt < 2:
+                    await asyncio.sleep(1.0)
 
-        return self._mock_generate_minigames(summary_markdown, subject_name)
+        logger.error(f"Gọi Gemini API sinh Minigames thất bại hoàn toàn sau 2 lần: {last_exception}")
+        raise AIEngineError(
+            error_code="AI_ENGINE_UNAVAILABLE",
+            message=f"Lỗi khi gọi mô hình Gemini ({settings.gemini_model}) sinh Minigames: {str(last_exception)}",
+            status_code=502
+        )
 
     async def process_material(self, text: str, subject_name: str) -> ProcessMaterialResponse:
         """Tương thích ngược: Tóm tắt tài liệu và sinh Minigames hoàn chỉnh."""
+        if settings.is_mock_mode:
+            return self._mock_process_material(text, subject_name)
         summary_res = await self.summarize_material(text, subject_name)
         minigames_res = await self.generate_minigames(summary_res.summary_markdown, subject_name)
         return ProcessMaterialResponse(

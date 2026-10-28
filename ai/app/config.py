@@ -47,7 +47,7 @@ def _load_settings() -> Settings:
         host=os.getenv("HOST", "127.0.0.1"),
         ai_mode=ai_mode,
         gemini_api_key=os.getenv("GEMINI_API_KEY", "").strip(),
-        gemini_model=os.getenv("GEMINI_MODEL", "gemini-3.8-flash").strip(),
+        gemini_model=os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite").strip(),
         gemini_timeout_ms=int(os.getenv("GEMINI_TIMEOUT_MS", "30000")),
         # Không có giá trị mặc định: thiếu key thì mọi endpoint nội bộ bị từ chối (fail closed).
         internal_api_key=os.getenv("INTERNAL_API_KEY", "").strip(),

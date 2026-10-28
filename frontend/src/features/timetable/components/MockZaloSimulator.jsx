@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   Send,
   Zap,
@@ -12,6 +12,7 @@ import {
   useSimulateZaloMessageMutation,
 } from "../services/timetableApi";
 import { getLocalizedErrorMessage } from "../../../utils/errorMessages";
+import { sortZaloGroupsAlphabetically } from "../constants/zaloConstants";
 
 const PRESET_MESSAGES = [
   {
@@ -78,11 +79,16 @@ export default function MockZaloSimulator({ selectedGroupId, selectedGroupName }
 
   const [simulationLog, setSimulationLog] = useState(null);
 
+  // Sắp xếp các nhóm Zalo theo bảng chữ cái
+  const sortedMappings = useMemo(() => {
+    return sortZaloGroupsAlphabetically(mappings);
+  }, [mappings]);
+
   // Compute effective target group
   const effectiveGroupId =
     selectedGroupId ||
     activeGroupId ||
-    (mappings.find((m) => m.active)?.zaloGroupId || (mappings[0]?.zaloGroupId || ""));
+    (sortedMappings.find((m) => m.active)?.zaloGroupId || (sortedMappings[0]?.zaloGroupId || ""));
 
   const handleSelectPreset = (preset) => {
     setMessageText(preset.text);
@@ -157,18 +163,23 @@ export default function MockZaloSimulator({ selectedGroupId, selectedGroupName }
       {/* Group & Sender Selection */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
         <div>
-          <label className="text-[11px] font-bold text-slate-600">Nhóm Zalo đích *</label>
+          <label className="text-xs font-extrabold text-slate-700 flex items-center justify-between">
+            <span>Nhóm Zalo đích <span className="text-rose-500">*</span></span>
+            <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md">
+              Sắp xếp A-Z
+            </span>
+          </label>
           <select
             value={effectiveGroupId}
             onChange={(e) => setActiveGroupId(e.target.value)}
-            className="mt-1 w-full text-xs px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+            className="mt-1 w-full text-xs sm:text-sm font-bold px-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white shadow-sm"
           >
-            {mappings.length === 0 ? (
-              <option value="">Chưa có nhóm nào (tạo ở cột trái)</option>
+            {sortedMappings.length === 0 ? (
+              <option value="">Chưa có nhóm nào (tạo ở tab Whitelist)</option>
             ) : (
-              mappings.map((m) => (
-                <option key={m.id} value={m.zaloGroupId}>
-                  {m.zaloGroupName} {m.active ? "🟢" : "⚪ (Tắt)"}
+              sortedMappings.map((m) => (
+                <option key={m.id} value={m.zaloGroupId} className="font-semibold py-1">
+                  {m.zaloGroupName} {m.active ? "🟢 (Đang bật)" : "⚪ (Tắt)"}
                 </option>
               ))
             )}
