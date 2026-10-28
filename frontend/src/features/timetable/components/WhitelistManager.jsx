@@ -12,10 +12,7 @@ import {
   QrCode,
   Plus,
   CheckCircle2,
-  AlertCircle,
-  Settings2,
-  ArrowRight,
-  ChevronDown
+  AlertCircle
 } from "lucide-react";
 import {
   useGetSubjectsQuery,
@@ -99,8 +96,6 @@ export default function WhitelistManager({ onSelectGroupForSimulator, onNavigate
 
   const [bridgeGroups, setBridgeGroups] = useState(DEFAULT_MOCK_GROUPS);
   const [bridgeStatus, setBridgeStatus] = useState(null);
-  const [isRefreshingGroups, setIsRefreshingGroups] = useState(false);
-  const [showAdvancedMappingFields, setShowAdvancedMappingFields] = useState(false);
 
   useEffect(() => {
     fetchBridgeGroups()
@@ -670,215 +665,95 @@ export default function WhitelistManager({ onSelectGroupForSimulator, onNavigate
         </form>
       )}
 
-      {/* Form Add Mapping Modal - GIAO DIỆN GHÉP NHÓM ZALO HIỆN ĐẠI, TO, RÕ RÀNG */}
+      {/* Form Add Mapping Modal - BỐ CỤC ĐƠN GIẢN, GỌN GÀNG, DỄ DÙNG */}
       {showAddMapping && (
-        <form onSubmit={handleCreateMapping} className="p-6 sm:p-7 rounded-3xl bg-gradient-to-br from-emerald-50/70 via-white to-indigo-50/40 border-2 border-emerald-200 shadow-xl space-y-6 animate-in fade-in zoom-in-95 duration-200">
-          
-          {/* Header Modal Ghép nhóm */}
-          <div className="flex items-center justify-between pb-4 border-b border-emerald-100">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-2xl bg-emerald-600 text-white shadow-md shadow-emerald-500/25">
-                <Link2 className="w-5 h-5" />
-              </div>
-              <div>
-                <h4 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
-                  Ghép nhóm Zalo vào Môn học theo dõi
-                </h4>
-                <p className="text-xs text-slate-500 font-medium mt-0.5">
-                  Chọn môn học và nhóm Zalo lớp tương ứng để Zalo AI tự động bóc tách tin nhắn & xếp lịch học
-                </p>
-              </div>
+        <form onSubmit={handleCreateMapping} className="p-6 rounded-3xl bg-emerald-50/50 border border-emerald-200/90 shadow-md space-y-4 animate-in fade-in duration-200">
+          <div className="flex items-center justify-between pb-3 border-b border-emerald-100">
+            <div className="flex items-center gap-2">
+              <Link2 className="w-5 h-5 text-emerald-600" />
+              <h4 className="text-sm sm:text-base font-black text-emerald-950">
+                Ghép nhóm Zalo vào Môn học theo dõi
+              </h4>
             </div>
-            <button
-              type="button"
-              onClick={() => setShowAddMapping(false)}
-              className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-2xl transition cursor-pointer"
-            >
+            <button type="button" onClick={() => setShowAddMapping(false)} className="p-1.5 text-slate-400 hover:text-slate-600 rounded-xl transition cursor-pointer">
               <X className="w-5 h-5" />
             </button>
           </div>
 
-          {/* 2 Bước chính: Chọn môn & Chọn nhóm Zalo (To, Rõ ràng, Đồng nhất Typography) */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
-            
-            {/* Cột 1: Chọn môn học */}
-            <div className="space-y-2">
-              <label className="text-xs sm:text-sm font-extrabold text-slate-800 flex items-center justify-between">
-                <span className="flex items-center gap-1.5">
-                  <span className="w-5 h-5 rounded-lg bg-indigo-600 text-white text-[11px] font-black flex items-center justify-center">1</span>
-                  <span>Chọn môn học cần theo dõi <span className="text-rose-500">*</span></span>
-                </span>
-                <span className="text-xs font-semibold text-slate-400">
-                  {sortedSubjects.length} môn khả dụng
-                </span>
-              </label>
-
-              <div className="relative">
-                <select
-                  required
-                  value={mappingForm.subjectId}
-                  onChange={(e) => setMappingForm({ ...mappingForm, subjectId: e.target.value })}
-                  className="w-full min-h-[56px] px-4 py-2.5 rounded-2xl border-2 border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 bg-white shadow-sm text-sm sm:text-base font-bold text-slate-900 focus:outline-none transition-all cursor-pointer"
-                >
-                  <option value="">-- Bấm để chọn môn học --</option>
-                  {sortedSubjects.map((s) => (
-                    <option key={s.id} value={s.id} className="py-2 text-sm font-semibold">
-                      {s.name} {s.code ? `(${s.code})` : ""} {s.defaultRoom ? `• Phòng ${s.defaultRoom}` : ""}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {mappingForm.subjectId && (() => {
-                const selSub = subjects.find((s) => s.id === mappingForm.subjectId);
-                if (!selSub) return null;
-                return (
-                  <div className="flex items-center gap-2 p-2.5 rounded-xl bg-indigo-50/80 border border-indigo-100 text-xs text-indigo-950 font-semibold">
-                    <span
-                      className="w-3 h-3 rounded-full shrink-0 shadow-sm"
-                      style={{ backgroundColor: selSub.colorHex || "#6366F1" }}
-                    />
-                    <span className="truncate">
-                      Đã chọn môn: <strong>{selSub.name}</strong> {selSub.code ? `[${selSub.code}]` : ""}
-                    </span>
-                  </div>
-                );
-              })()}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-end">
+            <div>
+              <label className="text-xs font-extrabold text-slate-800 block">Chọn môn học <span className="text-rose-500">*</span></label>
+              <select
+                required
+                value={mappingForm.subjectId}
+                onChange={(e) => setMappingForm({ ...mappingForm, subjectId: e.target.value })}
+                className="mt-1 w-full text-xs sm:text-sm font-bold px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white shadow-sm"
+              >
+                <option value="">-- Chọn môn học --</option>
+                {sortedSubjects.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name} {s.code ? `(${s.code})` : ""}
+                  </option>
+                ))}
+              </select>
             </div>
 
-            {/* Cột 2: Chọn nhóm Zalo bằng Dropdown ZaloGroupSelect (Sắp xếp theo bảng chữ cái A-Z) */}
-            <div className="space-y-2">
-              <label className="text-xs sm:text-sm font-extrabold text-slate-800 flex items-center justify-between">
-                <span className="flex items-center gap-1.5">
-                  <span className="w-5 h-5 rounded-lg bg-emerald-600 text-white text-[11px] font-black flex items-center justify-center">2</span>
-                  <span>Chọn nhóm Zalo tương ứng <span className="text-rose-500">*</span></span>
-                </span>
-                <span className="text-xs font-bold text-indigo-600 flex items-center gap-1">
-                  <Sparkles className="w-3.5 h-3.5" />
-                  Sắp xếp A-Z
-                </span>
-              </label>
-
-              <ZaloGroupSelect
-                groups={bridgeGroups}
-                value={mappingForm.zaloGroupId}
-                onChange={handleZaloGroupChange}
-                onRefresh={handleRefreshGroups}
-                isRefreshing={isRefreshingGroups}
-                onNavigateToConnect={onNavigateToConnect}
-                placeholder="-- Bấm để chọn nhóm Zalo liên kết --"
-              />
+            <div>
+              <label className="text-xs font-extrabold text-slate-800 block">Chọn nhanh từ nhóm Zalo</label>
+              <div className="mt-1">
+                <ZaloGroupSelect
+                  groups={bridgeGroups}
+                  value={mappingForm.zaloGroupId}
+                  onChange={handleZaloGroupChange}
+                  placeholder="-- Bấm vào đây để chọn nhóm Zalo --"
+                />
+              </div>
             </div>
 
-          </div>
-
-          {/* Xem trước kết nối (Link Preview Card) khi cả 2 đã chọn */}
-          {mappingForm.subjectId && mappingForm.zaloGroupId && (() => {
-            const currentSub = subjects.find((s) => s.id === mappingForm.subjectId);
-            return (
-              <div className="p-4 rounded-2xl bg-white border border-emerald-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs sm:text-sm animate-in fade-in duration-200">
-                <div className="flex items-center gap-3 min-w-0 flex-1">
-                  <div className="p-2.5 rounded-xl bg-emerald-100 text-emerald-700 shrink-0">
-                    <CheckCircle2 className="w-5 h-5" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="font-black text-slate-900 flex items-center gap-2 flex-wrap">
-                      <span className="text-indigo-700 font-extrabold">{currentSub?.name}</span>
-                      <ArrowRight className="w-4 h-4 text-emerald-600 shrink-0" />
-                      <span className="text-emerald-800 font-extrabold">{mappingForm.zaloGroupName}</span>
-                    </div>
-                    <p className="text-xs text-slate-500 mt-0.5 truncate font-medium">
-                      Mã nhóm Zalo: <span className="font-mono text-slate-600 font-bold">{mappingForm.zaloGroupId}</span> • Zalo AI sẽ tự động kích hoạt lọc tin nhắn
-                    </p>
-                  </div>
-                </div>
-              </div>
-            );
-          })()}
-
-          {/* Toggle tùy chỉnh nâng cao (sửa tên nhóm hoặc mã ID thủ công nếu cần) */}
-          <div className="pt-2 border-t border-slate-100">
-            <button
-              type="button"
-              onClick={() => setShowAdvancedMappingFields(!showAdvancedMappingFields)}
-              className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-800 transition cursor-pointer"
-            >
-              <Settings2 className="w-3.5 h-3.5" />
-              <span>
-                {showAdvancedMappingFields
-                  ? "Ẩn tùy chỉnh tên nhóm & mã ID thủ công"
-                  : "Tùy chỉnh nâng cao (Chỉnh sửa tên hiển thị hoặc nhập ID thủ công)"}
-              </span>
-              <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showAdvancedMappingFields ? "rotate-180" : ""}`} />
-            </button>
-
-            {showAdvancedMappingFields && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3 p-4 rounded-2xl bg-white border border-slate-200 animate-in fade-in duration-150">
-                <div>
-                  <label className="text-xs font-extrabold text-slate-700 block">
-                    Tên hiển thị nhóm Zalo
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={mappingForm.zaloGroupName}
-                    onChange={(e) => setMappingForm({ ...mappingForm, zaloGroupName: e.target.value })}
-                    placeholder="VD: Lập trình Web - K64"
-                    className="mt-1 w-full text-xs sm:text-sm font-semibold px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs font-extrabold text-slate-700 block">
-                    Mã nhóm Zalo (Group ID)
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={mappingForm.zaloGroupId}
-                    onChange={(e) => setMappingForm({ ...mappingForm, zaloGroupId: e.target.value })}
-                    placeholder="VD: group-it101"
-                    className="mt-1 w-full text-xs sm:text-sm font-semibold px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white font-mono"
-                  />
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Action Row: Checkbox Bật theo dõi ngay & Nút Xác nhận */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2">
-            <label className="inline-flex items-center gap-2.5 cursor-pointer">
+            <div>
+              <label className="text-xs font-extrabold text-slate-800 block">Tên nhóm Zalo <span className="text-rose-500">*</span></label>
               <input
-                type="checkbox"
-                checked={mappingForm.active}
-                onChange={(e) => setMappingForm({ ...mappingForm, active: e.target.checked })}
-                className="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500 cursor-pointer"
+                type="text"
+                required
+                value={mappingForm.zaloGroupName}
+                onChange={(e) => setMappingForm({ ...mappingForm, zaloGroupName: e.target.value })}
+                placeholder="VD: Lập trình Web - K64"
+                className="mt-1 w-full text-xs sm:text-sm font-semibold px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white shadow-sm"
               />
-              <span className="text-xs sm:text-sm font-bold text-slate-800">
-                Bật theo dõi Whitelist ngay sau khi ghép
-              </span>
-            </label>
-
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => setShowAddMapping(false)}
-                className="px-4 py-2.5 text-xs sm:text-sm font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-2xl transition cursor-pointer"
-              >
-                Hủy bỏ
-              </button>
-
-              <button
-                type="submit"
-                disabled={isCreatingMapping || !mappingForm.subjectId || !mappingForm.zaloGroupId}
-                className="px-6 py-3 text-xs sm:text-sm font-black text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 disabled:opacity-40 disabled:cursor-not-allowed rounded-2xl shadow-lg shadow-emerald-500/25 transition flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <Link2 className="w-4 h-4" />
-                <span>{isCreatingMapping ? "Đang ghép nhóm..." : "Xác nhận Ghép nhóm Zalo"}</span>
-              </button>
             </div>
-          </div>
 
+            <div>
+              <label className="text-xs font-extrabold text-slate-800 block">Mã nhóm Zalo (Group ID) <span className="text-rose-500">*</span></label>
+              <input
+                type="text"
+                required
+                value={mappingForm.zaloGroupId}
+                onChange={(e) => setMappingForm({ ...mappingForm, zaloGroupId: e.target.value })}
+                placeholder="VD: zalo-group-101"
+                className="mt-1 w-full text-xs sm:text-sm font-semibold px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white shadow-sm font-mono"
+              />
+            </div>
+
+            <div className="flex items-center justify-between p-2 rounded-xl bg-white border border-slate-200">
+              <label className="inline-flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={mappingForm.active}
+                  onChange={(e) => setMappingForm({ ...mappingForm, active: e.target.checked })}
+                  className="w-4 h-4 text-emerald-600 rounded cursor-pointer"
+                />
+                <span className="text-xs font-bold text-slate-700">Bật theo dõi ngay</span>
+              </label>
+            </div>
+
+            <button
+              type="submit"
+              disabled={isCreatingMapping || !mappingForm.subjectId || !mappingForm.zaloGroupId}
+              className="px-5 py-2.5 text-xs sm:text-sm font-black text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 rounded-2xl shadow-lg shadow-emerald-500/25 transition cursor-pointer"
+            >
+              {isCreatingMapping ? "Đang ghép..." : "Xác nhận Ghép nhóm"}
+            </button>
+          </div>
         </form>
       )}
 
