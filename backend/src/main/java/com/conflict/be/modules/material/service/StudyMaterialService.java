@@ -2,11 +2,18 @@ package com.conflict.be.modules.material.service;
 
 import com.conflict.be.core.exception.AppException;
 import com.conflict.be.core.exception.ErrorCode;
+import com.conflict.be.modules.chat.dto.ChatMessageDTO;
+import com.conflict.be.modules.chat.dto.SendMessageRequest;
+import com.conflict.be.modules.chat.repository.ChatMessageRepository;
+import com.conflict.be.modules.chat.service.ChatService;
 import com.conflict.be.modules.material.dto.AiProcessMaterialResponse;
 import com.conflict.be.modules.material.dto.MaterialUploadRequest;
+import com.conflict.be.modules.material.dto.ShareMaterialRequest;
 import com.conflict.be.modules.material.dto.StudyMaterialResponse;
 import com.conflict.be.modules.material.entity.StudyMaterialEntity;
+import com.conflict.be.modules.material.entity.StudyMaterialFileEntity;
 import com.conflict.be.modules.material.enums.MaterialProcessingStatus;
+import com.conflict.be.modules.material.repository.StudyMaterialFileRepository;
 import com.conflict.be.modules.material.repository.StudyMaterialRepository;
 import com.conflict.be.modules.subject.entity.Subject;
 import com.conflict.be.modules.subject.repository.SubjectRepository;
@@ -20,9 +27,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.Locale;
-import java.util.UUID;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 
 @Slf4j
 @Service
@@ -32,9 +38,18 @@ public class StudyMaterialService {
     private static final long MAX_FILE_SIZE = 20 * 1024 * 1024L; // 20MB
 
     private final StudyMaterialRepository studyMaterialRepository;
+    private final StudyMaterialFileRepository studyMaterialFileRepository;
     private final SubjectRepository subjectRepository;
     private final UserRepository userRepository;
     private final AiEngineClient aiEngineClient;
+    private final ChatMessageRepository chatMessageRepository;
+    private final ChatService chatService;
+
+    public record MaterialFileDownload(
+            String fileName,
+            String contentType,
+            byte[] data
+    ) {}
 
     @Transactional
     public StudyMaterialResponse uploadAndProcessMaterial(String userEmail, MaterialUploadRequest request) {
@@ -93,7 +108,19 @@ public class StudyMaterialService {
 
         entity = studyMaterialRepository.save(entity);
 
-        // Gọi AI Engine chỉ xử lý tóm tắt đề cương (Stage 1)
+        // Lưu trữ file gốc tách biệt để phục vụ xem trước PDF / tải lại bản gốc
+        if (studyMaterialFileRepository != null && entity.getId() != null) {
+            String contentType = resolveContentType(ext, file.getContentType());
+            StudyMaterialFileEntity fileEntity = StudyMaterialFileEntity.builder()
+                    .materialId(entity.getId())
+                    .contentType(contentType)
+                    .fileData(fileBytes)
+                    .build();
+            studyMaterialFileRepository.save(fileEntity);
+            entity.setFileUrl("/api/v1/materials/" + entity.getId() + "/file");
+        }
+
+        // Gọi AI Engine xử lý tóm tắt đề cương và trích xuất văn bản gốc (Stage 1)
         try {
             com.conflict.be.modules.material.dto.AiSummarizeResponse aiResponse = aiEngineClient.summarizeMaterial(
                     fileBytes,
@@ -102,6 +129,11 @@ public class StudyMaterialService {
             );
 
             entity.setAiSummaryMarkdown(aiResponse.getSummaryMarkdown());
+            String extracted = aiResponse.getExtractedText();
+            if ((extracted == null || extracted.isBlank()) && ext.equals("txt")) {
+                extracted = new String(fileBytes, StandardCharsets.UTF_8);
+            }
+            entity.setExtractedText(extracted);
             entity.setQuizData(new java.util.ArrayList<>());
             entity.setMemoryMatchData(new java.util.ArrayList<>());
             entity.setProcessingStatus(MaterialProcessingStatus.COMPLETED);
@@ -121,7 +153,7 @@ public class StudyMaterialService {
         }
 
         entity = studyMaterialRepository.save(entity);
-        return mapToResponse(entity);
+        return mapToResponse(entity, user.getId());
     }
 
     @Transactional
@@ -132,9 +164,7 @@ public class StudyMaterialService {
         StudyMaterialEntity entity = studyMaterialRepository.findById(materialId)
                 .orElseThrow(() -> new AppException(ErrorCode.MATERIAL_NOT_FOUND));
 
-        if (!entity.getUser().getId().equals(user.getId())) {
-            throw new AppException(ErrorCode.MATERIAL_FORBIDDEN);
-        }
+        validateReadAndPlayAccess(user, entity);
 
         String summary = entity.getAiSummaryMarkdown();
         if (summary == null || summary.isBlank()) {
@@ -150,7 +180,7 @@ public class StudyMaterialService {
         entity.setQuizData(aiResponse.getSpeedQuiz());
         entity.setMemoryMatchData(aiResponse.getMemoryMatchPairs());
         entity = studyMaterialRepository.save(entity);
-        return mapToResponse(entity);
+        return mapToResponse(entity, user.getId());
     }
 
     @Transactional(readOnly = true)
@@ -165,7 +195,19 @@ public class StudyMaterialService {
             list = studyMaterialRepository.findByUserIdOrderByCreatedAtDesc(user.getId());
         }
 
-        return list.stream().map(this::mapToResponse).toList();
+        return list.stream().map(e -> mapToResponse(e, user.getId())).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<StudyMaterialResponse> getSharedMaterials(String userEmail) {
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+        if (chatMessageRepository == null) {
+            return List.of();
+        }
+        List<StudyMaterialEntity> shared = chatMessageRepository.findDistinctSharedMaterialsForRecipient(user.getId());
+        return shared.stream().map(e -> mapToResponse(e, user.getId())).toList();
     }
 
     @Transactional(readOnly = true)
@@ -176,11 +218,78 @@ public class StudyMaterialService {
         StudyMaterialEntity entity = studyMaterialRepository.findById(materialId)
                 .orElseThrow(() -> new AppException(ErrorCode.MATERIAL_NOT_FOUND));
 
-        if (!entity.getUser().getId().equals(user.getId())) {
-            throw new AppException(ErrorCode.MATERIAL_FORBIDDEN);
+        validateReadAndPlayAccess(user, entity);
+
+        return mapToResponse(entity, user.getId());
+    }
+
+    @Transactional(readOnly = true)
+    public MaterialFileDownload getMaterialFile(String userEmail, UUID materialId) {
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+        StudyMaterialEntity entity = studyMaterialRepository.findById(materialId)
+                .orElseThrow(() -> new AppException(ErrorCode.MATERIAL_NOT_FOUND));
+
+        validateReadAndPlayAccess(user, entity);
+
+        if (studyMaterialFileRepository != null) {
+            Optional<StudyMaterialFileEntity> fileOpt = studyMaterialFileRepository.findById(materialId);
+            if (fileOpt.isPresent()) {
+                StudyMaterialFileEntity fileEntity = fileOpt.get();
+                return new MaterialFileDownload(
+                        entity.getFileName(),
+                        fileEntity.getContentType(),
+                        fileEntity.getFileData()
+                );
+            }
         }
 
-        return mapToResponse(entity);
+        if (entity.getExtractedText() != null && !entity.getExtractedText().isBlank()) {
+            String txtFileName = stripExtension(entity.getFileName()) + ".txt";
+            return new MaterialFileDownload(
+                    txtFileName,
+                    "text/plain; charset=utf-8",
+                    entity.getExtractedText().getBytes(StandardCharsets.UTF_8)
+            );
+        }
+
+        throw new AppException(ErrorCode.MATERIAL_FILE_NOT_FOUND);
+    }
+
+    @Transactional
+    public List<ChatMessageDTO> shareMaterial(String userEmail, UUID materialId, ShareMaterialRequest request) {
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+        StudyMaterialEntity entity = studyMaterialRepository.findById(materialId)
+                .orElseThrow(() -> new AppException(ErrorCode.MATERIAL_NOT_FOUND));
+
+        validateReadAndPlayAccess(user, entity);
+
+        if (request.getRecipientIds() == null || request.getRecipientIds().isEmpty()) {
+            throw new AppException(ErrorCode.MISSING_RECIPIENT_ID);
+        }
+
+        Set<UUID> uniqueRecipients = new LinkedHashSet<>(request.getRecipientIds());
+        List<ChatMessageDTO> results = new ArrayList<>();
+
+        for (UUID recipientId : uniqueRecipients) {
+            SendMessageRequest sendReq = SendMessageRequest.builder()
+                    .recipientId(recipientId)
+                    .content(request.getMessage())
+                    .sharedMaterialId(materialId)
+                    .messageType(request.getShareType() != null ? request.getShareType() : "SHARE_MATERIAL")
+                    .challengeGameType(request.getChallengeGameType())
+                    .challengerScore(request.getChallengerScore())
+                    .challengerTimeSeconds(request.getChallengerTimeSeconds())
+                    .build();
+
+            ChatMessageDTO sent = chatService.sendAndBroadcastMessage(userEmail, sendReq);
+            results.add(sent);
+        }
+
+        return results;
     }
 
     @Transactional
@@ -195,6 +304,9 @@ public class StudyMaterialService {
             throw new AppException(ErrorCode.MATERIAL_FORBIDDEN);
         }
 
+        if (studyMaterialFileRepository != null) {
+            studyMaterialFileRepository.deleteById(materialId);
+        }
         studyMaterialRepository.delete(entity);
     }
 
@@ -227,13 +339,34 @@ public class StudyMaterialService {
         entity.setErrorMessage(null);
 
         entity = studyMaterialRepository.save(entity);
-        return mapToResponse(entity);
+        return mapToResponse(entity, user.getId());
+    }
+
+    private void validateReadAndPlayAccess(User user, StudyMaterialEntity entity) {
+        if (entity.getUser().getId().equals(user.getId())) {
+            return;
+        }
+        if (chatMessageRepository != null && chatMessageRepository.existsSharedMaterialAccess(entity.getId(), user.getId())) {
+            return;
+        }
+        throw new AppException(ErrorCode.MATERIAL_FORBIDDEN);
     }
 
     public StudyMaterialResponse mapToResponse(StudyMaterialEntity entity) {
+        return mapToResponse(entity, entity.getUser() != null ? entity.getUser().getId() : null);
+    }
+
+    public StudyMaterialResponse mapToResponse(StudyMaterialEntity entity, UUID currentUserId) {
+        boolean isOwner = currentUserId != null && entity.getUser() != null && currentUserId.equals(entity.getUser().getId());
+        boolean hasFile = (entity.getFileUrl() != null && !entity.getFileUrl().isBlank())
+                || (studyMaterialFileRepository != null && entity.getId() != null && studyMaterialFileRepository.existsById(entity.getId()));
+
         return StudyMaterialResponse.builder()
                 .id(entity.getId())
                 .userId(entity.getUser().getId())
+                .ownerName(entity.getUser().getFullName())
+                .ownerAvatarUrl(entity.getUser().getAvatarUrl())
+                .isOwner(isOwner)
                 .subjectId(entity.getSubject().getId())
                 .subjectName(entity.getSubject().getName())
                 .title(entity.getTitle())
@@ -241,6 +374,8 @@ public class StudyMaterialService {
                 .fileType(entity.getFileType())
                 .fileSize(entity.getFileSize())
                 .fileUrl(entity.getFileUrl())
+                .hasOriginalFile(hasFile)
+                .extractedText(entity.getExtractedText())
                 .aiSummaryMarkdown(entity.getAiSummaryMarkdown())
                 .quizData(entity.getQuizData())
                 .memoryMatchData(entity.getMemoryMatchData())
@@ -249,6 +384,21 @@ public class StudyMaterialService {
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
                 .build();
+    }
+
+    private String resolveContentType(String ext, String providedContentType) {
+        if ("pdf".equals(ext)) {
+            return "application/pdf";
+        }
+        if ("docx".equals(ext)) {
+            return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+        }
+        if ("txt".equals(ext)) {
+            return "text/plain; charset=utf-8";
+        }
+        return (providedContentType != null && !providedContentType.isBlank())
+                ? providedContentType
+                : "application/octet-stream";
     }
 
     private String getFileExtension(String filename) {

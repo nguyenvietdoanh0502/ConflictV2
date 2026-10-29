@@ -1,14 +1,15 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useGetLeaderboardQuery } from "../services/studyApi";
 import { useSelector } from "react-redux";
 import { selectCurrentUser } from "../../auth/authSelectors";
 
-export default function LeaderboardModal({ isOpen, onClose, material }) {
+export default function LeaderboardModal({ isOpen, onClose, material, onOpenChallenge }) {
   const currentUser = useSelector(selectCurrentUser);
   const [gameType, setGameType] = useState("SPEED_QUIZ");
+  const [scope, setScope] = useState("global"); // "global" | "friends"
 
   const { data: leaderboard = [], isLoading } = useGetLeaderboardQuery(
-    { materialId: material?.id, gameType },
+    { materialId: material?.id, gameType, scope },
     { skip: !isOpen || !material?.id }
   );
 
@@ -38,13 +39,41 @@ export default function LeaderboardModal({ isOpen, onClose, material }) {
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-full p-2 text-[#77718C] hover:bg-[#F0EEF8] hover:text-[#2F2A45] text-xs font-bold"
-          >
-            Đóng
-          </button>
+          <div className="flex items-center gap-2">
+            {/* Bộ lọc phạm vi: Tất cả vs Bạn bè */}
+            <div className="flex rounded-xl bg-[#F0EEF8] p-0.5 text-[11px] font-bold">
+              <button
+                type="button"
+                onClick={() => setScope("global")}
+                className={`rounded-lg px-2.5 py-1 transition ${
+                  scope === "global"
+                    ? "bg-white text-social-violet shadow-xs font-extrabold"
+                    : "text-[#77718C] hover:text-[#2F2A45]"
+                }`}
+              >
+                Tất cả
+              </button>
+              <button
+                type="button"
+                onClick={() => setScope("friends")}
+                className={`rounded-lg px-2.5 py-1 transition ${
+                  scope === "friends"
+                    ? "bg-white text-social-violet shadow-xs font-extrabold"
+                    : "text-[#77718C] hover:text-[#2F2A45]"
+                }`}
+              >
+                Bạn bè
+              </button>
+            </div>
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-full p-2 text-[#77718C] hover:bg-[#F0EEF8] hover:text-[#2F2A45] text-xs font-bold"
+            >
+              Đóng
+            </button>
+          </div>
         </div>
 
         {/* Tab switch giữa 2 game */}
@@ -80,8 +109,14 @@ export default function LeaderboardModal({ isOpen, onClose, material }) {
           </div>
         ) : leaderboard.length === 0 ? (
           <div className="py-12 text-center text-[#77718C]">
-            <p className="text-sm font-bold text-[#2F2A45]">Chưa có lượt chơi nào!</p>
-            <p className="text-xs mt-1">Hãy là người đầu tiên chinh phục Minigame và ghi tên lên bảng vàng!</p>
+            <p className="text-sm font-bold text-[#2F2A45]">
+              {scope === "friends"
+                ? "Chưa có bạn bè nào ghi điểm ở chế độ này!"
+                : "Chưa có lượt chơi nào!"}
+            </p>
+            <p className="text-xs mt-1">
+              Hãy chinh phục Minigame và gửi lời mời thách đấu cho bạn bè ngay!
+            </p>
           </div>
         ) : (
           <div className="mt-6 space-y-6">
@@ -178,7 +213,22 @@ export default function LeaderboardModal({ isOpen, onClose, material }) {
           </div>
         )}
 
-        <div className="mt-6 flex justify-end pt-3 border-t border-[#E5E2EC]">
+        <div className="mt-6 flex items-center justify-between pt-3 border-t border-[#E5E2EC]">
+          {onOpenChallenge ? (
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                onOpenChallenge(material, gameType);
+              }}
+              className="rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 px-4 py-2.5 text-xs font-extrabold text-white shadow-sm hover:from-amber-600 hover:to-orange-600"
+            >
+              Thách đấu bạn bè
+            </button>
+          ) : (
+            <div />
+          )}
+
           <button
             type="button"
             onClick={onClose}

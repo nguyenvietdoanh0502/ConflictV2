@@ -20,6 +20,18 @@ export const studyApi = baseApi.injectEndpoints({
           : [{ type: "Material", id: "LIST" }],
     }),
 
+    getSharedMaterials: builder.query({
+      query: () => "/v1/materials/shared",
+      transformResponse: (response) => response.data || [],
+      providesTags: (result) =>
+        result
+          ? [
+              ...result.map(({ id }) => ({ type: "Material", id })),
+              { type: "Material", id: "SHARED_LIST" },
+            ]
+          : [{ type: "Material", id: "SHARED_LIST" }],
+    }),
+
     getMaterialById: builder.query({
       query: (id) => `/v1/materials/${id}`,
       transformResponse: (response) => response.data,
@@ -62,6 +74,18 @@ export const studyApi = baseApi.injectEndpoints({
       invalidatesTags: (result, error, materialId) => [
         { type: "Material", id: materialId },
         { type: "Material", id: "LIST" },
+        { type: "Material", id: "SHARED_LIST" },
+      ],
+    }),
+
+    shareMaterial: builder.mutation({
+      query: ({ materialId, ...body }) => ({
+        url: `/v1/materials/${materialId}/share`,
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: (result, error, { recipientIds = [] }) => [
+        ...recipientIds.map((friendUserId) => ({ type: "ChatHistory", id: friendUserId })),
       ],
     }),
 
@@ -77,8 +101,8 @@ export const studyApi = baseApi.injectEndpoints({
     }),
 
     getLeaderboard: builder.query({
-      query: ({ materialId, gameType = "SPEED_QUIZ" }) =>
-        `/v1/materials/${materialId}/leaderboard?gameType=${gameType}`,
+      query: ({ materialId, gameType = "SPEED_QUIZ", scope = "global" }) =>
+        `/v1/materials/${materialId}/leaderboard?gameType=${gameType}&scope=${scope}`,
       transformResponse: (response) => response.data || [],
       providesTags: (result, error, { materialId }) => [
         { type: "GameScore", id: materialId },
@@ -89,11 +113,13 @@ export const studyApi = baseApi.injectEndpoints({
 
 export const {
   useGetMaterialsQuery,
+  useGetSharedMaterialsQuery,
   useGetMaterialByIdQuery,
   useUploadMaterialMutation,
   useDeleteMaterialMutation,
   useRegenerateMaterialMutation,
   useGenerateMinigamesMutation,
+  useShareMaterialMutation,
   useSubmitGameScoreMutation,
   useGetLeaderboardQuery,
 } = studyApi;

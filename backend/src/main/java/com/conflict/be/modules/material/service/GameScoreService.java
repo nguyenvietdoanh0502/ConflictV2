@@ -2,6 +2,9 @@ package com.conflict.be.modules.material.service;
 
 import com.conflict.be.core.exception.AppException;
 import com.conflict.be.core.exception.ErrorCode;
+import com.conflict.be.modules.friendship.entity.Friendship;
+import com.conflict.be.modules.friendship.enums.FriendshipStatus;
+import com.conflict.be.modules.friendship.repository.FriendshipRepository;
 import com.conflict.be.modules.material.dto.LeaderboardEntryDTO;
 import com.conflict.be.modules.material.dto.SubmitScoreRequest;
 import com.conflict.be.modules.material.entity.GameScoreEntity;
@@ -17,9 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 @Slf4j
 @Service
@@ -29,6 +30,7 @@ public class GameScoreService {
     private final GameScoreRepository gameScoreRepository;
     private final StudyMaterialRepository studyMaterialRepository;
     private final UserRepository userRepository;
+    private final FriendshipRepository friendshipRepository;
 
     @Transactional
     public LeaderboardEntryDTO submitScore(String userEmail, UUID materialId, SubmitScoreRequest request) {
@@ -65,15 +67,49 @@ public class GameScoreService {
 
     @Transactional(readOnly = true)
     public List<LeaderboardEntryDTO> getLeaderboard(UUID materialId, GameType gameType) {
-        List<GameScoreEntity> scores = gameScoreRepository
-                .findTop10ByMaterialIdAndGameTypeOrderByScoreDescTimeTakenSecondsAsc(materialId, gameType);
+        return getLeaderboard(null, materialId, gameType, "global");
+    }
+
+    @Transactional(readOnly = true)
+    public List<LeaderboardEntryDTO> getLeaderboard(String userEmail, UUID materialId, GameType gameType, String scope) {
+        List<GameScoreEntity> scores = gameScoreRepository.findByMaterialIdAndGameTypeOrdered(materialId, gameType);
+        if (scores == null || scores.isEmpty()) {
+            scores = gameScoreRepository.findTop10ByMaterialIdAndGameTypeOrderByScoreDescTimeTakenSecondsAsc(materialId, gameType);
+        }
+
+        Set<UUID> allowedUserIds = null;
+        if ("friends".equalsIgnoreCase(scope) && userEmail != null && !userEmail.isBlank()) {
+            Optional<User> currentUserOpt = userRepository.findByEmail(userEmail);
+            if (currentUserOpt.isPresent()) {
+                UUID currentUserId = currentUserOpt.get().getId();
+                allowedUserIds = new HashSet<>();
+                allowedUserIds.add(currentUserId);
+                if (friendshipRepository != null) {
+                    List<Friendship> friendships = friendshipRepository.findFriendships(currentUserId, FriendshipStatus.ACCEPTED);
+                    for (Friendship f : friendships) {
+                        if (f.getLowUser() != null) allowedUserIds.add(f.getLowUser().getId());
+                        if (f.getHighUser() != null) allowedUserIds.add(f.getHighUser().getId());
+                    }
+                }
+            }
+        }
 
         List<LeaderboardEntryDTO> result = new ArrayList<>();
+        Set<UUID> seenUsers = new HashSet<>();
         int rank = 1;
+
         for (GameScoreEntity entity : scores) {
+            UUID playerId = entity.getUser().getId();
+            if (allowedUserIds != null && !allowedUserIds.contains(playerId)) {
+                continue;
+            }
+            // Mỗi người chơi lấy thành tích cao nhất trên bảng xếp hạng
+            if (!seenUsers.add(playerId)) {
+                continue;
+            }
             result.add(LeaderboardEntryDTO.builder()
                     .id(entity.getId())
-                    .userId(entity.getUser().getId())
+                    .userId(playerId)
                     .fullName(entity.getUser().getFullName())
                     .avatarUrl(entity.getUser().getAvatarUrl())
                     .score(entity.getScore())
@@ -82,6 +118,9 @@ public class GameScoreService {
                     .playedAt(entity.getPlayedAt())
                     .rank(rank++)
                     .build());
+            if (result.size() >= 10) {
+                break;
+            }
         }
         return result;
     }

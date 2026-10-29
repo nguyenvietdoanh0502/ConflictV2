@@ -27,6 +27,7 @@ from app.schemas import (
     AnalyzeMessageRequest,
     AnalyzeMessageResponse,
     DetectedEventItem,
+    GeminiSummarizeSchema,
     GenerateMinigamesRequest,
     GenerateMinigamesResponse,
     MemoryMatchPairItem,
@@ -510,7 +511,7 @@ class GeminiService:
         config = types.GenerateContentConfig(
             system_instruction=get_summary_only_system_prompt(),
             response_mime_type="application/json",
-            response_schema=SummarizeMaterialResponse,
+            response_schema=GeminiSummarizeSchema,
             temperature=0.2,
         )
 
@@ -528,9 +529,9 @@ class GeminiService:
                 )
 
                 if response and response.text:
-                    parsed = SummarizeMaterialResponse.model_validate_json(response.text)
+                    parsed = GeminiSummarizeSchema.model_validate_json(response.text)
                     logger.info(f"Gemini API tóm tắt thành công ({len(parsed.summary_markdown)} ký tự).")
-                    return parsed
+                    return SummarizeMaterialResponse(summary_markdown=parsed.summary_markdown, extracted_text=text)
             except asyncio.TimeoutError as te:
                 last_exception = te
                 logger.warning(f"Lần gọi Gemini tóm tắt thứ {attempt} vượt quá 60s.")
@@ -612,6 +613,7 @@ class GeminiService:
         minigames_res = await self.generate_minigames(summary_res.summary_markdown, subject_name)
         return ProcessMaterialResponse(
             summary_markdown=summary_res.summary_markdown,
+            extracted_text=text,
             speed_quiz=minigames_res.speed_quiz,
             memory_match_pairs=minigames_res.memory_match_pairs
         )
@@ -666,7 +668,7 @@ class GeminiService:
 - **Hỏi: Tại sao nên sử dụng Refresh Token bên cạnh Access Token?**
   - *Đáp*: Access Token có thời gian sống ngắn (ví dụ 15-60 phút) để hạn chế rủi ro lộ token, trong khi Refresh Token lưu trữ an toàn (HttpOnly Cookie) giúp tự động gia hạn phiên mà không bắt người dùng đăng nhập lại liên tục."""
 
-        return SummarizeMaterialResponse(summary_markdown=summary)
+        return SummarizeMaterialResponse(summary_markdown=summary, extracted_text=text)
 
     def _mock_generate_minigames(self, summary_markdown: str, subject_name: str) -> GenerateMinigamesResponse:
         """Sinh bộ Minigame (Quiz + Memory Match) từ chính nội dung tóm tắt."""
@@ -802,6 +804,7 @@ class GeminiService:
         minigames_res = self._mock_generate_minigames(summary_res.summary_markdown, subject_name)
         return ProcessMaterialResponse(
             summary_markdown=summary_res.summary_markdown,
+            extracted_text=text,
             speed_quiz=minigames_res.speed_quiz,
             memory_match_pairs=minigames_res.memory_match_pairs
         )

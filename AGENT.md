@@ -35,13 +35,13 @@ UniSync. Tên thư mục/package cũ (`ConflictV2`, `com.conflict.be`, `conflict
 | Auth (register + OTP email, login, refresh cookie, logout, forgot/reset/change password, rate limit) | ✅ Xong | `backend/.../modules/auth`, `frontend/src/features/auth` |
 | Profile + avatar Cloudinary | ✅ Xong | `modules/user`, `features/profile` |
 | Kết bạn (PIN), danh sách/lời mời | ✅ Xong (cần thêm tìm theo tên/email) | `modules/friendship`, `features/friend` |
-| Chat 1-1 STOMP (backend) | ✅ Backend xong, ❌ chưa có UI | `modules/chat` |
+| Chat 1-1 STOMP & Social Sharing | ✅ Xong (Chat 1-1 STOMP, ChatWindow & MessengerDropdown UI, Rich Card chia sẻ đề cương & thách đấu Minigame) | `modules/chat`, `features/chat` |
 | Online/Offline presence | ❌ Chưa | — |
 | Môn học / Thời khóa biểu / FullCalendar | 🔄 Đang triển khai (DB Migration V8, V9, Entity, Repository xong) | `modules/subject`, `modules/schedule`, `modules/zalo` |
 | AI Engine (Python FastAPI + Gemini) | 🔄 Đang triển khai (Bóc tách tin nhắn Zalo, 16 tiết học, Mock Mode, Auth) | `ai/` |
 | Zalo Bridge (Node + zca-js) + Demo Simulator | ❌ Chưa | `zalo-bridge/` (sẽ tạo) |
-| Đề cương + Minigame + điểm | ✅ Xong (V11, AI bóc tách PDF/DOCX/TXT, Cheatsheet, Speed Quiz, Memory Match, Leaderboard) | `backend/.../modules/material`, `ai/app`, `frontend/.../features/study` |
-| Thông báo & Dropdown Facebook (TKB mới, Lịch học hôm nay, Tin nhắn) | ✅ Xong (V12, WS `/user/queue/notifications`, Dropdown UI) | `backend/.../modules/notification`, `frontend/.../features/notification` |
+| Đề cương + Minigame + điểm + Chia sẻ/Thách đấu | ✅ Xong (V11 + V13, AI bóc tách PDF/DOCX/TXT, Smart Cheatsheet + Xem đề cương gốc & PDF preview/download, Speed Quiz, Memory Match, Chia sẻ đề cương & Thách đấu bạn bè, Leaderboard Global/Friends) | `backend/.../modules/material`, `ai/app`, `frontend/.../features/study` |
+| Thông báo & Dropdown Facebook (TKB mới, Lịch học hôm nay, Tin nhắn, Đề cương & Thách đấu) | ✅ Xong (V12, WS `/user/queue/notifications`, Dropdown UI hỗ trợ `MATERIAL_SHARED` & `MINIGAME_CHALLENGE`) | `backend/.../modules/notification`, `frontend/.../features/notification` |
 | Reminder engine (`@Scheduled` + mail + WS) | ❌ Chưa | — |
 | Dashboard thay trang chủ feed tĩnh | ❌ Chưa (`pages/HomePage.jsx` là mock, sẽ xóa) | — |
 | Docker/CI cấp monorepo | ❌ Chưa | — |
@@ -235,7 +235,10 @@ POST   /schedule/events/{id}/confirm | /reject
 POST   /zalo/connect  (trả QR)   GET /zalo/status   GET /zalo/groups
 GET|POST /zalo/mappings   PATCH|DELETE /zalo/mappings/{id}   (toggle isActive)
 POST   /zalo/simulate                         Demo Simulator (FR-2.4)
-GET|POST /materials  GET|DELETE /materials/{id}  POST /materials/{id}/regenerate
+GET|POST /materials  GET|DELETE /materials/{id}  POST /materials/{id}/generate-minigames
+GET    /materials/shared                      danh sách đề cương được bạn bè chia sẻ
+GET    /materials/{id}/file?download=         xem trực tiếp hoặc tải tệp gốc đề cương
+POST   /materials/{id}/share                  chia sẻ đề cương / gửi lời mời thách đấu minigame cho bạn bè
 POST   /materials/{id}/scores   GET /materials/{id}/leaderboard?scope=global|friends
 GET|PUT /users/me/reminder-settings
 GET    /notifications?page&size&unreadOnly    lấy danh sách thông báo
@@ -251,7 +254,7 @@ POST   /internal/zalo/messages                chỉ cho bridge, header X-Interna
 
 - Endpoint `/ws` (WebSocket thuần, chưa bật SockJS). Header `Authorization: Bearer <accessToken>` gửi trong frame CONNECT.
 - Prefix: app `/app`, user `/user`, broker `/queue`.
-- **Hiện có:** SEND `/app/chat.send` `{recipientId, content}`. SUBSCRIBE `/user/queue/messages`, `/user/queue/errors`, `/user/queue/schedule`, `/user/queue/notifications`.
+- **Hiện có:** SEND `/app/chat.send` `{recipientId, content, sharedMaterialId?, messageType?, challengeGameType?, challengerScore?, challengerTimeSeconds?}`. SUBSCRIBE `/user/queue/messages`, `/user/queue/errors`, `/user/queue/schedule`, `/user/queue/notifications`.
 - **Dự kiến:** `/user/queue/presence` (bạn bè online/offline). Chat có thêm `sharedMaterialId`.
 - `WebSocketAuthChannelInterceptor` **whitelist cứng** các destination. Thêm destination mới thì phải sửa ở đó và viết test.
 - Payload đẩy qua WS cũng bọc `ApiResponse`.

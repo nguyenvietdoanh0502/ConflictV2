@@ -1,21 +1,26 @@
 import { Link } from "react-router-dom";
 import { useSelector } from "react-redux";
 import {
-  selectCurrentUser,
-  selectIsAuthenticated,
-} from "../features/auth/authSelectors";
+  Calendar,
+  Sparkles,
+  BookOpen,
+  Users,
+  Bell,
+  MessageSquare,
+} from "lucide-react";
+import { selectIsAuthenticated } from "../features/auth/authSelectors";
 import ContactsSidebar from "../features/chat/components/ContactsSidebar";
 
-function FeatureCard({ icon, title, description, to, accent }) {
+function FeatureCard({ icon, title, description, to }) {
   const content = (
     <div className="group relative flex h-full flex-col justify-between overflow-hidden rounded-[24px] border border-white/80 bg-white/85 p-6 shadow-card backdrop-blur-xl transition duration-200 hover:-translate-y-1 hover:bg-white hover:shadow-soft">
       <div className="flex flex-1 flex-col">
         <div className="flex items-center justify-between">
-          <span className={`grid h-12 w-12 place-items-center rounded-2xl ${accent} text-2xl shadow-sm`}>
+          <span className="grid h-11 w-11 place-items-center rounded-2xl bg-[#EAE6FF] text-social-violet border border-social-violet/15 shadow-xs transition-colors group-hover:bg-social-violet group-hover:text-white">
             {icon}
           </span>
         </div>
-        <h3 className="mt-4 text-base sm:text-lg font-bold text-social-ink group-hover:text-social-violet transition-colors min-h-[3rem] flex items-center">
+        <h3 className="mt-4 text-base sm:text-lg font-bold text-social-ink group-hover:text-social-violet transition-colors">
           {title}
         </h3>
         <p className="mt-2 text-xs sm:text-sm leading-6 text-social-muted flex-1">
@@ -63,51 +68,42 @@ export default function HomePage() {
                   </div>
                 </div>
 
-                <div className="grid gap-5 sm:grid-cols-2 auto-rows-fr">
+                <div className="grid gap-5 sm:grid-cols-2 md:grid-cols-3 auto-rows-fr">
                   <FeatureCard
-                    icon="📅"
+                    icon={<Calendar className="h-5 w-5" strokeWidth={2} />}
                     title="Thời khóa biểu Thông minh"
                     description="Xem lịch học theo ngày, tuần, tháng với phân loại màu trực quan: học bù, thi cử, deadline."
                     to="/timetable"
-                    accent="bg-[#EAE6FF] text-[#7C6EE6]"
                   />
                   <FeatureCard
-                    icon="✨"
+                    icon={<Sparkles className="h-5 w-5" strokeWidth={2} />}
                     title="Đồng bộ Zalo AI"
                     description="Ghép nhóm chat lớp học, AI tự động phát hiện thông báo nghỉ học, học bù và ghim vào lịch."
                     to="/timetable"
-                    accent="bg-[#FFE5EE] text-[#FF8FB3]"
                   />
                   <FeatureCard
-                    icon="🎮"
+                    icon={<BookOpen className="h-5 w-5" strokeWidth={2} />}
                     title="Đề cương & Minigame"
                     description="Tải lên PDF/Word đề cương, AI sinh bản tóm tắt và minigame trắc nghiệm, lật thẻ khái niệm."
                     to="/study"
-                    accent="bg-[#E5F7F1] text-[#41957F]"
                   />
                   <FeatureCard
-                    icon="👥"
+                    icon={<Users className="h-5 w-5" strokeWidth={2} />}
                     title="Kết nối Bạn bè"
                     description="Tìm bạn học, kết nối bằng mã cá nhân, quản lý danh sách bạn bè và cùng nhau thi đua."
                     to="/friends"
-                    accent="bg-[#FFF0E5] text-[#D47C4D]"
                   />
-                  {/* Tạm ẩn 2 box cuối cùng theo yêu cầu của người dùng */}
-                  {/*
                   <FeatureCard
-                    icon="🔔"
+                    icon={<Bell className="h-5 w-5" strokeWidth={2} />}
                     title="Nhắc nhở Đa kênh"
-                    description="Tự động quét lịch thi, học bù và thông báo kịp thời qua Toast, Web Push và Email."
-                    accent="bg-[#FFF9DB] text-[#A68A00]"
+                    description="Tự động quét lịch thi, học bù và thông báo kịp thời."
                   />
                   <FeatureCard
-                    icon="💬"
+                    icon={<MessageSquare className="h-5 w-5" strokeWidth={2} />}
                     title="Thách đấu & Trò chuyện"
                     description="Nhắn tin trực tiếp thời gian thực, gửi thẻ đề cương ôn tập và thách đấu minigame."
                     to="/friends"
-                    accent="bg-[#F1EAFE] text-[#7C6EE6]"
                   />
-                  */}
                 </div>
               </div>
             </div>
@@ -152,21 +148,27 @@ export default function HomePage() {
             {/* Core Values */}
             <div className="grid gap-6 sm:grid-cols-3">
               <div className="rounded-[28px] border border-white/80 bg-white/70 p-6 shadow-card backdrop-blur">
-                <div className="grid h-12 w-12 place-items-center rounded-2xl bg-[#EAE6FF] text-2xl">⚡</div>
+                <div className="grid h-11 w-11 place-items-center rounded-2xl bg-[#EAE6FF] text-social-violet">
+                  <Calendar className="h-5 w-5" strokeWidth={2} />
+                </div>
                 <h3 className="mt-4 text-lg font-extrabold text-social-ink">Zalo to Calendar</h3>
                 <p className="mt-2 text-sm leading-6 text-social-muted">
                   Kết nối nhóm Zalo môn học với cơ chế Whitelist bảo mật. AI nhận diện lịch nghỉ, học bù và ghim vào lịch chuẩn xác.
                 </p>
               </div>
               <div className="rounded-[28px] border border-white/80 bg-white/70 p-6 shadow-card backdrop-blur">
-                <div className="grid h-12 w-12 place-items-center rounded-2xl bg-[#FFE5EE] text-2xl">🎯</div>
+                <div className="grid h-11 w-11 place-items-center rounded-2xl bg-[#EAE6FF] text-social-violet">
+                  <BookOpen className="h-5 w-5" strokeWidth={2} />
+                </div>
                 <h3 className="mt-4 text-lg font-extrabold text-social-ink">Syllabus to Minigame</h3>
                 <p className="mt-2 text-sm leading-6 text-social-muted">
                   Bóc tách đề cương PDF/Word thành tóm tắt Markdown và bộ câu hỏi trắc nghiệm tốc độ, lật thẻ ghép cặp khái niệm.
                 </p>
               </div>
               <div className="rounded-[28px] border border-white/80 bg-white/70 p-6 shadow-card backdrop-blur">
-                <div className="grid h-12 w-12 place-items-center rounded-2xl bg-[#E5F7F1] text-2xl">🤝</div>
+                <div className="grid h-11 w-11 place-items-center rounded-2xl bg-[#EAE6FF] text-social-violet">
+                  <Users className="h-5 w-5" strokeWidth={2} />
+                </div>
                 <h3 className="mt-4 text-lg font-extrabold text-social-ink">Social Learning</h3>
                 <p className="mt-2 text-sm leading-6 text-social-muted">
                   Kết nối bạn cùng lớp, chat thời gian thực và thách đấu điểm minigame ôn thi để tạo động lực học tập mỗi ngày.

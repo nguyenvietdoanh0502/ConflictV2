@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import confetti from "canvas-confetti";
 import { useSubmitGameScoreMutation } from "../services/studyApi";
 import MathText from "./MathText";
@@ -10,6 +10,7 @@ export default function SpeedQuizGame({
   onBack,
   onOpenLeaderboard,
   onSwitchToMemoryMatch,
+  onOpenChallenge,
 }) {
   const [submitScore] = useSubmitGameScoreMutation();
 
@@ -28,9 +29,20 @@ export default function SpeedQuizGame({
   const [totalTimeTaken, setTotalTimeTaken] = useState(0);
 
   const timerRef = useRef(null);
-  const startTimeRef = useRef(Date.now());
+  const startTimeRef = useRef(null);
 
   const currentQ = questions[currentIndex];
+
+  useEffect(() => {
+    startTimeRef.current = Date.now();
+  }, []);
+
+  // Hết giờ mà chưa chọn
+  const handleTimeOut = useCallback(() => {
+    setIsAnswered(true);
+    setSelectedOption(-1);
+    setStreak(0);
+  }, []);
 
   // Khởi động lại game
   const handleRestart = () => {
@@ -63,15 +75,7 @@ export default function SpeedQuizGame({
     }, 1000);
 
     return () => clearInterval(timerRef.current);
-  }, [currentIndex, isAnswered, isFinished]);
-
-  // Hết giờ mà chưa chọn
-  const handleTimeOut = () => {
-    if (isAnswered) return;
-    setIsAnswered(true);
-    setSelectedOption(-1);
-    setStreak(0);
-  };
+  }, [currentIndex, isAnswered, isFinished, currentQ, handleTimeOut]);
 
   // Người dùng click chọn đáp án
   const handleSelectOption = (idx) => {
@@ -111,7 +115,8 @@ export default function SpeedQuizGame({
   // Kết thúc game
   const handleFinishGame = () => {
     setIsFinished(true);
-    const durationSec = Math.round((Date.now() - startTimeRef.current) / 1000);
+    const startedAt = startTimeRef.current || Date.now();
+    const durationSec = Math.max(1, Math.round((Date.now() - startedAt) / 1000));
     setTotalTimeTaken(durationSec);
 
     try {
@@ -187,7 +192,27 @@ export default function SpeedQuizGame({
           </div>
         </div>
 
-        <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+        {/* Nút Thách đấu bạn bè với mốc điểm vừa đạt */}
+        {onOpenChallenge && (
+          <div className="mt-5">
+            <button
+              type="button"
+              onClick={() =>
+                onOpenChallenge(material, {
+                  defaultMode: "CHALLENGE_GAME",
+                  defaultGameType: "SPEED_QUIZ",
+                  challengerScore: score,
+                  challengerTimeSeconds: totalTimeTaken,
+                })
+              }
+              className="w-full rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 px-6 py-3.5 text-xs font-black text-white shadow-lg shadow-amber-500/25 hover:from-amber-600 hover:to-orange-600 transition-all hover:scale-[1.01]"
+            >
+              ⚔️ Thách đấu bạn bè vượt mốc {score} điểm!
+            </button>
+          </div>
+        )}
+
+        <div className="mt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
           <button
             type="button"
             onClick={handleRestart}
@@ -229,14 +254,30 @@ export default function SpeedQuizGame({
           onClick={onBack}
           className="text-xs font-bold text-[#77718C] hover:text-social-violet"
         >
-          Dừng chơi
+          ← Dừng chơi
         </button>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 sm:gap-4">
           {streak > 1 && (
             <span className="rounded-full bg-orange-100 px-3 py-1 text-xs font-black text-orange-600 animate-bounce">
               Streak x{streak}!
             </span>
+          )}
+
+          {onOpenChallenge && (
+            <button
+              type="button"
+              onClick={() =>
+                onOpenChallenge(material, {
+                  defaultMode: "CHALLENGE_GAME",
+                  defaultGameType: "SPEED_QUIZ",
+                  challengerScore: score > 0 ? score : null,
+                })
+              }
+              className="rounded-xl border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-extrabold text-amber-700 hover:bg-amber-100 transition-colors"
+            >
+              Thách đấu
+            </button>
           )}
 
           <div className="flex items-center gap-1.5 text-xs font-extrabold text-[#2F2A45]">

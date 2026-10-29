@@ -13,4 +13,7 @@ import lombok.NoArgsConstructor;
 public class AiSummarizeResponse {
     @JsonProperty("summary_markdown")
     private String summaryMarkdown;
+
+    @JsonProperty("extracted_text")
+    private String extractedText;
 }

@@ -16,6 +16,9 @@ public class AiProcessMaterialResponse {
     @JsonProperty("summary_markdown")
     private String summaryMarkdown;
 
+    @JsonProperty("extracted_text")
+    private String extractedText;
+
     @JsonProperty("speed_quiz")
     private List<QuizQuestionDTO> speedQuiz;
 

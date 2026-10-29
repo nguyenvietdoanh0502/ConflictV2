@@ -2,13 +2,16 @@ package com.conflict.be.modules.material.service;
 
 import com.conflict.be.core.exception.AppException;
 import com.conflict.be.core.exception.ErrorCode;
-import com.conflict.be.modules.material.dto.AiProcessMaterialResponse;
-import com.conflict.be.modules.material.dto.MaterialUploadRequest;
-import com.conflict.be.modules.material.dto.MemoryMatchPairDTO;
-import com.conflict.be.modules.material.dto.QuizQuestionDTO;
-import com.conflict.be.modules.material.dto.StudyMaterialResponse;
+import com.conflict.be.modules.chat.dto.ChatMessageDTO;
+import com.conflict.be.modules.chat.dto.SendMessageRequest;
+import com.conflict.be.modules.chat.repository.ChatMessageRepository;
+import com.conflict.be.modules.chat.service.ChatService;
+import com.conflict.be.modules.material.dto.*;
 import com.conflict.be.modules.material.entity.StudyMaterialEntity;
+import com.conflict.be.modules.material.entity.StudyMaterialFileEntity;
+import com.conflict.be.modules.material.enums.GameType;
 import com.conflict.be.modules.material.enums.MaterialProcessingStatus;
+import com.conflict.be.modules.material.repository.StudyMaterialFileRepository;
 import com.conflict.be.modules.material.repository.StudyMaterialRepository;
 import com.conflict.be.modules.subject.entity.Subject;
 import com.conflict.be.modules.subject.repository.SubjectRepository;
@@ -24,6 +27,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -39,6 +43,9 @@ class StudyMaterialServiceTest {
     private StudyMaterialRepository studyMaterialRepository;
 
     @Mock
+    private StudyMaterialFileRepository studyMaterialFileRepository;
+
+    @Mock
     private SubjectRepository subjectRepository;
 
     @Mock
@@ -47,18 +54,27 @@ class StudyMaterialServiceTest {
     @Mock
     private AiEngineClient aiEngineClient;
 
+    @Mock
+    private ChatMessageRepository chatMessageRepository;
+
+    @Mock
+    private ChatService chatService;
+
     @InjectMocks
     private StudyMaterialService studyMaterialService;
 
     private User testUser;
+    private User friendUser;
     private Subject testSubject;
     private UUID userId;
+    private UUID friendId;
     private UUID subjectId;
     private UUID materialId;
 
     @BeforeEach
     void setUp() {
         userId = UUID.randomUUID();
+        friendId = UUID.randomUUID();
         subjectId = UUID.randomUUID();
         materialId = UUID.randomUUID();
 
@@ -66,6 +82,12 @@ class StudyMaterialServiceTest {
                 .id(userId)
                 .email("student@unisync.edu.vn")
                 .fullName("Nguyễn Việt Doanh")
+                .build();
+
+        friendUser = User.builder()
+                .id(friendId)
+                .email("friend@unisync.edu.vn")
+                .fullName("Trần Minh Quân")
                 .build();
 
         testSubject = Subject.builder()
@@ -77,13 +99,14 @@ class StudyMaterialServiceTest {
     }
 
     @Test
-    @DisplayName("Upload tài liệu hợp lệ và AI sinh Minigame thành công")
+    @DisplayName("Upload tài liệu hợp lệ, lưu file gốc + văn bản gốc và AI sinh tóm tắt thành công")
     void uploadAndProcessMaterial_success() {
+        byte[] rawContent = "Nội dung đề cương lập trình web với Spring Boot".getBytes(StandardCharsets.UTF_8);
         MockMultipartFile file = new MockMultipartFile(
                 "file",
                 "de_cuong_web.pdf",
                 "application/pdf",
-                "Nội dung đề cương lập trình web với Spring Boot".getBytes()
+                rawContent
         );
 
         MaterialUploadRequest request = new MaterialUploadRequest();
@@ -91,8 +114,9 @@ class StudyMaterialServiceTest {
         request.setTitle("Đề cương giữa kỳ");
         request.setFile(file);
 
-        com.conflict.be.modules.material.dto.AiSummarizeResponse aiResponse = com.conflict.be.modules.material.dto.AiSummarizeResponse.builder()
+        AiSummarizeResponse aiResponse = AiSummarizeResponse.builder()
                 .summaryMarkdown("## 1. Khái niệm cốt lõi\nSpring Boot...")
+                .extractedText("Nội dung đề cương lập trình web với Spring Boot")
                 .build();
 
         when(userRepository.findByEmail(testUser.getEmail())).thenReturn(Optional.of(testUser));
@@ -113,7 +137,120 @@ class StudyMaterialServiceTest {
         assertEquals("PDF", response.getFileType());
         assertEquals(MaterialProcessingStatus.COMPLETED, response.getProcessingStatus());
         assertNotNull(response.getAiSummaryMarkdown());
+        assertEquals("Nội dung đề cương lập trình web với Spring Boot", response.getExtractedText());
+        assertTrue(response.isHasOriginalFile());
+        assertTrue(response.isOwner());
+        verify(studyMaterialFileRepository).save(any(StudyMaterialFileEntity.class));
         verify(studyMaterialRepository, atLeastOnce()).save(any());
+    }
+
+    @Test
+    @DisplayName("Tải xuống bản gốc của đề cương thành công")
+    void getMaterialFile_success() {
+        byte[] pdfBytes = "%PDF-1.4 sample".getBytes(StandardCharsets.UTF_8);
+        StudyMaterialEntity existing = StudyMaterialEntity.builder()
+                .id(materialId)
+                .user(testUser)
+                .subject(testSubject)
+                .title("Đề cương giữa kỳ")
+                .fileName("de_cuong.pdf")
+                .fileType("PDF")
+                .fileSize((long) pdfBytes.length)
+                .build();
+
+        StudyMaterialFileEntity fileEntity = StudyMaterialFileEntity.builder()
+                .materialId(materialId)
+                .contentType("application/pdf")
+                .fileData(pdfBytes)
+                .build();
+
+        when(userRepository.findByEmail(testUser.getEmail())).thenReturn(Optional.of(testUser));
+        when(studyMaterialRepository.findById(materialId)).thenReturn(Optional.of(existing));
+        when(studyMaterialFileRepository.findById(materialId)).thenReturn(Optional.of(fileEntity));
+
+        StudyMaterialService.MaterialFileDownload download = studyMaterialService.getMaterialFile(testUser.getEmail(), materialId);
+
+        assertNotNull(download);
+        assertEquals("de_cuong.pdf", download.fileName());
+        assertEquals("application/pdf", download.contentType());
+        assertArrayEquals(pdfBytes, download.data());
+    }
+
+    @Test
+    @DisplayName("Bạn bè được chia sẻ đề cương có quyền xem chi tiết nhưng không có quyền xóa")
+    void sharedMaterial_friendCanReadButCannotDelete() {
+        StudyMaterialEntity existing = StudyMaterialEntity.builder()
+                .id(materialId)
+                .user(testUser)
+                .subject(testSubject)
+                .title("Đề cương giữa kỳ")
+                .fileName("de_cuong.pdf")
+                .fileType("PDF")
+                .fileSize(1024L)
+                .extractedText("Văn bản gốc")
+                .aiSummaryMarkdown("## 1. Khái niệm cốt lõi")
+                .processingStatus(MaterialProcessingStatus.COMPLETED)
+                .build();
+
+        when(userRepository.findByEmail(friendUser.getEmail())).thenReturn(Optional.of(friendUser));
+        when(studyMaterialRepository.findById(materialId)).thenReturn(Optional.of(existing));
+        when(chatMessageRepository.existsSharedMaterialAccess(materialId, friendId)).thenReturn(true);
+
+        StudyMaterialResponse response = studyMaterialService.getMaterialById(friendUser.getEmail(), materialId);
+        assertNotNull(response);
+        assertFalse(response.isOwner());
+        assertEquals("Nguyễn Việt Doanh", response.getOwnerName());
+
+        // Nhưng bạn bè không được phép xóa
+        AppException deleteEx = assertThrows(AppException.class, () ->
+                studyMaterialService.deleteMaterial(friendUser.getEmail(), materialId)
+        );
+        assertEquals(ErrorCode.MATERIAL_FORBIDDEN, deleteEx.getErrorCode());
+    }
+
+    @Test
+    @DisplayName("Chia sẻ đề cương và gửi lời mời thách đấu Minigame cho bạn bè thành công")
+    void shareMaterial_success() {
+        StudyMaterialEntity existing = StudyMaterialEntity.builder()
+                .id(materialId)
+                .user(testUser)
+                .subject(testSubject)
+                .title("Đề cương giữa kỳ")
+                .fileName("de_cuong.pdf")
+                .fileType("PDF")
+                .fileSize(1024L)
+                .processingStatus(MaterialProcessingStatus.COMPLETED)
+                .build();
+
+        ShareMaterialRequest shareReq = ShareMaterialRequest.builder()
+                .recipientIds(List.of(friendId))
+                .shareType("CHALLENGE_GAME")
+                .challengeGameType(GameType.SPEED_QUIZ)
+                .challengerScore(1250)
+                .challengerTimeSeconds(45)
+                .message("Vào đua top nào!")
+                .build();
+
+        ChatMessageDTO expectedMsg = ChatMessageDTO.builder()
+                .id(UUID.randomUUID())
+                .senderId(userId)
+                .recipientId(friendId)
+                .messageType("CHALLENGE_GAME")
+                .challengeGameType(GameType.SPEED_QUIZ)
+                .challengerScore(1250)
+                .content("Vào đua top nào!")
+                .build();
+
+        when(userRepository.findByEmail(testUser.getEmail())).thenReturn(Optional.of(testUser));
+        when(studyMaterialRepository.findById(materialId)).thenReturn(Optional.of(existing));
+        when(chatService.sendAndBroadcastMessage(eq(testUser.getEmail()), any(SendMessageRequest.class))).thenReturn(expectedMsg);
+
+        List<ChatMessageDTO> sentList = studyMaterialService.shareMaterial(testUser.getEmail(), materialId, shareReq);
+
+        assertEquals(1, sentList.size());
+        assertEquals("CHALLENGE_GAME", sentList.get(0).getMessageType());
+        assertEquals(1250, sentList.get(0).getChallengerScore());
+        verify(chatService, times(1)).sendAndBroadcastMessage(eq(testUser.getEmail()), any(SendMessageRequest.class));
     }
 
     @Test
@@ -131,7 +268,7 @@ class StudyMaterialServiceTest {
                 .processingStatus(MaterialProcessingStatus.COMPLETED)
                 .build();
 
-        com.conflict.be.modules.material.dto.AiGenerateMinigamesResponse minigamesResponse = com.conflict.be.modules.material.dto.AiGenerateMinigamesResponse.builder()
+        AiGenerateMinigamesResponse minigamesResponse = AiGenerateMinigamesResponse.builder()
                 .speedQuiz(List.of(
                         QuizQuestionDTO.builder()
                                 .question("Spring Boot dùng Annotation nào để tạo REST controller?")
@@ -234,6 +371,7 @@ class StudyMaterialServiceTest {
 
         studyMaterialService.deleteMaterial(testUser.getEmail(), materialId);
 
+        verify(studyMaterialFileRepository).deleteById(materialId);
         verify(studyMaterialRepository).delete(entity);
     }
 }

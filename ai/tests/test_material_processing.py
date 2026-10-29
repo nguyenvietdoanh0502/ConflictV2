@@ -48,6 +48,7 @@ def test_process_material_service():
     """
     response = asyncio.run(ai_service.process_material(sample_text, "Lập trình Web"))
     assert response.summary_markdown is not None
+    assert response.extracted_text == sample_text
     assert "## 1. Khái niệm cốt lõi" in response.summary_markdown
     assert "## 2. Công thức & Quy tắc cần nhớ" in response.summary_markdown
     assert "## 3. Các câu hỏi thường gặp" in response.summary_markdown
@@ -85,6 +86,8 @@ def test_api_process_material_file():
     assert response.status_code == 200
     json_data = response.json()
     assert "summary_markdown" in json_data
+    assert "extracted_text" in json_data
+    assert "PostgreSQL" in json_data["extracted_text"]
     assert "speed_quiz" in json_data
     assert "memory_match_pairs" in json_data
     assert len(json_data["speed_quiz"]) >= 5
@@ -123,6 +126,8 @@ def test_api_summarize_material_file():
     assert response.status_code == 200
     json_data = response.json()
     assert "summary_markdown" in json_data
+    assert "extracted_text" in json_data
+    assert "AES, DES" in json_data["extracted_text"]
     assert "## 1. Khái niệm cốt lõi" in json_data["summary_markdown"]
 
 
@@ -143,4 +148,3 @@ def test_api_generate_minigames():
     assert "memory_match_pairs" in json_data
     assert len(json_data["speed_quiz"]) == 10
     assert len(json_data["memory_match_pairs"]) == 8
-
