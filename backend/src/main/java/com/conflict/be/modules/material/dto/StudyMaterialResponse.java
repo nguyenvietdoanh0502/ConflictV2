@@ -17,6 +17,9 @@ import java.util.UUID;
 public class StudyMaterialResponse {
     private UUID id;
     private UUID userId;
+    private String ownerName;
+    private String ownerAvatarUrl;
+    private boolean isOwner;
     private UUID subjectId;
     private String subjectName;
     private String title;
@@ -24,6 +27,8 @@ public class StudyMaterialResponse {
     private String fileType;
     private Long fileSize;
     private String fileUrl;
+    private boolean hasOriginalFile;
+    private String extractedText;
     private String aiSummaryMarkdown;
     private List<QuizQuestionDTO> quizData;
     private List<MemoryMatchPairDTO> memoryMatchData;

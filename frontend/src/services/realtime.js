@@ -194,13 +194,13 @@ class RealtimeService {
     this.updateStatus("disconnected");
   }
 
-  sendMessage(recipientId, content) {
+  sendMessage(recipientId, content, extra = {}) {
     if (!this.client || !this.client.connected) {
       throw new Error("WEBSOCKET_NOT_CONNECTED");
     }
 
     const trimmed = (content || "").trim();
-    if (!trimmed) {
+    if (!trimmed && !extra.sharedMaterialId) {
       throw new Error("EMPTY_MESSAGE");
     }
 
@@ -209,6 +209,7 @@ class RealtimeService {
       body: JSON.stringify({
         recipientId,
         content: trimmed,
+        ...extra,
       }),
     });
   }

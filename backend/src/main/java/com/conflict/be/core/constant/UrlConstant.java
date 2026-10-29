@@ -58,7 +58,10 @@ public class UrlConstant {
 
     public static class Material {
         public static final String BASE = "/materials";
+        public static final String SHARED_WITH_ME = "/materials/shared";
         public static final String BY_ID = "/materials/{id}";
+        public static final String FILE = "/materials/{id}/file";
+        public static final String SHARE = "/materials/{id}/share";
         public static final String REGENERATE = "/materials/{id}/regenerate";
         public static final String GENERATE_MINIGAMES = "/materials/{id}/generate-minigames";
         public static final String SCORES = "/materials/{id}/scores";

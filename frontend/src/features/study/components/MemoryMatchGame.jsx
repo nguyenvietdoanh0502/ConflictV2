@@ -1,20 +1,50 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import confetti from "canvas-confetti";
 import { useSubmitGameScoreMutation } from "../services/studyApi";
 import MathText from "./MathText";
+
+function buildShuffledCards(pairs) {
+  if (!pairs || pairs.length === 0) return [];
+  const activePairs = pairs.slice(0, 8);
+  const cleanCardText = (str) => (str || "").trim().replace(/^\d+\.\s*/, "");
+
+  const cardList = [];
+  activePairs.forEach((pair) => {
+    cardList.push({
+      id: `term-${pair.pair_id}`,
+      pairId: pair.pair_id,
+      type: "TERM",
+      text: cleanCardText(pair.term),
+    });
+    cardList.push({
+      id: `def-${pair.pair_id}`,
+      pairId: pair.pair_id,
+      type: "DEF",
+      text: cleanCardText(pair.definition),
+    });
+  });
+
+  for (let i = cardList.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [cardList[i], cardList[j]] = [cardList[j], cardList[i]];
+  }
+  return cardList;
+}
 
 export default function MemoryMatchGame({
   material,
   onBack,
   onOpenLeaderboard,
   onSwitchToQuiz,
+  onOpenChallenge,
 }) {
   const [submitScore] = useSubmitGameScoreMutation();
 
   const pairs = material?.memoryMatchData || [];
+  const hasPairs = pairs.length > 0;
 
   // Tạo danh sách thẻ bài đã xáo trộn
-  const [cards, setCards] = useState([]);
+  const [cards, setCards] = useState(() => buildShuffledCards(pairs));
   const [flippedIndices, setFlippedIndices] = useState([]);
   const [matchedPairIds, setMatchedPairIds] = useState(new Set());
   const [moves, setMoves] = useState(0);
@@ -25,55 +55,26 @@ export default function MemoryMatchGame({
   const [seconds, setSeconds] = useState(0);
   const timerRef = useRef(null);
 
-  // Khởi tạo thẻ bài
+  useEffect(() => {
+    if (!hasPairs || isFinished) return;
+    timerRef.current = setInterval(() => {
+      setSeconds((prev) => prev + 1);
+    }, 1000);
+    return () => clearInterval(timerRef.current);
+  }, [hasPairs, isFinished]);
+
+  // Khởi tạo lại thẻ bài khi bấm Chơi lại
   const initializeGame = () => {
     if (!pairs || pairs.length === 0) return;
-
-    // Giới hạn tối đa 8 cặp (16 thẻ bài)
-    const activePairs = pairs.slice(0, 8);
-
-    const cleanCardText = (str) => (str || "").trim().replace(/^\d+\.\s*/, "");
-
-    const cardList = [];
-    activePairs.forEach((pair) => {
-      cardList.push({
-        id: `term-${pair.pair_id}`,
-        pairId: pair.pair_id,
-        type: "TERM",
-        text: cleanCardText(pair.term),
-      });
-      cardList.push({
-        id: `def-${pair.pair_id}`,
-        pairId: pair.pair_id,
-        type: "DEF",
-        text: cleanCardText(pair.definition),
-      });
-    });
-
-    // Tráo ngẫu nhiên (Fisher-Yates shuffle)
-    for (let i = cardList.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [cardList[i], cardList[j]] = [cardList[j], cardList[i]];
-    }
-
-    setCards(cardList);
+    clearInterval(timerRef.current);
+    setCards(buildShuffledCards(pairs));
     setFlippedIndices([]);
     setMatchedPairIds(new Set());
     setMoves(0);
     setSeconds(0);
     setIsFinished(false);
     setScore(0);
-
-    clearInterval(timerRef.current);
-    timerRef.current = setInterval(() => {
-      setSeconds((prev) => prev + 1);
-    }, 1000);
   };
-
-  useEffect(() => {
-    initializeGame();
-    return () => clearInterval(timerRef.current);
-  }, [material]);
 
   // Xử lý khi click vào 1 thẻ bài
   const handleCardClick = (index) => {
@@ -191,7 +192,27 @@ export default function MemoryMatchGame({
           </div>
         </div>
 
-        <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+        {/* Nút Thách đấu bạn bè */}
+        {onOpenChallenge && (
+          <div className="mt-5">
+            <button
+              type="button"
+              onClick={() =>
+                onOpenChallenge(material, {
+                  defaultMode: "CHALLENGE_GAME",
+                  defaultGameType: "MEMORY_MATCH",
+                  challengerScore: score,
+                  challengerTimeSeconds: seconds,
+                })
+              }
+              className="w-full rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 px-6 py-3.5 text-xs font-black text-white shadow-lg shadow-amber-500/25 hover:from-amber-600 hover:to-orange-600 transition-all hover:scale-[1.01]"
+            >
+              Thách đấu bạn bè vượt mốc {score} điểm ({seconds}s)!
+            </button>
+          </div>
+        )}
+
+        <div className="mt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
           <button
             type="button"
             onClick={initializeGame}
@@ -229,10 +250,25 @@ export default function MemoryMatchGame({
           onClick={onBack}
           className="text-xs font-bold text-[#77718C] hover:text-social-violet"
         >
-          Dừng chơi
+          ← Dừng chơi
         </button>
 
-        <div className="flex items-center gap-5">
+        <div className="flex flex-wrap items-center gap-3 sm:gap-5">
+          {onOpenChallenge && (
+            <button
+              type="button"
+              onClick={() =>
+                onOpenChallenge(material, {
+                  defaultMode: "CHALLENGE_GAME",
+                  defaultGameType: "MEMORY_MATCH",
+                })
+              }
+              className="rounded-xl border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-extrabold text-amber-700 hover:bg-amber-100 transition-colors"
+            >
+              ⚔️ Thách đấu
+            </button>
+          )}
+
           <div className="flex items-center gap-2 text-xs font-extrabold text-[#2F2A45]">
             <span>Thời gian:</span>
             <span className="font-mono text-social-violet rounded-xl bg-[#F0EEF8] px-2.5 py-1">

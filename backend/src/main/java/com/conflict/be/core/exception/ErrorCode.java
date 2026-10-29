@@ -236,6 +236,8 @@ public enum ErrorCode {
     MATERIAL_PARSE_FAILED("MATERIAL_PARSE_FAILED", "Could not extract text from document (file may be empty or scanned images)", 422),
     MATERIAL_PROCESSING_FAILED("MATERIAL_PROCESSING_FAILED", "Failed to generate study materials via AI", 500),
     INVALID_GAME_TYPE("INVALID_GAME_TYPE", "Game type must be SPEED_QUIZ or MEMORY_MATCH", 400),
+    MATERIAL_FILE_NOT_FOUND("MATERIAL_FILE_NOT_FOUND", "Original file is not available for this material", 404),
+    MINIGAME_NOT_GENERATED("MINIGAME_NOT_GENERATED", "Please generate minigames before sending a challenge", 400),
 
     // ==========================================
     // NOTIFICATION ERRORS

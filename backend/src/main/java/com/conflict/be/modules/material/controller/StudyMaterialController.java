@@ -3,8 +3,10 @@ package com.conflict.be.modules.material.controller;
 import com.conflict.be.core.common.ApiResponse;
 import com.conflict.be.core.common.annotation.RestApiV1;
 import com.conflict.be.core.constant.UrlConstant;
+import com.conflict.be.modules.chat.dto.ChatMessageDTO;
 import com.conflict.be.modules.material.dto.LeaderboardEntryDTO;
 import com.conflict.be.modules.material.dto.MaterialUploadRequest;
+import com.conflict.be.modules.material.dto.ShareMaterialRequest;
 import com.conflict.be.modules.material.dto.StudyMaterialResponse;
 import com.conflict.be.modules.material.dto.SubmitScoreRequest;
 import com.conflict.be.modules.material.enums.GameType;
@@ -12,11 +14,14 @@ import com.conflict.be.modules.material.service.GameScoreService;
 import com.conflict.be.modules.material.service.StudyMaterialService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.UUID;
 
@@ -52,6 +57,16 @@ public class StudyMaterialController {
         return ResponseEntity.ok(ApiResponse.success(list));
     }
 
+    @GetMapping(UrlConstant.Material.SHARED_WITH_ME)
+    public ResponseEntity<ApiResponse<List<StudyMaterialResponse>>> getSharedMaterials(
+            Authentication authentication
+    ) {
+        List<StudyMaterialResponse> list = studyMaterialService.getSharedMaterials(
+                authentication.getName()
+        );
+        return ResponseEntity.ok(ApiResponse.success(list));
+    }
+
     @GetMapping(UrlConstant.Material.BY_ID)
     public ResponseEntity<ApiResponse<StudyMaterialResponse>> getMaterialById(
             Authentication authentication,
@@ -62,6 +77,41 @@ public class StudyMaterialController {
                 id
         );
         return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @GetMapping(UrlConstant.Material.FILE)
+    public ResponseEntity<byte[]> getMaterialFile(
+            Authentication authentication,
+            @PathVariable UUID id,
+            @RequestParam(defaultValue = "false") boolean download
+    ) {
+        StudyMaterialService.MaterialFileDownload fileDownload = studyMaterialService.getMaterialFile(
+                authentication.getName(),
+                id
+        );
+
+        ContentDisposition disposition = ContentDisposition.builder(download ? "attachment" : "inline")
+                .filename(fileDownload.fileName(), StandardCharsets.UTF_8)
+                .build();
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_TYPE, fileDownload.contentType())
+                .header(HttpHeaders.CONTENT_DISPOSITION, disposition.toString())
+                .body(fileDownload.data());
+    }
+
+    @PostMapping(UrlConstant.Material.SHARE)
+    public ResponseEntity<ApiResponse<List<ChatMessageDTO>>> shareMaterial(
+            Authentication authentication,
+            @PathVariable UUID id,
+            @Valid @RequestBody ShareMaterialRequest request
+    ) {
+        List<ChatMessageDTO> messages = studyMaterialService.shareMaterial(
+                authentication.getName(),
+                id,
+                request
+        );
+        return ResponseEntity.ok(ApiResponse.success("Đã gửi chia sẻ / lời mời thách đấu thành công", messages));
     }
 
     @DeleteMapping(UrlConstant.Material.BY_ID)
@@ -113,10 +163,13 @@ public class StudyMaterialController {
 
     @GetMapping(UrlConstant.Material.LEADERBOARD)
     public ResponseEntity<ApiResponse<List<LeaderboardEntryDTO>>> getLeaderboard(
+            Authentication authentication,
             @PathVariable UUID id,
-            @RequestParam(defaultValue = "SPEED_QUIZ") GameType gameType
+            @RequestParam(defaultValue = "SPEED_QUIZ") GameType gameType,
+            @RequestParam(defaultValue = "global") String scope
     ) {
-        List<LeaderboardEntryDTO> leaderboard = gameScoreService.getLeaderboard(id, gameType);
+        String userEmail = authentication != null ? authentication.getName() : null;
+        List<LeaderboardEntryDTO> leaderboard = gameScoreService.getLeaderboard(userEmail, id, gameType, scope);
         return ResponseEntity.ok(ApiResponse.success(leaderboard));
     }
 }

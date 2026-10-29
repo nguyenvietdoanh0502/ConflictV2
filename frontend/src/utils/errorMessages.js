@@ -93,6 +93,8 @@ export const ERROR_CODE_TRANSLATIONS = {
   MATERIAL_PARSE_FAILED: "Không thể trích xuất văn bản từ tài liệu (file có thể trống hoặc là ảnh chụp).",
   MATERIAL_PROCESSING_FAILED: "Không thể tạo tài liệu ôn tập qua AI. Vui lòng thử lại sau.",
   INVALID_GAME_TYPE: "Chế độ minigame không hợp lệ.",
+  MATERIAL_FILE_NOT_FOUND: "Tài liệu này chưa có tệp gốc lưu trữ trên máy chủ.",
+  MINIGAME_NOT_GENERATED: "Vui lòng khởi tạo bộ Minigame trước khi gửi lời mời thách đấu.",
 
   // Generic System
   UNCATEGORIZED_EXCEPTION: "Đã có lỗi hệ thống xảy ra. Vui lòng thử lại sau.",

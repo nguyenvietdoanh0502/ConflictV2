@@ -155,10 +155,21 @@ class MemoryMatchPairItem(BaseModel):
     )
 
 
+class GeminiSummarizeSchema(BaseModel):
+    summary_markdown: str = Field(
+        ...,
+        description="Bản tóm tắt đề cương dạng Markdown chuẩn 3 phần: ## 1. Khái niệm cốt lõi, ## 2. Công thức & Quy tắc cần nhớ, ## 3. Các câu hỏi thường gặp"
+    )
+
+
 class SummarizeMaterialResponse(BaseModel):
     summary_markdown: str = Field(
         ...,
         description="Bản tóm tắt đề cương dạng Markdown chuẩn 3 phần: ## 1. Khái niệm cốt lõi, ## 2. Công thức & Quy tắc cần nhớ, ## 3. Các câu hỏi thường gặp"
+    )
+    extracted_text: Optional[str] = Field(
+        None,
+        description="Văn bản gốc được trích xuất từ file đề cương"
     )
 
 
@@ -194,6 +205,10 @@ class ProcessMaterialResponse(BaseModel):
         ...,
         description="Bản tóm tắt đề cương dạng Markdown chuẩn 3 phần: ## 1. Khái niệm cốt lõi, ## 2. Công thức & Quy tắc cần nhớ, ## 3. Các câu hỏi thường gặp"
     )
+    extracted_text: Optional[str] = Field(
+        None,
+        description="Văn bản gốc được trích xuất từ file đề cương"
+    )
     speed_quiz: List[QuizQuestionItem] = Field(
         default_factory=list,
         description="Bộ câu hỏi trắc nghiệm 4 đáp án cho Đấu trường Trắc nghiệm (tùy chọn hoặc sinh theo yêu cầu)"
@@ -208,5 +223,3 @@ class ExtractTextResponse(BaseModel):
     text: str
     char_count: int
     page_count: int
-
-

@@ -1,14 +1,17 @@
-import React from "react";
+import { useSelector } from "react-redux";
+import { selectCurrentUser } from "../../auth/authSelectors";
 import { getLocalizedErrorMessage } from "../../../utils/errorMessages";
 
 function MaterialCard({
   material,
   onOpenStudy,
   onOpenLeaderboard,
+  onOpenShare,
   onDelete,
   onGenerateMinigames,
   isGeneratingMinigames = false,
 }) {
+  const currentUser = useSelector(selectCurrentUser);
   const isCompleted = material.processingStatus === "COMPLETED";
   const isProcessing = material.processingStatus === "PROCESSING";
   const isFailed = material.processingStatus === "FAILED";
@@ -16,6 +19,10 @@ function MaterialCard({
   const quizCount = material.quizData?.length || 0;
   const matchCount = material.memoryMatchData?.length || 0;
   const hasMinigames = quizCount > 0 || matchCount > 0;
+  const isOwner =
+    material.isOwner !== undefined
+      ? material.isOwner
+      : !currentUser?.id || material.userId === currentUser?.id;
 
   const formatDate = (isoString) => {
     if (!isoString) return "";
@@ -41,10 +48,14 @@ function MaterialCard({
   return (
     <div className="group relative flex flex-col justify-between rounded-3xl border border-[#E5E2EC] bg-white p-5 shadow-sm hover:shadow-md hover:border-social-violet/40 transition-all">
       <div>
-        {/* Header card: Type badge, Subject pill, and Delete button */}
+        {/* Header card: Type badge, Subject pill, and Share/Delete actions */}
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-1.5 flex-wrap">
-            <span className={`rounded-lg border px-2 py-0.5 text-[10px] font-black uppercase tracking-wider ${getTypeBadge(material.fileType)}`}>
+            <span
+              className={`rounded-lg border px-2 py-0.5 text-[10px] font-black uppercase tracking-wider ${getTypeBadge(
+                material.fileType
+              )}`}
+            >
               {material.fileType || "DOC"}
             </span>
             <span className="rounded-xl border border-social-violet/20 bg-social-violet/10 px-2.5 py-0.5 text-[11px] font-bold text-social-violet max-w-[140px] truncate">
@@ -52,17 +63,45 @@ function MaterialCard({
             </span>
           </div>
 
-          <button
-            type="button"
-            title="Xóa tài liệu này"
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete(material);
-            }}
-            className="rounded-xl border border-[#E5E2EC] bg-[#FAF9FD] px-2.5 py-1 text-xs font-bold text-[#77718C] hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600 transition-colors"
-          >
-            Xóa
-          </button>
+          <div className="flex items-center gap-1">
+            {isCompleted && onOpenShare && (
+              <button
+                type="button"
+                title="Chia sẻ đề cương hoặc Thách đấu bạn bè"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onOpenShare(
+                    material,
+                    hasMinigames ? "CHALLENGE_GAME" : "SHARE_MATERIAL"
+                  );
+                }}
+                className="rounded-xl border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-extrabold text-amber-700 hover:bg-amber-100 transition-colors"
+              >
+                {hasMinigames ? "Thách đấu" : "Chia sẻ"}
+              </button>
+            )}
+
+            {isOwner && onDelete ? (
+              <button
+                type="button"
+                title="Xóa tài liệu này"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(material);
+                }}
+                className="rounded-xl border border-[#E5E2EC] bg-[#FAF9FD] px-2.5 py-1 text-xs font-bold text-[#77718C] hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600 transition-colors"
+              >
+                Xóa
+              </button>
+            ) : !isOwner && material.ownerName ? (
+              <span
+                className="rounded-xl bg-[#FAF9FD] border border-[#E5E2EC] px-2 py-0.5 text-[10px] font-bold text-[#77718C] truncate max-w-[110px]"
+                title={`Chia sẻ bởi ${material.ownerName}`}
+              >
+                Từ: {material.ownerName}
+              </span>
+            ) : null}
+          </div>
         </div>
 
         {/* Title */}
@@ -79,18 +118,22 @@ function MaterialCard({
         <div className="mt-4 pt-3 border-t border-[#F0EEF8]">
           {isProcessing && (
             <div className="rounded-xl bg-social-violet/10 p-2.5 text-xs font-bold text-social-violet animate-pulse">
-              Đang đọc hiểu & tạo Cheatsheet...
+              Đang đọc hiểu & tạo bảng tóm tắt...
             </div>
           )}
 
           {isFailed && (
             <div className="rounded-xl bg-rose-50 p-2.5 text-xs font-bold text-rose-600 border border-rose-200">
-              Lỗi xử lý: {getLocalizedErrorMessage({ message: material.errorMessage }, "Không thể xử lý hoặc trích xuất văn bản.")}
+              Lỗi xử lý:{" "}
+              {getLocalizedErrorMessage(
+                { message: material.errorMessage },
+                "Không thể xử lý hoặc trích xuất văn bản."
+              )}
             </div>
           )}
 
-          {isCompleted && (
-            hasMinigames ? (
+          {isCompleted &&
+            (hasMinigames ? (
               <div className="flex flex-wrap items-center gap-2 text-xs">
                 <span className="rounded-lg bg-amber-50 px-2 py-1 text-amber-700 font-bold border border-amber-200">
                   {quizCount} câu trắc nghiệm
@@ -101,10 +144,9 @@ function MaterialCard({
               </div>
             ) : (
               <div className="rounded-lg bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700 border border-emerald-200 inline-block">
-                Đã tóm tắt Smart Cheatsheet
+                Đã tóm tắt xong
               </div>
-            )
-          )}
+            ))}
         </div>
       </div>
 
@@ -115,7 +157,7 @@ function MaterialCard({
         </span>
 
         {isCompleted && (
-          <div className="flex items-center gap-1.5">
+          <div className="flex flex-wrap items-center justify-end gap-1.5">
             {hasMinigames && (
               <button
                 type="button"
@@ -129,8 +171,17 @@ function MaterialCard({
 
             <button
               type="button"
+              onClick={() => onOpenStudy(material, "original")}
+              title="Xem nội dung đề cương gốc"
+              className="rounded-xl border border-[#E5E2EC] bg-[#FAF9FD] px-2.5 py-1.5 text-xs font-bold text-[#4F4965] hover:bg-[#F0EEF8] transition-colors"
+            >
+              Bản gốc
+            </button>
+
+            <button
+              type="button"
               onClick={() => onOpenStudy(material, "cheatsheet")}
-              className="rounded-xl border border-[#E5E2EC] bg-[#FAF9FD] px-3 py-1.5 text-xs font-bold text-[#4F4965] hover:bg-[#F0EEF8] transition-colors"
+              className="rounded-xl border border-[#E5E2EC] bg-[#FAF9FD] px-2.5 py-1.5 text-xs font-bold text-[#4F4965] hover:bg-[#F0EEF8] transition-colors"
             >
               Tóm tắt
             </button>
@@ -139,7 +190,7 @@ function MaterialCard({
               <button
                 type="button"
                 onClick={() => onOpenStudy(material, "quiz")}
-                className="rounded-xl bg-social-violet px-3.5 py-1.5 text-xs font-bold text-white shadow-md shadow-social-violet/25 hover:bg-[#6E60DC] hover:shadow-social-violet/35 transition-all"
+                className="rounded-xl bg-social-violet px-3 py-1.5 text-xs font-bold text-white shadow-md shadow-social-violet/25 hover:bg-[#6E60DC] hover:shadow-social-violet/35 transition-all"
               >
                 Vào ôn tập
               </button>
@@ -147,8 +198,10 @@ function MaterialCard({
               <button
                 type="button"
                 disabled={isGeneratingMinigames}
-                onClick={() => onGenerateMinigames && onGenerateMinigames(material)}
-                className="rounded-xl bg-social-violet px-3.5 py-1.5 text-xs font-bold text-white shadow-md shadow-violet-500/25 hover:bg-[#6E60DC] transition-all disabled:opacity-50"
+                onClick={() =>
+                  onGenerateMinigames && onGenerateMinigames(material)
+                }
+                className="rounded-xl bg-social-violet px-3 py-1.5 text-xs font-bold text-white shadow-md shadow-violet-500/25 hover:bg-[#6E60DC] transition-all disabled:opacity-50"
               >
                 {isGeneratingMinigames ? "Đang tạo..." : "Tạo Minigame"}
               </button>

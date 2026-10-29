@@ -1,10 +1,9 @@
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import {
   Bell,
   CheckCheck,
-  Calendar,
   Sun,
   MessageCircle,
   Trash2,
@@ -14,6 +13,8 @@ import {
   ChevronRight,
   UserPlus,
   UserCheck,
+  BookOpen,
+  Swords,
 } from "lucide-react";
 import {
   useGetNotificationsQuery,
@@ -49,13 +50,11 @@ export default function NotificationDropdown({ onClose }) {
   const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState("all"); // "all" | "unread"
-  const [page, setPage] = useState(0);
+  const [page] = useState(0);
 
   const {
     data: notifData,
     isLoading,
-    isFetching,
-    refetch,
   } = useGetNotificationsQuery({
     page,
     size: 30,
@@ -92,16 +91,17 @@ export default function NotificationDropdown({ onClose }) {
       }
     }
 
+    let meta = {};
+    if (notif.metadata) {
+      try {
+        meta = JSON.parse(notif.metadata);
+      } catch {
+        // ignore
+      }
+    }
+
     // 2. Action based on type
     if (notif.type === "NEW_MESSAGE") {
-      let meta = {};
-      if (notif.metadata) {
-        try {
-          meta = JSON.parse(notif.metadata);
-        } catch {
-          // ignore
-        }
-      }
       if (meta.senderId) {
         dispatch(
           openChat({
@@ -112,6 +112,24 @@ export default function NotificationDropdown({ onClose }) {
         );
       } else {
         navigate("/friends");
+      }
+      if (onClose) onClose();
+    } else if (
+      notif.type === "MATERIAL_SHARED" ||
+      notif.type === "MINIGAME_CHALLENGE"
+    ) {
+      if (notif.link) {
+        navigate(notif.link);
+      } else if (meta.materialId) {
+        const mode =
+          notif.type === "MINIGAME_CHALLENGE"
+            ? meta.challengeGameType === "MEMORY_MATCH"
+              ? "match"
+              : "quiz"
+            : "cheatsheet";
+        navigate(`/study?materialId=${meta.materialId}&mode=${mode}`);
+      } else {
+        navigate("/study");
       }
       if (onClose) onClose();
     } else if (
@@ -260,7 +278,7 @@ export default function NotificationDropdown({ onClose }) {
             <p className="text-xs text-[#8F8A9F] mt-1 max-w-[240px]">
               {activeTab === "unread"
                 ? "Bạn đã đọc hết mọi thông báo quan trọng rồi!"
-                : "Các cập nhật thời khóa biểu, lịch học hôm nay và tin nhắn sẽ xuất hiện tại đây."}
+                : "Các cập nhật thời khóa biểu, chia sẻ đề cương, thách đấu và tin nhắn sẽ xuất hiện tại đây."}
             </p>
           </div>
         ) : (
@@ -301,6 +319,40 @@ export default function NotificationDropdown({ onClose }) {
                       )}
                       <span className="absolute -bottom-0.5 -right-0.5 h-5 w-5 rounded-full bg-[#0084FF] text-white grid place-items-center shadow ring-2 ring-white">
                         <MessageCircle className="h-3 w-3 fill-current" />
+                      </span>
+                    </div>
+                  ) : notif.type === "MINIGAME_CHALLENGE" ? (
+                    <div className="relative">
+                      {meta.avatarUrl ? (
+                        <img
+                          src={meta.avatarUrl}
+                          alt=""
+                          className="h-11 w-11 rounded-full object-cover ring-2 ring-white shadow-sm"
+                        />
+                      ) : (
+                        <div className="h-11 w-11 rounded-full bg-gradient-to-tr from-amber-500 to-orange-500 text-white font-extrabold text-sm grid place-items-center ring-2 ring-white shadow-sm">
+                          {(meta.senderName || notif.title || "U").charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                      <span className="absolute -bottom-0.5 -right-0.5 h-5 w-5 rounded-full bg-amber-500 text-white grid place-items-center shadow ring-2 ring-white">
+                        <Swords className="h-3 w-3" />
+                      </span>
+                    </div>
+                  ) : notif.type === "MATERIAL_SHARED" ? (
+                    <div className="relative">
+                      {meta.avatarUrl ? (
+                        <img
+                          src={meta.avatarUrl}
+                          alt=""
+                          className="h-11 w-11 rounded-full object-cover ring-2 ring-white shadow-sm"
+                        />
+                      ) : (
+                        <div className="h-11 w-11 rounded-full bg-gradient-to-tr from-[#6E60DC] to-[#9B8FF3] text-white font-extrabold text-sm grid place-items-center ring-2 ring-white shadow-sm">
+                          {(meta.senderName || notif.title || "U").charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                      <span className="absolute -bottom-0.5 -right-0.5 h-5 w-5 rounded-full bg-social-violet text-white grid place-items-center shadow ring-2 ring-white">
+                        <BookOpen className="h-3 w-3" />
                       </span>
                     </div>
                   ) : notif.type === "FRIEND_REQUEST_RECEIVED" ? (
@@ -372,6 +424,16 @@ export default function NotificationDropdown({ onClose }) {
                     {notif.type === "NEW_SCHEDULE_EVENT" && (
                       <span className="ml-1 px-1.5 py-0.2 rounded-full bg-[#EDE7F6] text-[#512DA8] text-[10px] font-bold">
                         Thời khóa biểu
+                      </span>
+                    )}
+                    {notif.type === "MATERIAL_SHARED" && (
+                      <span className="ml-1 px-1.5 py-0.2 rounded-full bg-[#EDE7F6] text-social-violet text-[10px] font-bold">
+                        Đề cương chia sẻ
+                      </span>
+                    )}
+                    {notif.type === "MINIGAME_CHALLENGE" && (
+                      <span className="ml-1 px-1.5 py-0.2 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold">
+                        ⚔️ Thách đấu
                       </span>
                     )}
                     {notif.type === "FRIEND_REQUEST_RECEIVED" && (
