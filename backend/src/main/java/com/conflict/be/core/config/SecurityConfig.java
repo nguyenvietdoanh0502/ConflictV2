@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -15,24 +16,23 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import org.springframework.security.config.Customizer;
-import java.util.List;
 
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
 @EnableMethodSecurity
-
 public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
     private final AuthenticationProvider authenticationProvider;
+
     @org.springframework.beans.factory.annotation.Value("${conflict.cors.allowed-origins:http://localhost:5173,http://localhost:3000,https://*.vercel.app}")
     private String allowedOriginsConfig;
 
     @Bean
-    CorsConfigurationSource corsConfigurationSource(){
+    CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
 
         java.util.List<String> origins = java.util.Arrays.stream(allowedOriginsConfig.split(","))
@@ -42,7 +42,7 @@ public class SecurityConfig {
 
         config.setAllowedOriginPatterns(origins);
         config.setAllowedMethods(
-                List.of("GET","POST","PUT","PATCH","DELETE","OPTIONS")
+                List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
         );
         config.setAllowedHeaders(
                 List.of("Authorization", "Content-Type", "X-XSRF-TOKEN", "X-Internal-Api-Key", "Origin", "Accept", "X-Requested-With")
@@ -50,7 +50,7 @@ public class SecurityConfig {
         config.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**",config);
+        source.registerCorsConfiguration("/**", config);
         return source;
     }
 
@@ -73,8 +73,6 @@ public class SecurityConfig {
                                         "/api/v1/auth/verify-otp-forgot-password",
                                         "/api/v1/auth/reset-password",
                                         "/api/v1/internal/zalo/**",
-                                        "/api/v1/zalo/simulate",
-                                        "/api/v1/webhook/**",
                                         "/v3/api-docs/**",
                                         "/swagger-ui/**"
                                 ).permitAll()

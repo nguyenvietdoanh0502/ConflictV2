@@ -14,7 +14,6 @@ import org.springframework.stereotype.Service;
 
 import java.security.Key;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
@@ -53,7 +52,7 @@ public class JwtProvider {
     }
 
     public String generateToken(UserDetails userDetails) {
-        return buildToken(Map.of("tokenType","access"),userDetails,jwtExpiration);
+        return buildToken(Map.of("tokenType", "access"), userDetails, jwtExpiration);
     }
 
     public String generateToken(Map<String, Object> extraClaims, UserDetails userDetails) {
@@ -61,25 +60,26 @@ public class JwtProvider {
     }
 
     public String generateRefreshToken(UserDetails userDetails) {
-        return buildToken(Map.of("tokenType","refresh"), userDetails, refreshExpiration);
+        return buildToken(Map.of("tokenType", "refresh"), userDetails, refreshExpiration);
     }
 
     public String generateResetPasswordToken(UserDetails userDetails) {
         return buildToken(Map.of("tokenType", "reset_password"), userDetails, resetExpiration);
     }
 
-    public UserDetails validateRefreshToken(String refreshToken){
+    public UserDetails validateRefreshToken(String refreshToken) {
         String email = extractUsername(refreshToken);
-        if(email==null){
+        if (email == null) {
             throw new AppException(ErrorCode.INVALID_REFRESH_TOKEN);
         }
         UserDetails userDetails = userDetailsService.loadUserByUsername(email);
-        String tokenType = extractClaim(refreshToken,claims -> claims.get("tokenType",String.class));
-        if(!"refresh".equals(tokenType)||isTokenExpired(refreshToken)){
+        String tokenType = extractClaim(refreshToken, claims -> claims.get("tokenType", String.class));
+        if (!"refresh".equals(tokenType) || isTokenExpired(refreshToken)) {
             throw new AppException(ErrorCode.INVALID_REFRESH_TOKEN);
         }
         return userDetails;
     }
+
     private String buildToken(
             Map<String, Object> extraClaims,
             UserDetails userDetails,
@@ -98,7 +98,9 @@ public class JwtProvider {
 
     public boolean isTokenValid(String token, UserDetails userDetails) {
         final String username = extractUsername(token);
-        return (username.equals(userDetails.getUsername())) && !isTokenExpired(token);
+        final String tokenType = extractClaim(token, claims -> claims.get("tokenType", String.class));
+        boolean isAccessType = (tokenType == null || "access".equals(tokenType));
+        return isAccessType && (username.equals(userDetails.getUsername())) && !isTokenExpired(token);
     }
 
     private boolean isTokenExpired(String token) {
@@ -122,14 +124,15 @@ public class JwtProvider {
         byte[] keyBytes = Decoders.BASE64.decode(secretKey);
         return Keys.hmacShaKeyFor(keyBytes);
     }
+
     public boolean isAccessTokenValid(
             String token,
             UserDetails userDetails
-    ){
+    ) {
         String tokenType = extractClaim(
                 token,
-                claims -> claims.get("tokenType",String.class)
+                claims -> claims.get("tokenType", String.class)
         );
-        return "access".equals(tokenType) && isTokenValid(token,userDetails);
+        return "access".equals(tokenType) && isTokenValid(token, userDetails);
     }
 }

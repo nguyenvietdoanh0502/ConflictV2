@@ -1,8 +1,8 @@
 server:
   port: 8080
   tomcat:
-    max-http-form-post-size: 20MB
-    max-swallow-size: 20MB
+    max-http-form-post-size: 25MB
+    max-swallow-size: 25MB
 
 spring:
   datasource:
@@ -23,13 +23,13 @@ spring:
   data:
     redis:
       host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
+      port: ${REDIS_PORT:6380}
 
   mail:
     host: ${MAIL_HOST:smtp.gmail.com}
     port: ${MAIL_PORT:587}
-    username: ${MAIL_USERNAME:lminhhieu2507@gmail.com}
-    password: ${MAIL_PASSWORD:bgcpomzycvqgzdtm}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
     properties:
       mail:
         smtp:
@@ -66,7 +66,7 @@ conflict:
 
 logging:
   level:
-    com.hit.conflict: DEBUG
+    com.conflict.be: DEBUG
     org.hibernate.SQL: DEBUG
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
 
@@ -77,5 +77,3 @@ unisync:
     timeout-seconds: ${AI_TIMEOUT_SECONDS:120}
   zalo:
     bridge-url: ${ZALO_BRIDGE_URL:http://localhost:3001}
-
-
