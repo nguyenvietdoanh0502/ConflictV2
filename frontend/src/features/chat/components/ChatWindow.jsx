@@ -481,7 +481,7 @@ export default function ChatWindow() {
                         </div>
                       )}
 
-                      <div className="flex flex-col gap-1.5 min-w-0">
+                      <div className={`flex flex-col gap-1.5 min-w-0 ${isMe ? "items-end" : "items-start"}`}>
                         {/* Text Bubble */}
                         {msg.content && (
                           <div
