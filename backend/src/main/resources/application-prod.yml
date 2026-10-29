@@ -1,8 +1,9 @@
 server:
   port: 8080
+  forward-headers-strategy: native
   tomcat:
-    max-http-form-post-size: 20MB
-    max-swallow-size: 20MB
+    max-http-form-post-size: 25MB
+    max-swallow-size: 25MB
     threads:
       max: 50
       min-spare: 10

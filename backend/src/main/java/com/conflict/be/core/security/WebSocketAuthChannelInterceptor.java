@@ -2,6 +2,7 @@ package com.conflict.be.core.security;
 
 import com.conflict.be.core.exception.AppException;
 import com.conflict.be.core.exception.ErrorCode;
+import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.messaging.Message;
@@ -10,13 +11,14 @@ import org.springframework.messaging.simp.stomp.StompCommand;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.ChannelInterceptor;
 import org.springframework.messaging.support.MessageHeaderAccessor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Component;
 
-import org.springframework.security.access.AccessDeniedException;
 import java.util.List;
 import java.util.Set;
 
@@ -93,29 +95,33 @@ public class WebSocketAuthChannelInterceptor
         }
 
         String jwt = authHeader.substring(7);
-        String tokenId = jwtProvider.extractJwtId(jwt);
-        Boolean isBlacklisted = redisTemplate.hasKey(
-                "blacklist:jti:" + tokenId
-        );
-        if (Boolean.TRUE.equals(isBlacklisted)) {
-            throw new AppException(ErrorCode.INVALID_REFRESH_TOKEN);
-        }
+        try {
+            String tokenId = jwtProvider.extractJwtId(jwt);
+            Boolean isBlacklisted = redisTemplate.hasKey(
+                    "blacklist:jti:" + tokenId
+            );
+            if (Boolean.TRUE.equals(isBlacklisted)) {
+                throw new AppException(ErrorCode.INVALID_REFRESH_TOKEN);
+            }
 
-        String email = jwtProvider.extractUsername(jwt);
-        if (email == null) {
+            String email = jwtProvider.extractUsername(jwt);
+            if (email == null) {
+                throw new AppException(ErrorCode.UNAUTHENTICATED);
+            }
+
+            UserDetails userDetails = userDetailsService.loadUserByUsername(email);
+            if (!jwtProvider.isAccessTokenValid(jwt, userDetails)) {
+                throw new AppException(ErrorCode.UNAUTHENTICATED);
+            }
+
+            return new UsernamePasswordAuthenticationToken(
+                    userDetails,
+                    null,
+                    userDetails.getAuthorities()
+            );
+        } catch (JwtException | IllegalArgumentException | UsernameNotFoundException ex) {
             throw new AppException(ErrorCode.UNAUTHENTICATED);
         }
-
-        UserDetails userDetails = userDetailsService.loadUserByUsername(email);
-        if (!jwtProvider.isTokenValid(jwt, userDetails)) {
-            throw new AppException(ErrorCode.UNAUTHENTICATED);
-        }
-
-        return new UsernamePasswordAuthenticationToken(
-                userDetails,
-                null,
-                userDetails.getAuthorities()
-        );
     }
 
     private void requireAuthenticated(StompHeaderAccessor accessor) {

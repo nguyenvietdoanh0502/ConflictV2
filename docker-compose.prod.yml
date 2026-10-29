@@ -114,7 +114,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 24M
+          memory: 64M
     networks:
       - unisync-net
 
