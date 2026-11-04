@@ -4,7 +4,7 @@
 # ==============================================================================
 param (
     [Parameter(Mandatory=$false, Position=0)]
-    [ValidateSet("backend", "ai", "bridge", "frontend", "all")]
+    [ValidateSet("backend", "ai", "bridge", "nginx", "frontend", "all")]
     [string]$Target = "backend",
 
     [string]$DockerUser = "vietdoanh",
@@ -36,7 +36,20 @@ if ($Target -eq "frontend" -or $Target -eq "all") {
     Write-Host "Kiem tra tien trinh tai: https://vercel.com/dashboard" -ForegroundColor Gray
 }
 
-# 2. BACKEND
+# 2. NGINX & DOCKER COMPOSE CONFIG
+if ($Target -eq "nginx" -or $Target -eq "all") {
+    Print-Header "DONG BO CAU HINH NGINX & DOCKER COMPOSE LEN EC2"
+    Write-Host "[1/3] Dang tai docker-compose.prod.yml va thu muc nginx/ len EC2..." -ForegroundColor Green
+    scp -i "$PemKey" -o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL docker-compose.prod.yml ubuntu@${Ec2Ip}:/home/ubuntu/unisync/docker-compose.prod.yml
+    scp -i "$PemKey" -o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL nginx/nginx.conf ubuntu@${Ec2Ip}:/home/ubuntu/unisync/nginx/nginx.conf
+    scp -i "$PemKey" -o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL nginx/conf.d/app.conf ubuntu@${Ec2Ip}:/home/ubuntu/unisync/nginx/conf.d/app.conf
+
+    Write-Host "[2/3] Dang cap nhat container nginx va kiem tra cu phap..." -ForegroundColor Green
+    Run-SshCommand "sudo docker compose -f docker-compose.prod.yml up -d nginx && sudo docker exec unisync-nginx nginx -t && sudo docker exec unisync-nginx nginx -s reload"
+    Write-Host "[OK] Nginx da duoc cap nhat va reload an toan tren server!" -ForegroundColor Green
+}
+
+# 3. BACKEND
 if ($Target -eq "backend" -or $Target -eq "all") {
     Print-Header "TRIEN KHAI BACKEND (Spring Boot)"
     Write-Host "[1/3] Dang build Docker image cho backend..." -ForegroundColor Green
@@ -50,7 +63,7 @@ if ($Target -eq "backend" -or $Target -eq "all") {
     Write-Host "[OK] Backend da duoc cap nhat thanh cong tren server!" -ForegroundColor Green
 }
 
-# 3. AI ENGINE
+# 4. AI ENGINE
 if ($Target -eq "ai" -or $Target -eq "all") {
     Print-Header "TRIEN KHAI AI ENGINE (FastAPI)"
     Write-Host "[1/3] Dang build Docker image cho AI engine..." -ForegroundColor Green
@@ -64,7 +77,7 @@ if ($Target -eq "ai" -or $Target -eq "all") {
     Write-Host "[OK] AI Engine da duoc cap nhat thanh cong tren server!" -ForegroundColor Green
 }
 
-# 4. ZALO BRIDGE
+# 5. ZALO BRIDGE
 if ($Target -eq "bridge" -or $Target -eq "all") {
     Print-Header "TRIEN KHAI ZALO BRIDGE (Node.js)"
     Write-Host "[1/3] Dang build Docker image cho Zalo Bridge..." -ForegroundColor Green
@@ -83,4 +96,4 @@ Write-Host "Moi dich vu da san sang tren san pham live:" -ForegroundColor Green
 Write-Host "- Web app: https://conflict-v2.vercel.app" -ForegroundColor Cyan
 Write-Host "- Backend API: https://unisync.duckdns.org/api" -ForegroundColor Cyan
 Write-Host "- WebSocket: wss://unisync.duckdns.org/ws" -ForegroundColor Cyan
-Write-Host "- Zalo Bridge: https://unisync.duckdns.org/zalo" -ForegroundColor Cyan
+Write-Host "- Gateway Health: https://unisync.duckdns.org/health" -ForegroundColor Cyan
