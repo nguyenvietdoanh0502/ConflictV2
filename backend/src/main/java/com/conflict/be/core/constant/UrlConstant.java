@@ -29,6 +29,13 @@ public class UrlConstant {
         public static final String HISTORY = "/chat/{friendUserId}/messages";
     }
 
+    public static class E2ee {
+        public static final String KEYS = "/e2ee/keys";
+        public static final String MY_KEY = "/e2ee/keys/me";
+        public static final String MY_KEY_BACKUP = "/e2ee/keys/me/backup";
+        public static final String USER_KEYS = "/e2ee/keys/users/{userId}";
+    }
+
     public static class Subject {
         public static final String BASE = "/subjects";
         public static final String BY_ID = "/subjects/{id}";

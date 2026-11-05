@@ -23,11 +23,13 @@ class RealtimeService {
     this.client = null;
     this.currentAccessToken = null;
     this.messageListeners = new Set();
+    this.errorListeners = new Set();
     this.scheduleListeners = new Set();
     this.notificationListeners = new Set();
     this.statusListeners = new Set();
     this.status = "disconnected"; // "connecting" | "connected" | "disconnected" | "error"
     this.messageSubscription = null;
+    this.errorSubscription = null;
     this.scheduleSubscription = null;
     this.notificationSubscription = null;
   }
@@ -100,6 +102,23 @@ class RealtimeService {
           console.error("Failed to subscribe to /user/queue/messages:", err);
         }
 
+        // Subscribe to STOMP command errors
+        try {
+          this.errorSubscription = this.client.subscribe(
+            "/user/queue/errors",
+            (message) => {
+              try {
+                const parsed = JSON.parse(message.body);
+                this.notifyErrorListeners(parsed);
+              } catch (err) {
+                console.error("Failed to parse incoming WebSocket error:", err);
+              }
+            }
+          );
+        } catch (err) {
+          console.error("Failed to subscribe to /user/queue/errors:", err);
+        }
+
         // Subscribe to real-time Schedule notifications (UniSync Zalo AI PoC)
         try {
           this.scheduleSubscription = this.client.subscribe(
@@ -168,6 +187,15 @@ class RealtimeService {
       this.messageSubscription = null;
     }
 
+    if (this.errorSubscription) {
+      try {
+        this.errorSubscription.unsubscribe();
+      } catch {
+        // ignore
+      }
+      this.errorSubscription = null;
+    }
+
     if (this.scheduleSubscription) {
       try {
         this.scheduleSubscription.unsubscribe();
@@ -222,6 +250,23 @@ class RealtimeService {
         console.error("Error in message listener:", err);
       }
     });
+  }
+
+  notifyErrorListeners(errorPayload) {
+    this.errorListeners.forEach((listener) => {
+      try {
+        listener(errorPayload);
+      } catch (err) {
+        console.error("Error in error listener:", err);
+      }
+    });
+  }
+
+  onError(callback) {
+    this.errorListeners.add(callback);
+    return () => {
+      this.errorListeners.delete(callback);
+    };
   }
 
   notifyScheduleListeners(notification) {

@@ -18,8 +18,16 @@ public class SendMessageRequest {
     @NotNull(message = "MISSING_RECIPIENT_ID")
     private UUID recipientId;
 
-    @Size(max = 2000, message = "MESSAGE_TOO_LONG")
+    @Size(max = 8192, message = "MESSAGE_TOO_LONG")
     private String content;
+
+    private Boolean encrypted;
+
+    private String iv;
+
+    private Integer senderKeyVersion;
+
+    private Integer recipientKeyVersion;
 
     private UUID sharedMaterialId;
 

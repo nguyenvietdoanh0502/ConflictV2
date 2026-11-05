@@ -8,6 +8,7 @@ import com.conflict.be.modules.chat.dto.MessagePageDTO;
 import com.conflict.be.modules.chat.dto.SendMessageRequest;
 import com.conflict.be.modules.chat.entity.ChatMessage;
 import com.conflict.be.modules.chat.repository.ChatMessageRepository;
+import com.conflict.be.modules.e2ee.service.E2eeKeyService;
 import com.conflict.be.modules.friendship.enums.FriendshipStatus;
 import com.conflict.be.modules.friendship.repository.FriendshipRepository;
 import com.conflict.be.modules.material.dto.SharedMaterialPreviewDTO;
@@ -34,12 +35,17 @@ import java.util.*;
 @RequiredArgsConstructor
 public class ChatService {
     private static final int MAX_MESSAGE_LENGTH = 2000;
+    private static final int MAX_CIPHERTEXT_LENGTH = 8192;
+    private static final int MIN_CIPHERTEXT_BYTES = 17; // 1B plaintext + 16B AES-GCM tag
+    private static final int MAX_CIPHERTEXT_BYTES = 6144;
+    private static final int EXPECTED_IV_BYTES = 12;
     private final UserRepository userRepository;
     private final FriendshipRepository friendshipRepository;
     private final ChatMessageRepository chatMessageRepository;
     private final StudyMaterialRepository studyMaterialRepository;
     private final NotificationService notificationService;
     private final SimpMessagingTemplate messagingTemplate;
+    private final E2eeKeyService e2eeKeyService;
 
     private User requireActiveUser(String email) {
         User user = userRepository.findByEmail(email)
@@ -80,6 +86,11 @@ public class ChatService {
         friendshipRepository.findByUsersAndStatusForUpdate(sender.getId(), recipient.getId(), FriendshipStatus.ACCEPTED)
                 .orElseThrow(() -> new AppException(ErrorCode.NOT_FRIENDS));
 
+        boolean encrypted = Boolean.TRUE.equals(request.getEncrypted());
+        if (encrypted) {
+            validateEncryptedPayload(sender, recipient, request);
+        }
+
         StudyMaterialEntity sharedMaterial = null;
         String messageType = "TEXT";
         GameType challengeGameType = null;
@@ -111,13 +122,19 @@ public class ChatService {
             }
         }
 
-        String content = resolveContent(request.getContent(), sharedMaterial, messageType, challengeGameType, challengerScore);
+        String content = encrypted
+                ? request.getContent()
+                : resolveContent(request.getContent(), sharedMaterial, messageType, challengeGameType, challengerScore);
 
         ChatMessage saved = chatMessageRepository.save(
                 ChatMessage.builder()
                         .sender(sender)
                         .recipient(recipient)
                         .content(content)
+                        .encrypted(encrypted)
+                        .encryptionIv(encrypted ? request.getIv() : null)
+                        .senderKeyVersion(encrypted ? request.getSenderKeyVersion() : null)
+                        .recipientKeyVersion(encrypted ? request.getRecipientKeyVersion() : null)
                         .sharedMaterial(sharedMaterial)
                         .messageType(messageType)
                         .challengeGameType(challengeGameType)
@@ -202,11 +219,16 @@ public class ChatService {
                     metadataJson
             );
         } else {
-            String content = saved.getContent();
-            String preview = content.length() > 60 ? content.substring(0, 57) + "..." : content;
+            String preview;
+            if (saved.isEncrypted()) {
+                preview = "Tin nhắn được mã hóa đầu-cuối";
+            } else {
+                String content = saved.getContent();
+                preview = content.length() > 60 ? content.substring(0, 57) + "..." : content;
+            }
             String metadataJson = String.format(
-                    "{\"senderId\":\"%s\",\"senderName\":\"%s\",\"avatarUrl\":\"%s\"}",
-                    sender.getId(), escapeJson(sender.getFullName()), escapeJson(senderAvatar)
+                    "{\"senderId\":\"%s\",\"senderName\":\"%s\",\"avatarUrl\":\"%s\",\"encrypted\":%s}",
+                    sender.getId(), escapeJson(sender.getFullName()), escapeJson(senderAvatar), saved.isEncrypted()
             );
 
             notificationService.createAndSendNotification(
@@ -286,6 +308,53 @@ public class ChatService {
                 .build();
     }
 
+    private void validateEncryptedPayload(User sender, User recipient, SendMessageRequest request) {
+        if (request.getSharedMaterialId() != null) {
+            throw new AppException(ErrorCode.E2EE_INVALID_PAYLOAD);
+        }
+        if (request.getMessageType() != null
+                && !request.getMessageType().isBlank()
+                && !"TEXT".equalsIgnoreCase(request.getMessageType())) {
+            throw new AppException(ErrorCode.E2EE_INVALID_PAYLOAD);
+        }
+        String rawContent = request.getContent();
+        if (rawContent == null || rawContent.isEmpty() || rawContent.length() > MAX_CIPHERTEXT_LENGTH) {
+            throw new AppException(ErrorCode.E2EE_INVALID_PAYLOAD);
+        }
+        if (request.getIv() == null
+                || request.getIv().isBlank()
+                || request.getSenderKeyVersion() == null
+                || request.getRecipientKeyVersion() == null) {
+            throw new AppException(ErrorCode.E2EE_INVALID_PAYLOAD);
+        }
+        try {
+            byte[] ivBytes = Base64.getDecoder().decode(request.getIv());
+            byte[] cipherBytes = Base64.getDecoder().decode(rawContent);
+            if (ivBytes.length != EXPECTED_IV_BYTES
+                    || cipherBytes.length < MIN_CIPHERTEXT_BYTES
+                    || cipherBytes.length > MAX_CIPHERTEXT_BYTES) {
+                throw new AppException(ErrorCode.E2EE_INVALID_PAYLOAD);
+            }
+        } catch (AppException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new AppException(ErrorCode.E2EE_INVALID_PAYLOAD);
+        }
+
+        Optional<Integer> senderActiveVersion = e2eeKeyService.getActiveVersion(sender.getId());
+        if (senderActiveVersion.isEmpty() || !senderActiveVersion.get().equals(request.getSenderKeyVersion())) {
+            throw new AppException(ErrorCode.E2EE_KEY_OUTDATED);
+        }
+
+        Optional<Integer> recipientActiveVersion = e2eeKeyService.getActiveVersion(recipient.getId());
+        if (recipientActiveVersion.isEmpty()) {
+            throw new AppException(ErrorCode.E2EE_RECIPIENT_NO_KEY);
+        }
+        if (!recipientActiveVersion.get().equals(request.getRecipientKeyVersion())) {
+            throw new AppException(ErrorCode.E2EE_KEY_OUTDATED);
+        }
+    }
+
     private ChatMessageDTO mapToDTO(ChatMessage message) {
         SharedMaterialPreviewDTO preview = null;
         StudyMaterialEntity mat = message.getSharedMaterial();
@@ -306,6 +375,10 @@ public class ChatService {
                 .senderId(message.getSender().getId())
                 .recipientId(message.getRecipient().getId())
                 .content(message.getContent())
+                .encrypted(message.isEncrypted())
+                .iv(message.getEncryptionIv())
+                .senderKeyVersion(message.getSenderKeyVersion())
+                .recipientKeyVersion(message.getRecipientKeyVersion())
                 .messageType(message.getMessageType() != null ? message.getMessageType() : "TEXT")
                 .challengeGameType(message.getChallengeGameType())
                 .challengerScore(message.getChallengerScore())

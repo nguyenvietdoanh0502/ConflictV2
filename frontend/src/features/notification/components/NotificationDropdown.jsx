@@ -409,7 +409,9 @@ export default function NotificationDropdown({ onClose }) {
                     </span>
                     <span className="text-[#4F4965] break-words">
                       {notif.type === "NEW_MESSAGE"
-                        ? `đã nhắn: "${notif.content}"`
+                        ? meta.encrypted
+                          ? "đã gửi cho bạn một tin nhắn"
+                          : `đã nhắn: "${notif.content}"`
                         : notif.content}
                     </span>
                   </p>

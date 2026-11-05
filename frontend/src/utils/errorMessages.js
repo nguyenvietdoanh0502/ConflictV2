@@ -73,6 +73,14 @@ export const ERROR_CODE_TRANSLATIONS = {
   CHAT_RECIPIENT_NOT_FOUND: "Không tìm thấy người nhận tin nhắn.",
   CANNOT_MESSAGE_SELF: "Bạn không thể tự gửi tin nhắn cho chính mình.",
   INVALID_PAGINATION: "Tham số phân trang không hợp lệ.",
+  E2EE_INVALID_PUBLIC_KEY: "Khóa công khai không hợp lệ (cần chuẩn ECDH P-256).",
+  E2EE_INVALID_KEY_BACKUP: "Dữ liệu sao lưu khóa mã hóa không hợp lệ.",
+  E2EE_REAUTH_REQUIRED: "Vui lòng nhập mật khẩu đăng nhập để đặt lại khóa mã hóa.",
+  E2EE_PASSWORD_INCORRECT: "Mật khẩu đăng nhập không chính xác.",
+  E2EE_KEY_NOT_FOUND: "Bạn chưa thiết lập khóa mã hóa đầu-cuối.",
+  E2EE_RECIPIENT_NO_KEY: "Người nhận chưa kích hoạt mã hóa đầu-cuối.",
+  E2EE_KEY_OUTDATED: "Khóa mã hóa của cuộc trò chuyện vừa thay đổi, hệ thống đang đồng bộ lại.",
+  E2EE_INVALID_PAYLOAD: "Gói tin mã hóa không hợp lệ.",
 
   // Subject & Timetable
   SUBJECT_NOT_FOUND: "Không tìm thấy môn học.",

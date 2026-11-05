@@ -5,6 +5,8 @@ import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { useLogoutMutation } from "../../auth/authApi";
 import { clearCredentials } from "../../auth/authSlice";
+import { e2eeSession } from "../../e2ee/e2eeSession";
+import { resetE2eeState } from "../../e2ee/e2eeSlice";
 
 function getLogoutErrorMessage(error) {
   return getLocalizedErrorMessage(error, "Đăng xuất thất bại. Vui lòng thử lại.");
@@ -90,6 +92,8 @@ export default function LogoutConfirmModal({ isOpen, onClose, onConfirm }) {
 
     try {
       await logout().unwrap();
+      await e2eeSession.wipe();
+      dispatch(resetE2eeState());
       dispatch(clearCredentials());
       onConfirm();
       navigate("/", { replace: true });

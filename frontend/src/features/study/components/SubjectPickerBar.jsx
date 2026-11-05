@@ -1,6 +1,7 @@
 import { getLocalizedErrorMessage } from "../../../utils/errorMessages";
-import React, { useState } from "react";
+import { useState } from "react";
 import { useCreateSubjectMutation } from "../../timetable/services/timetableApi";
+import EditSubjectModal from "../../timetable/components/EditSubjectModal";
 
 export default function SubjectPickerBar({
   subjects = [],
@@ -9,6 +10,8 @@ export default function SubjectPickerBar({
   isLoading = false,
 }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingSubject, setEditingSubject] = useState(null);
+  const selectedSubject = subjects.find((s) => s.id === selectedSubjectId) || null;
   const [createSubject, { isLoading: isCreating }] = useCreateSubjectMutation();
 
   const [form, setForm] = useState({
@@ -77,13 +80,24 @@ export default function SubjectPickerBar({
           </h2>
         </div>
 
-        <button
-          type="button"
-          onClick={handleOpenModal}
-          className="rounded-xl bg-[#FAF9FD] px-3.5 py-1.5 text-xs font-bold text-social-violet hover:bg-social-violet/10 transition-colors"
-        >
-          + Thêm môn học
-        </button>
+        <div className="flex items-center gap-2">
+          {selectedSubject && (
+            <button
+              type="button"
+              onClick={() => setEditingSubject(selectedSubject)}
+              className="rounded-xl border border-[#E5E2EC] bg-white px-3 py-1.5 text-xs font-bold text-[#4F4965] hover:border-social-violet/40 hover:text-social-violet transition-colors"
+            >
+              Sửa môn đang chọn
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={handleOpenModal}
+            className="rounded-xl bg-[#FAF9FD] px-3.5 py-1.5 text-xs font-bold text-social-violet hover:bg-social-violet/10 transition-colors"
+          >
+            + Thêm môn học
+          </button>
+        </div>
       </div>
 
       {isLoading ? (
@@ -153,6 +167,12 @@ export default function SubjectPickerBar({
           })}
         </div>
       )}
+
+      <EditSubjectModal
+        isOpen={Boolean(editingSubject)}
+        subject={editingSubject}
+        onClose={() => setEditingSubject(null)}
+      />
 
       {/* Modal Thêm Môn học Nhanh */}
       {isModalOpen && (

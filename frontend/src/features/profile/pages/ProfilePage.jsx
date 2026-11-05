@@ -3,7 +3,9 @@ import { useSelector } from "react-redux";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { selectCurrentUser } from "../../auth/authSelectors";
 import LogoutConfirmModal from "../components/LogoutConfirmModal";
+import ChangePasswordModal from "../components/ChangePasswordModal";
 import UpdateProfileModal from "../components/UpdateProfileModal";
+import E2eeSecuritySection from "../../e2ee/components/E2eeSecuritySection";
 
 const genderLabels = {
   MALE: "Nam",
@@ -147,6 +149,7 @@ function ProfileDetail({ accent, icon, label, value, wide = false }) {
 
 export default function ProfilePage() {
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
   const [isUpdateProfileModalOpen, setIsUpdateProfileModalOpen] =
     useState(false);
   const user = useSelector(selectCurrentUser);
@@ -168,6 +171,14 @@ export default function ProfilePage() {
 
   const closeUpdateProfileModal = useCallback(() => {
     setIsUpdateProfileModalOpen(false);
+  }, []);
+
+  const openChangePasswordModal = useCallback(() => {
+    setIsChangePasswordModalOpen(true);
+  }, []);
+
+  const closeChangePasswordModal = useCallback(() => {
+    setIsChangePasswordModalOpen(false);
   }, []);
 
   const openLogoutModal = useCallback(() => {
@@ -297,7 +308,28 @@ export default function ProfilePage() {
           </nav>
 
 
-          <div className="border-t border-[#F0ECF7] p-4">
+          <div className="border-t border-[#F0ECF7] p-4 space-y-2.5">
+            <button
+              type="button"
+              onClick={openChangePasswordModal}
+              className="group flex min-h-11 w-full items-center justify-center gap-2 rounded-[16px] border border-[#DCD6F3] bg-[#FAF9FF] px-4 text-sm font-bold text-[#6559B9] transition hover:border-[#B8ADEA] hover:bg-[#F0ECFF] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#7C6EE6]/20"
+              aria-haspopup="dialog"
+            >
+              <svg
+                aria-hidden="true"
+                className="h-4 w-4 transition group-hover:-translate-y-0.5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+              </svg>
+              Đổi mật khẩu
+            </button>
             <button
               type="button"
               onClick={openLogoutModal}
@@ -417,6 +449,8 @@ export default function ProfilePage() {
                   </div>
                 </section>
 
+                <E2eeSecuritySection />
+
                 <section className="rounded-[26px] border border-[#ECE7F5] bg-[#F9F7FF] p-4 sm:p-6">
                   <div className="mb-4 flex flex-wrap items-end justify-between gap-2 sm:mb-5">
                     <div>
@@ -492,6 +526,10 @@ export default function ProfilePage() {
           onClose={closeUpdateProfileModal}
         />
       )}
+      <ChangePasswordModal
+        isOpen={isChangePasswordModalOpen}
+        onClose={closeChangePasswordModal}
+      />
       <LogoutConfirmModal
         isOpen={isLogoutModalOpen}
         onClose={closeLogoutModal}

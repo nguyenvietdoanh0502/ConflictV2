@@ -19,6 +19,10 @@ public class ChatMessageDTO {
     private UUID senderId;
     private UUID recipientId;
     private String content;
+    private boolean encrypted;
+    private String iv;
+    private Integer senderKeyVersion;
+    private Integer recipientKeyVersion;
     private String messageType;
     private GameType challengeGameType;
     private Integer challengerScore;
