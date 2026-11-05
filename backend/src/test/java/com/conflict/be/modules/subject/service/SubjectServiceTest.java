@@ -3,6 +3,9 @@ package com.conflict.be.modules.subject.service;
 import com.conflict.be.core.exception.AppException;
 import com.conflict.be.core.exception.ErrorCode;
 import com.conflict.be.modules.schedule.entity.ScheduleEvent;
+import com.conflict.be.modules.schedule.enums.EventSource;
+import com.conflict.be.modules.schedule.enums.EventStatus;
+import com.conflict.be.modules.schedule.enums.EventType;
 import com.conflict.be.modules.schedule.repository.ScheduleEventRepository;
 import com.conflict.be.modules.subject.dto.SubjectRequest;
 import com.conflict.be.modules.subject.dto.SubjectResponse;
@@ -20,6 +23,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
@@ -153,6 +157,48 @@ class SubjectServiceTest {
         assertEquals(3, events.size());
         assertEquals("Mạng máy tính", events.get(0).getTitle());
         assertEquals("302-A1", events.get(0).getRoom());
+    }
+
+    @Test
+    @DisplayName("Nên cập nhật màu sắc, tên và phòng học mặc định của môn học đồng thời đồng bộ sang các buổi học hiện có")
+    void shouldUpdateSubjectColorAndInfoAndSyncExistingEvents() {
+        when(userRepository.findByEmail(testUser.getEmail())).thenReturn(Optional.of(testUser));
+        when(subjectRepository.findByIdAndUserId(subjectId, userId)).thenReturn(Optional.of(testSubject));
+        when(subjectRepository.existsByUserIdAndNameIgnoreCase(userId, "Lập trình Web nâng cao")).thenReturn(false);
+        when(subjectRepository.save(any(Subject.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        ScheduleEvent existingEvent = ScheduleEvent.builder()
+                .id(UUID.randomUUID())
+                .user(testUser)
+                .subject(testSubject)
+                .title("Lập trình Web")
+                .room("401-A1")
+                .eventType(EventType.REGULAR_CLASS)
+                .source(EventSource.MANUAL)
+                .status(EventStatus.CONFIRMED)
+                .startDatetime(Instant.now())
+                .endDatetime(Instant.now().plusSeconds(3600))
+                .build();
+        when(scheduleEventRepository.findBySubjectId(subjectId)).thenReturn(List.of(existingEvent));
+
+        SubjectRequest request = SubjectRequest.builder()
+                .name("Lập trình Web nâng cao")
+                .code("IT101M")
+                .defaultRoom("502-B2")
+                .colorHex("#DB2777")
+                .dayOfWeek(2)
+                .startTime(LocalTime.of(7, 0))
+                .endTime(LocalTime.of(9, 35))
+                .build();
+
+        SubjectResponse response = subjectService.updateSubject(testUser.getEmail(), subjectId, request);
+
+        assertEquals("Lập trình Web nâng cao", response.getName());
+        assertEquals("#DB2777", response.getColorHex());
+        assertEquals("502-B2", response.getDefaultRoom());
+        assertEquals("Lập trình Web nâng cao", existingEvent.getTitle());
+        assertEquals("502-B2", existingEvent.getRoom());
+        verify(scheduleEventRepository, times(1)).saveAll(any());
     }
 
     @Test

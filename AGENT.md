@@ -33,11 +33,11 @@ UniSync. Tên thư mục/package cũ (`ConflictV2`, `com.conflict.be`, `conflict
 | Hạng mục | Trạng thái | Vị trí |
 | --- | --- | --- |
 | Auth (register + OTP email, login, refresh cookie, logout, forgot/reset/change password, rate limit) | ✅ Xong | `backend/.../modules/auth`, `frontend/src/features/auth` |
-| Profile + avatar Cloudinary | ✅ Xong | `modules/user`, `features/profile` |
+| Profile + avatar Cloudinary + đổi mật khẩu | ✅ Xong (`ProfilePage.jsx`, `ChangePasswordModal.jsx`) | `modules/user`, `modules/auth`, `features/profile` |
 | Kết bạn (PIN), danh sách/lời mời | ✅ Xong (cần thêm tìm theo tên/email) | `modules/friendship`, `features/friend` |
 | Chat 1-1 STOMP, E2EE & Social Sharing | ✅ Xong (Chat 1-1 STOMP, E2EE ECDH P-256 + AES-256-GCM + PIN 8 ký tự, ChatWindow & MessengerDropdown UI, Rich Card chia sẻ đề cương & thách đấu Minigame) | `modules/chat`, `modules/e2ee`, `features/chat`, `features/e2ee` |
 | Online/Offline presence | ❌ Chưa (UI đang hiển thị chấm xanh tĩnh) | — |
-| Môn học / Thời khóa biểu / FullCalendar | ✅ Xong nền tảng & UI lịch tuần (Migrations V8–V10, CRUD môn học & sự kiện, tự sinh buổi học định kỳ, duyệt sự kiện AI; cần bổ sung view Ngày/Tháng/Agenda & UI sửa môn học) | `modules/subject`, `modules/schedule`, `modules/zalo`, `features/timetable` |
+| Môn học / Thời khóa biểu / FullCalendar | ✅ Xong nền tảng & UI lịch tuần (Migrations V8–V10, CRUD + sửa môn học & màu sắc `EditSubjectModal`, tự sinh/đồng bộ buổi học định kỳ, duyệt sự kiện AI; cần bổ sung view Ngày/Tháng/Agenda) | `modules/subject`, `modules/schedule`, `modules/zalo`, `features/timetable` |
 | AI Engine (Python FastAPI + Gemini) | ✅ Xong (Bóc tách tin nhắn văn bản & ảnh TKB Zalo, tách ca A–L / M–Z, 16 tiết học, xử lý PDF/DOCX/TXT 2 giai đoạn, Mock Mode, Auth `X-Internal-Api-Key`, Streamlit Playground) | `ai/` |
 | Zalo Bridge (Node + zca-js) + Demo Simulator | ✅ Xong (Multi-session theo `userId`, QR login, đồng bộ whitelist, đẩy tin nhắn & ảnh về Backend; có `POST /api/v1/zalo/simulate` & `MockZaloSimulator.jsx`) | `zalo-bridge/`, `modules/zalo`, `features/timetable` |
 | Đề cương + Minigame + điểm + Chia sẻ/Thách đấu | ✅ Xong (V11 + V13, AI bóc tách PDF/DOCX/TXT, Smart Cheatsheet + Xem đề cương gốc & PDF preview/download, Speed Quiz, Memory Match, Chia sẻ đề cương & Thách đấu bạn bè, Leaderboard Global/Friends) | `backend/.../modules/material`, `ai/app`, `frontend/.../features/study` |
@@ -317,6 +317,6 @@ POST   /notifications/trigger-today
 
 ## 11. Nợ kỹ thuật còn lại & Hạng mục tiếp theo
 
-- Thời khóa biểu trên Frontend mới bật chế độ xem Tuần (`timeGridWeek`), cần mở thêm Ngày/Tháng/Agenda và form sửa môn học.
+- Thời khóa biểu trên Frontend mới bật chế độ xem Tuần (`timeGridWeek`), cần mở thêm Ngày/Tháng/Agenda.
 - Cần bổ sung tìm kiếm người dùng theo tên/email (`GET /api/v1/users/search?q=`) và trạng thái Online/Offline thực tế qua WebSocket.
 - Cần mở rộng Smart Reminder thêm bảng cấu hình cá nhân (`user_reminder_settings`) và quét nhắc lịch qua Email trước 30 phút / 24h / 2h.

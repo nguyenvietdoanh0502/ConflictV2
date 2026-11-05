@@ -27,7 +27,10 @@ import java.time.ZoneId;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -171,12 +174,18 @@ public class SubjectService {
             throw new AppException(ErrorCode.SUBJECT_ALREADY_EXISTS);
         }
 
+        boolean scheduleChanged = !Objects.equals(subject.getDayOfWeek(), request.getDayOfWeek())
+                || !Objects.equals(subject.getStartTime(), request.getStartTime())
+                || !Objects.equals(subject.getEndTime(), request.getEndTime())
+                || !Objects.equals(subject.getSemesterStartDate(), request.getSemesterStartDate())
+                || !Objects.equals(subject.getSemesterEndDate(), request.getSemesterEndDate());
+
         subject.setName(request.getName().trim());
         subject.setCode(request.getCode() != null ? request.getCode().trim() : null);
         subject.setLecturer(request.getLecturer() != null ? request.getLecturer().trim() : null);
         subject.setDefaultRoom(request.getDefaultRoom() != null ? request.getDefaultRoom().trim() : null);
         if (request.getColorHex() != null && !request.getColorHex().isBlank()) {
-            subject.setColorHex(request.getColorHex());
+            subject.setColorHex(request.getColorHex().trim());
         }
         subject.setDayOfWeek(request.getDayOfWeek());
         subject.setStartTime(request.getStartTime());
@@ -186,8 +195,50 @@ public class SubjectService {
         subject.setSemesterEndDate(request.getSemesterEndDate());
 
         Subject updated = subjectRepository.save(subject);
+        syncScheduleEventsAfterSubjectUpdate(user, updated, scheduleChanged);
         log.info("Updated subject '{}' (ID: {}) for user {}", updated.getName(), updated.getId(), user.getEmail());
         return SubjectResponse.fromEntity(updated);
+    }
+
+    private void syncScheduleEventsAfterSubjectUpdate(User user, Subject updated, boolean scheduleChanged) {
+        List<ScheduleEvent> existingEvents = scheduleEventRepository.findBySubjectId(updated.getId());
+        if (existingEvents == null) {
+            existingEvents = List.of();
+        }
+
+        if (scheduleChanged) {
+            Set<UUID> referencedIds = existingEvents.stream()
+                    .map(ScheduleEvent::getRelatedEvent)
+                    .filter(Objects::nonNull)
+                    .map(ScheduleEvent::getId)
+                    .collect(Collectors.toSet());
+
+            List<ScheduleEvent> removableRegularEvents = existingEvents.stream()
+                    .filter(e -> e.getSource() == EventSource.MANUAL
+                            && e.getEventType() == EventType.REGULAR_CLASS
+                            && !referencedIds.contains(e.getId()))
+                    .toList();
+
+            if (!removableRegularEvents.isEmpty()) {
+                scheduleEventRepository.deleteAll(removableRegularEvents);
+            }
+
+            generateRecurringScheduleEvents(user, updated);
+        } else if (!existingEvents.isEmpty()) {
+            List<ScheduleEvent> toUpdate = new ArrayList<>();
+            for (ScheduleEvent evt : existingEvents) {
+                if (evt.getSource() == EventSource.MANUAL && evt.getEventType() == EventType.REGULAR_CLASS) {
+                    evt.setTitle(updated.getName());
+                    if (evt.getOriginalRoom() == null) {
+                        evt.setRoom(updated.getDefaultRoom());
+                    }
+                    toUpdate.add(evt);
+                }
+            }
+            if (!toUpdate.isEmpty()) {
+                scheduleEventRepository.saveAll(toUpdate);
+            }
+        }
     }
 
     @Transactional

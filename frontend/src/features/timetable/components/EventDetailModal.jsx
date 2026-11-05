@@ -10,24 +10,37 @@ import {
   Trash2,
   X,
   User,
+  Palette,
   AlertCircle
 } from "lucide-react";
 import {
+  useGetSubjectsQuery,
   useConfirmScheduleEventMutation,
   useRejectScheduleEventMutation,
   useDeleteScheduleEventMutation,
 } from "../services/timetableApi";
 import ConfirmDeleteModal from "./ConfirmDeleteModal";
+import EditSubjectModal from "./EditSubjectModal";
 
 export default function EventDetailModal({ event, onClose }) {
   const [confirmEvent, { isLoading: isConfirming }] = useConfirmScheduleEventMutation();
   const [rejectEvent, { isLoading: isRejecting }] = useRejectScheduleEventMutation();
   const [deleteEvent, { isLoading: isDeleting }] = useDeleteScheduleEventMutation();
 
+  const { data: subjects = [] } = useGetSubjectsQuery(undefined, { skip: !event?.subjectId });
+  const [isEditSubjectOpen, setIsEditSubjectOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deleteError, setDeleteError] = useState("");
 
   if (!event) return null;
+
+  const matchedSubject = subjects.find((s) => s.id === event.subjectId) || (event.subjectId ? {
+    id: event.subjectId,
+    name: event.subjectName || event.title,
+    code: event.subjectCode || "",
+    defaultRoom: event.room || "",
+    colorHex: event.subjectColorHex || "#4F46E5",
+  } : null);
 
   const handleConfirm = async () => {
     try {
@@ -184,10 +197,23 @@ export default function EventDetailModal({ event, onClose }) {
                   <div className="mt-3 inline-flex items-center gap-2.5 rounded-2xl border border-slate-200/80 bg-slate-50 px-4 py-2">
                     <span
                       className="w-3.5 h-3.5 rounded-full shrink-0"
-                      style={{ backgroundColor: event.subjectColorHex || "#7C6EE6" }}
+                      style={{ backgroundColor: matchedSubject?.colorHex || event.subjectColorHex || "#7C6EE6" }}
                     />
                     <span className="text-sm sm:text-base font-bold text-slate-800">
-                      {event.subjectName} {event.subjectCode ? `(${event.subjectCode})` : ""}
+                      {matchedSubject?.name || event.subjectName} {(matchedSubject?.code || event.subjectCode) ? `(${matchedSubject?.code || event.subjectCode})` : ""}
+                    </span>
+                    {matchedSubject && (
+                      <button
+                        type="button"
+                        onClick={() => setIsEditSubjectOpen(true)}
+                        className="ml-1 inline-flex items-center gap-1 rounded-xl border border-indigo-200 bg-white px-2.5 py-1 text-xs font-extrabold text-indigo-700 shadow-xs transition hover:bg-indigo-50 cursor-pointer"
+                        title="Chỉnh sửa thông tin và màu sắc môn học"
+                      >
+                        <Palette className="h-3.5 w-3.5" />
+                        <span>Đổi màu / Sửa môn</span>
+                      </button>
+                    )}
+                    <span className="hidden">
                     </span>
                   </div>
                 )}
@@ -393,6 +419,15 @@ export default function EventDetailModal({ event, onClose }) {
           </button>
         </div>
       </div>
+
+      {matchedSubject && (
+        <EditSubjectModal
+          isOpen={isEditSubjectOpen}
+          subject={matchedSubject}
+          onClose={() => setIsEditSubjectOpen(false)}
+          onSaved={() => onClose()}
+        />
+      )}
 
       {/* Confirm Delete Overlay Modal */}
       <ConfirmDeleteModal

@@ -142,7 +142,7 @@ const DISTINCT_SUBJECT_COLORS = [
 ];
 
 const getSubjectColor = (subjectId, subjectName, subjectColorHex) => {
-  if (subjectColorHex && subjectColorHex !== "#6366F1") {
+  if (subjectColorHex) {
     return subjectColorHex;
   }
   const key = (subjectName || subjectId || "Môn học").toString();

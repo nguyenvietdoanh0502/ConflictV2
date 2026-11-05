@@ -5,6 +5,7 @@ import {
   BookOpen,
   Link2,
   Trash2,
+  Pencil,
   X,
   Sparkles,
   Calendar,
@@ -25,6 +26,8 @@ import {
 } from "../services/timetableApi";
 import { useGetBridgeGroupsQuery, useGetBridgeStatusQuery } from "../services/zaloBridgeApi";
 import ConfirmDeleteModal from "./ConfirmDeleteModal";
+import EditSubjectModal from "./EditSubjectModal";
+import { SUBJECT_COLOR_SWATCHES } from "../constants/subjectColors";
 import ZaloGroupSelect from "./ZaloGroupSelect";
 import {
   DEFAULT_MOCK_GROUPS,
@@ -90,6 +93,7 @@ export default function WhitelistManager({ onSelectGroupForSimulator, onNavigate
   const [deleteMapping, { isLoading: isDeletingMapping }] = useDeleteZaloMappingMutation();
 
   const [showAddSubject, setShowAddSubject] = useState(false);
+  const [editingSubject, setEditingSubject] = useState(null);
   const [showAddMapping, setShowAddMapping] = useState(false);
   const [deleteConfirmState, setDeleteConfirmState] = useState(null);
   const [deleteError, setDeleteError] = useState("");
@@ -471,6 +475,22 @@ export default function WhitelistManager({ onSelectGroupForSimulator, onNavigate
 
               <div>
                 <label className="text-xs font-extrabold text-slate-800 block">Màu sắc hiển thị trên TKB</label>
+                <div className="flex flex-wrap items-center gap-1.5 mt-1.5 mb-2">
+                  {SUBJECT_COLOR_SWATCHES.map((swatch) => (
+                    <button
+                      key={swatch.hex}
+                      type="button"
+                      onClick={() => setSubjectForm({ ...subjectForm, colorHex: swatch.hex })}
+                      title={swatch.name}
+                      className={`w-6 h-6 rounded-full transition-transform cursor-pointer ${
+                        subjectForm.colorHex?.toLowerCase() === swatch.hex.toLowerCase()
+                          ? "scale-115 ring-2 ring-slate-900 ring-offset-1"
+                          : "hover:scale-110"
+                      }`}
+                      style={{ backgroundColor: swatch.hex }}
+                    />
+                  ))}
+                </div>
                 <div className="flex items-center gap-3 mt-1.5 p-2 rounded-xl bg-white border border-slate-200">
                   <input
                     type="color"
@@ -776,7 +796,9 @@ export default function WhitelistManager({ onSelectGroupForSimulator, onNavigate
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2.5 flex-wrap">
                         <span
-                          className="w-3.5 h-3.5 rounded-full shrink-0 shadow-sm ring-2 ring-white"
+                          onClick={() => setEditingSubject(subject)}
+                          title="Bấm để đổi màu môn học"
+                          className="w-4 h-4 rounded-full shrink-0 shadow-sm ring-2 ring-white cursor-pointer hover:scale-125 transition-transform"
                           style={{ backgroundColor: subject.colorHex || "#6366F1" }}
                         />
                         <h4 className="text-sm sm:text-base font-black text-slate-900 truncate">
@@ -815,7 +837,16 @@ export default function WhitelistManager({ onSelectGroupForSimulator, onNavigate
                       </div>
                     </div>
 
-                    {/* Action: Delete Subject */}
+                    {/* Action: Edit & Delete Subject */}
+                    <button
+                      type="button"
+                      onClick={() => setEditingSubject(subject)}
+                      className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold text-slate-600 hover:text-indigo-700 hover:bg-indigo-50 rounded-xl transition shrink-0 cursor-pointer"
+                      title={`Chỉnh sửa môn "${subject.name}"`}
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                      <span>Sửa</span>
+                    </button>
                     <button
                       type="button"
                       onClick={() => requestDeleteSubject(subject.id, subject.name)}
@@ -915,6 +946,12 @@ export default function WhitelistManager({ onSelectGroupForSimulator, onNavigate
           </div>
         )}
       </div>
+
+      <EditSubjectModal
+        isOpen={Boolean(editingSubject)}
+        subject={editingSubject}
+        onClose={() => setEditingSubject(null)}
+      />
 
       {/* Confirm Delete Overlay Modal */}
       {deleteConfirmState && (

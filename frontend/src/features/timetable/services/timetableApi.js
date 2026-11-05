@@ -27,6 +27,21 @@ export const timetableApi = baseApi.injectEndpoints({
       ],
     }),
 
+    updateSubject: builder.mutation({
+      query: ({ id, ...body }) => ({
+        url: `/v1/subjects/${id}`,
+        method: "PUT",
+        body,
+      }),
+      invalidatesTags: (result, error, { id }) => [
+        { type: "Subject", id },
+        { type: "Subject", id: "LIST" },
+        { type: "ScheduleEvent", id: "LIST" },
+        { type: "ZaloMapping", id: "LIST" },
+        "Material",
+      ],
+    }),
+
     deleteSubject: builder.mutation({
       query: (id) => ({
         url: `/v1/subjects/${id}`,
@@ -148,6 +163,7 @@ export const timetableApi = baseApi.injectEndpoints({
 export const {
   useGetSubjectsQuery,
   useCreateSubjectMutation,
+  useUpdateSubjectMutation,
   useDeleteSubjectMutation,
   useGetZaloMappingsQuery,
   useCreateZaloMappingMutation,
