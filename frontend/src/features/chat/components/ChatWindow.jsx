@@ -15,6 +15,14 @@ import {
 } from "../../study/services/studyApi";
 import { realtimeService } from "../../../services/realtime";
 import { getLocalizedErrorMessage } from "../../../utils/errorMessages";
+import {
+  useGetUserPublicKeysQuery,
+  useLazyGetUserPublicKeysQuery,
+} from "../../e2ee/e2eeApi";
+import { e2eeSession } from "../../e2ee/e2eeSession";
+import { openE2eeUnlockModal, selectE2eeStatus } from "../../e2ee/e2eeSlice";
+import { useDecryptedMessages } from "../../e2ee/hooks/useDecryptedMessages";
+import E2eeBanner from "../../e2ee/components/E2eeBanner";
 
 function formatMessageTime(isoString) {
   if (!isoString) return "";
@@ -47,6 +55,9 @@ export default function ChatWindow() {
   const isMinimized = useSelector(selectIsChatMinimized);
   const currentUser = useSelector(selectCurrentUser);
   const accessToken = useSelector(selectAccessToken);
+  const e2eeStatus = useSelector(selectE2eeStatus);
+  const [peerHasActiveKey, setPeerHasActiveKey] = useState(false);
+  const pendingRetryTextRef = useRef(null);
 
   // Messages management
   const [olderMessages, setOlderMessages] = useState([]);
@@ -77,6 +88,12 @@ export default function ChatWindow() {
 
   const [getOlderMessages] = useLazyGetChatHistoryQuery();
 
+  const { data: peerPublicKeys = [], isLoading: isLoadingPeerKeys } =
+    useGetUserPublicKeysQuery(activeFriend?.id, {
+      skip: !activeFriend?.id,
+    });
+  const [refetchPeerKeys] = useLazyGetUserPublicKeysQuery();
+
   const { data: myMaterials = [], isLoading: isLoadingMyMaterials } =
     useGetMaterialsQuery(null, { skip: !isMaterialPickerOpen });
   const [shareMaterial, { isLoading: isSharingMaterial }] =
@@ -88,7 +105,7 @@ export default function ChatWindow() {
   );
 
   // Unified deduplicated messages list
-  const messages = useMemo(() => {
+  const rawMessages = useMemo(() => {
     const initialItems = initialHistory?.items || [];
     const combined = [...olderMessages, ...initialItems, ...realtimeMessages];
     const seen = new Set();
@@ -101,6 +118,83 @@ export default function ChatWindow() {
     }
     return deduped;
   }, [olderMessages, initialHistory?.items, realtimeMessages]);
+
+  const messages = useDecryptedMessages(rawMessages, currentUser?.id);
+
+  // Sync peer public keys into E2EE session
+  useEffect(() => {
+    if (!activeFriend?.id) {
+      return;
+    }
+    let cancelled = false;
+    e2eeSession
+      .ingestPeerPublicKeys(activeFriend.id, peerPublicKeys)
+      .then((activeVer) => {
+        if (!cancelled) {
+          setPeerHasActiveKey(Boolean(activeVer));
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [activeFriend?.id, peerPublicKeys]);
+
+  // Listen to STOMP error frames (e.g., E2EE_KEY_OUTDATED, E2EE_RECIPIENT_NO_KEY)
+  useEffect(() => {
+    if (!activeFriend?.id || !currentUser?.id) return;
+
+    const unsubError = realtimeService.onError(async (errPayload) => {
+      const code = errPayload?.errorCode;
+      if (
+        code === "E2EE_KEY_OUTDATED" ||
+        code === "E2EE_RECIPIENT_NO_KEY"
+      ) {
+        try {
+          const freshKeys = await refetchPeerKeys(activeFriend.id, false).unwrap();
+          const activeVer = await e2eeSession.ingestPeerPublicKeys(
+            activeFriend.id,
+            freshKeys
+          );
+          setPeerHasActiveKey(Boolean(activeVer));
+
+          const retryText = pendingRetryTextRef.current;
+          pendingRetryTextRef.current = null;
+          if (retryText) {
+            if (activeVer && e2eeStatus === "ready") {
+              const payload = await e2eeSession.encryptForPeer(
+                currentUser.id,
+                activeFriend.id,
+                retryText
+              );
+              if (payload) {
+                realtimeService.sendMessage(activeFriend.id, payload.content, {
+                  encrypted: true,
+                  iv: payload.iv,
+                  senderKeyVersion: payload.senderKeyVersion,
+                  recipientKeyVersion: payload.recipientKeyVersion,
+                });
+                return;
+              }
+            }
+            realtimeService.sendMessage(activeFriend.id, retryText);
+          }
+        } catch (err) {
+          setSendError(
+            getLocalizedErrorMessage(
+              err,
+              "Không thể đồng bộ khóa mã hóa mới. Vui lòng thử lại."
+            )
+          );
+        }
+      } else if (code) {
+        setSendError(
+          getLocalizedErrorMessage(errPayload, "Không thể gửi tin nhắn.")
+        );
+      }
+    });
+
+    return unsubError;
+  }, [activeFriend?.id, currentUser?.id, e2eeStatus, refetchPeerKeys]);
 
   const hasMore = hasMoreState !== null ? hasMoreState : Boolean(initialHistory?.hasMore);
 
@@ -124,6 +218,23 @@ export default function ChatWindow() {
         (newMsg.senderId === currentUser?.id && newMsg.recipientId === activeFriend.id);
 
       if (isCurrentThread) {
+        const peerVerInMsg =
+          newMsg.senderId === activeFriend.id
+            ? newMsg.senderKeyVersion
+            : newMsg.recipientKeyVersion;
+        if (
+          newMsg.encrypted &&
+          (peerVerInMsg !== e2eeSession.getPeerActiveVersion(activeFriend.id) ||
+            !e2eeSession.hasPeerKeyVersion(activeFriend.id, peerVerInMsg))
+        ) {
+          refetchPeerKeys(activeFriend.id, false)
+            .unwrap()
+            .then((freshKeys) =>
+              e2eeSession.ingestPeerPublicKeys(activeFriend.id, freshKeys)
+            )
+            .then((activeVer) => setPeerHasActiveKey(Boolean(activeVer)))
+            .catch(() => {});
+        }
         setRealtimeMessages((prev) => {
           if (prev.some((m) => m.id === newMsg.id)) {
             return prev;
@@ -134,7 +245,7 @@ export default function ChatWindow() {
     });
 
     return unsubMessages;
-  }, [activeFriend?.id, currentUser?.id]);
+  }, [activeFriend?.id, currentUser?.id, refetchPeerKeys]);
 
   // Scroll to bottom helper
   const scrollToBottom = useCallback((behavior = "smooth") => {
@@ -184,7 +295,7 @@ export default function ChatWindow() {
   };
 
   // Send message
-  const handleSend = () => {
+  const handleSend = async () => {
     const trimmed = inputText.trim();
     if (!trimmed || !activeFriend?.id) return;
 
@@ -195,7 +306,32 @@ export default function ChatWindow() {
 
     try {
       setSendError("");
-      realtimeService.sendMessage(activeFriend.id, trimmed);
+      if (e2eeStatus === "locked") {
+        dispatch(openE2eeUnlockModal("unlock"));
+        setSendError("Vui lòng nhập mã PIN 8 ký tự để mở khóa trước khi gửi tin nhắn.");
+        return;
+      }
+
+      if (e2eeStatus === "ready" && peerHasActiveKey && currentUser?.id) {
+        const encryptedPayload = await e2eeSession.encryptForPeer(
+          currentUser.id,
+          activeFriend.id,
+          trimmed
+        );
+        if (encryptedPayload) {
+          pendingRetryTextRef.current = trimmed;
+          realtimeService.sendMessage(activeFriend.id, encryptedPayload.content, {
+            encrypted: true,
+            iv: encryptedPayload.iv,
+            senderKeyVersion: encryptedPayload.senderKeyVersion,
+            recipientKeyVersion: encryptedPayload.recipientKeyVersion,
+          });
+        } else {
+          realtimeService.sendMessage(activeFriend.id, trimmed);
+        }
+      } else {
+        realtimeService.sendMessage(activeFriend.id, trimmed);
+      }
       setInputText("");
       if (textareaRef.current) {
         textareaRef.current.style.height = "36px";
@@ -383,6 +519,11 @@ export default function ChatWindow() {
             </div>
           )}
 
+          <E2eeBanner
+            peerHasActiveKey={peerHasActiveKey}
+            isLoadingPeerKeys={isLoadingPeerKeys}
+          />
+
           {/* Message List */}
           <div
             ref={messagesContainerRef}
@@ -491,11 +632,16 @@ export default function ChatWindow() {
                                 : "rounded-2xl rounded-tl-sm bg-white text-social-ink border border-[#ECE8F5]"
                             }`}
                             title={formattedTime}
+                            onClick={() => {
+                              if (msg.cryptoState === "locked") {
+                                dispatch(openE2eeUnlockModal("unlock"));
+                              }
+                            }}
                           >
                             <p className="whitespace-pre-wrap">
                               {isChallenge || isShareMat
                                 ? msg.content.replace(/^(?:⚔️|📚|🎯|⚡|🃏)\s*/u, "")
-                                : msg.content}
+                                : msg.displayContent ?? msg.content}
                             </p>
                           </div>
                         )}

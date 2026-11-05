@@ -243,7 +243,19 @@ public enum ErrorCode {
     // NOTIFICATION ERRORS
     // ==========================================
     NOTIFICATION_NOT_FOUND("NOTIFICATION_NOT_FOUND", "Notification was not found", 404),
-    NOTIFICATION_FORBIDDEN("NOTIFICATION_FORBIDDEN", "You do not have permission to access this notification", 403);
+    NOTIFICATION_FORBIDDEN("NOTIFICATION_FORBIDDEN", "You do not have permission to access this notification", 403),
+
+    // ==========================================
+    // E2EE CHAT ERRORS
+    // ==========================================
+    E2EE_INVALID_PUBLIC_KEY("E2EE_INVALID_PUBLIC_KEY", "Public key must be a valid P-256 SPKI key", 400),
+    E2EE_INVALID_KEY_BACKUP("E2EE_INVALID_KEY_BACKUP", "Encrypted key backup parameters are invalid", 400),
+    E2EE_REAUTH_REQUIRED("E2EE_REAUTH_REQUIRED", "Current account password is required to reset E2EE keys", 400),
+    E2EE_PASSWORD_INCORRECT("E2EE_PASSWORD_INCORRECT", "Current account password is incorrect", 400),
+    E2EE_KEY_NOT_FOUND("E2EE_KEY_NOT_FOUND", "E2EE key has not been configured", 404),
+    E2EE_RECIPIENT_NO_KEY("E2EE_RECIPIENT_NO_KEY", "Recipient has not enabled E2EE", 409),
+    E2EE_KEY_OUTDATED("E2EE_KEY_OUTDATED", "E2EE key version is outdated, please refresh keys", 409),
+    E2EE_INVALID_PAYLOAD("E2EE_INVALID_PAYLOAD", "Invalid encrypted message payload", 400);
 
     private final String code;
     private final String message;

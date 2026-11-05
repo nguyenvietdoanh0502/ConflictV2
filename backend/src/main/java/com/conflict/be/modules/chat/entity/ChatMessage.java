@@ -29,8 +29,21 @@ public class ChatMessage {
     @JoinColumn(name = "recipient_id", nullable = false, updatable = false)
     private User recipient;
 
-    @Column(nullable = false, length = 2000, updatable = false)
+    @Column(nullable = false, length = 8192, updatable = false)
     private String content;
+
+    @Builder.Default
+    @Column(name = "is_encrypted", nullable = false, updatable = false)
+    private boolean encrypted = false;
+
+    @Column(name = "encryption_iv", length = 32, updatable = false)
+    private String encryptionIv;
+
+    @Column(name = "sender_key_version", updatable = false)
+    private Integer senderKeyVersion;
+
+    @Column(name = "recipient_key_version", updatable = false)
+    private Integer recipientKeyVersion;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "shared_material_id", updatable = false)

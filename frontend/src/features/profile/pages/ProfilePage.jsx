@@ -4,6 +4,7 @@ import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { selectCurrentUser } from "../../auth/authSelectors";
 import LogoutConfirmModal from "../components/LogoutConfirmModal";
 import UpdateProfileModal from "../components/UpdateProfileModal";
+import E2eeSecuritySection from "../../e2ee/components/E2eeSecuritySection";
 
 const genderLabels = {
   MALE: "Nam",
@@ -416,6 +417,8 @@ export default function ProfilePage() {
                     </button>
                   </div>
                 </section>
+
+                <E2eeSecuritySection />
 
                 <section className="rounded-[26px] border border-[#ECE7F5] bg-[#F9F7FF] p-4 sm:p-6">
                   <div className="mb-4 flex flex-wrap items-end justify-between gap-2 sm:mb-5">

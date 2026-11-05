@@ -2,6 +2,7 @@ import { Outlet } from "react-router-dom";
 import Header from "./Header";
 import Footer from "./Footer";
 import RealtimeChatManager from "../features/chat/components/RealtimeChatManager";
+import E2eeInitializer from "../features/e2ee/components/E2eeInitializer";
 
 export default function MainLayout() {
   return (
@@ -17,6 +18,7 @@ export default function MainLayout() {
       <Footer />
 
       <RealtimeChatManager />
+      <E2eeInitializer />
     </div>
   );
 }

@@ -35,7 +35,7 @@ UniSync. Tên thư mục/package cũ (`ConflictV2`, `com.conflict.be`, `conflict
 | Auth (register + OTP email, login, refresh cookie, logout, forgot/reset/change password, rate limit) | ✅ Xong | `backend/.../modules/auth`, `frontend/src/features/auth` |
 | Profile + avatar Cloudinary | ✅ Xong | `modules/user`, `features/profile` |
 | Kết bạn (PIN), danh sách/lời mời | ✅ Xong (cần thêm tìm theo tên/email) | `modules/friendship`, `features/friend` |
-| Chat 1-1 STOMP & Social Sharing | ✅ Xong (Chat 1-1 STOMP, ChatWindow & MessengerDropdown UI, Rich Card chia sẻ đề cương & thách đấu Minigame) | `modules/chat`, `features/chat` |
+| Chat 1-1 STOMP, E2EE & Social Sharing | ✅ Xong (Chat 1-1 STOMP, E2EE ECDH P-256 + AES-256-GCM + PIN 8 ký tự, ChatWindow & MessengerDropdown UI, Rich Card chia sẻ đề cương & thách đấu Minigame) | `modules/chat`, `modules/e2ee`, `features/chat`, `features/e2ee` |
 | Online/Offline presence | ❌ Chưa (UI đang hiển thị chấm xanh tĩnh) | — |
 | Môn học / Thời khóa biểu / FullCalendar | ✅ Xong nền tảng & UI lịch tuần (Migrations V8–V10, CRUD môn học & sự kiện, tự sinh buổi học định kỳ, duyệt sự kiện AI; cần bổ sung view Ngày/Tháng/Agenda & UI sửa môn học) | `modules/subject`, `modules/schedule`, `modules/zalo`, `features/timetable` |
 | AI Engine (Python FastAPI + Gemini) | ✅ Xong (Bóc tách tin nhắn văn bản & ảnh TKB Zalo, tách ca A–L / M–Z, 16 tiết học, xử lý PDF/DOCX/TXT 2 giai đoạn, Mock Mode, Auth `X-Internal-Api-Key`, Streamlit Playground) | `ai/` |
@@ -215,6 +215,9 @@ GET    /friends/requests/incoming | /friends/requests/outgoing
 PATCH  /friends/requests/{requestId}/accept
 DELETE /friends/requests/{requestId}
 GET    /chat/{friendUserId}/messages?page&size
+GET    /e2ee/keys/me | /e2ee/keys/users/{userId}
+POST   /e2ee/keys
+PUT    /e2ee/keys/me/backup
 
 # Subjects & Schedule
 GET|POST       /subjects
@@ -256,7 +259,7 @@ POST   /notifications/trigger-today
 
 - Endpoint `/ws` (WebSocket thuần) và `/ws-sockjs` (SockJS fallback). Header `Authorization: Bearer <accessToken>` gửi trong frame CONNECT.
 - Prefix: app `/app`, user `/user`, broker `/queue`.
-- **Hiện có:** SEND `/app/chat.send` `{recipientId, content, sharedMaterialId?, messageType?, challengeGameType?, challengerScore?, challengerTimeSeconds?}`. SUBSCRIBE `/user/queue/messages`, `/user/queue/errors`, `/user/queue/schedule`, `/user/queue/notifications`.
+- **Hiện có:** SEND `/app/chat.send` `{recipientId, content, encrypted?, iv?, senderKeyVersion?, recipientKeyVersion?, sharedMaterialId?, messageType?, challengeGameType?, challengerScore?, challengerTimeSeconds?}`. SUBSCRIBE `/user/queue/messages`, `/user/queue/errors`, `/user/queue/schedule`, `/user/queue/notifications`.
 - `WebSocketAuthChannelInterceptor` **whitelist cứng** các destination và xác thực access token (`isAccessTokenValid`).
 
 ### 8.3 AI Engine (nội bộ, port 8000)
@@ -278,7 +281,7 @@ POST   /notifications/trigger-today
 
 ---
 
-## 9. Mô hình dữ liệu (Flyway V1–V13)
+## 9. Mô hình dữ liệu (Flyway V1–V14)
 
 - **V1–V7 (Cốt lõi & Mạng xã hội):**
   - `users`: UUID, email, `password_hash`, `full_name`, avatar, `pin_code`, `status`, timestamps.
@@ -296,6 +299,9 @@ POST   /notifications/trigger-today
   - `chat_messages`: mở rộng thêm `shared_material_id`, `message_type`, `metadata` cho thẻ chia sẻ đề cương & thách đấu.
 - **V12 (Thông báo):**
   - `notifications`: thông báo đa loại (`SCHEDULE_NEW`, `DAILY_SUMMARY`, `FRIEND_REQUEST`, `MATERIAL_SHARED`, `MINIGAME_CHALLENGE`, ...).
+- **V14 (Mã hóa đầu-cuối Chat E2EE):**
+  - `user_e2ee_keys`: `user_id`, `key_version`, `public_key` (ECDH P-256 SPKI), `encrypted_private_key`, `kdf_salt`, `kdf_iterations`, `wrap_iv`, `is_active`.
+  - `chat_messages`: mở rộng `content` lên 8192 ký tự, thêm `is_encrypted`, `encryption_iv`, `sender_key_version`, `recipient_key_version`.
 
 ---
 
