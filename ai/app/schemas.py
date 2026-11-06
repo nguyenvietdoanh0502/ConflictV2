@@ -1,6 +1,8 @@
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from typing import List, Literal, Optional
 from pydantic import BaseModel, Field, model_validator
+
+VN_TZ = timezone(timedelta(hours=7))
 
 EventTypeLiteral = Literal[
     "REGULAR_CLASS",
@@ -10,6 +12,26 @@ EventTypeLiteral = Literal[
     "DEADLINE",
     "ROOM_CHANGE"
 ]
+
+
+def _parse_and_normalize_vn_iso(raw_str: str, fallback_time: str = "07:00:00") -> tuple[datetime, str]:
+    s = (raw_str or "").strip()
+    if len(s) == 10 and s[4] == "-" and s[7] == "-":
+        s = f"{s}T{fallback_time}+07:00"
+    elif " " in s and "T" not in s:
+        s = s.replace(" ", "T", 1)
+
+    if s.endswith(("Z", "z")):
+        s = s[:-1] + "+00:00"
+
+    dt = datetime.fromisoformat(s)
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=VN_TZ)
+    else:
+        dt = dt.astimezone(VN_TZ)
+
+    normalized = dt.strftime("%Y-%m-%dT%H:%M:%S+07:00")
+    return dt, normalized
 
 
 class DetectedEventItem(BaseModel):
@@ -41,14 +63,25 @@ class DetectedEventItem(BaseModel):
     @model_validator(mode="after")
     def validate_datetimes(self):
         try:
-            start_dt = datetime.fromisoformat(self.start_datetime)
-            end_dt = datetime.fromisoformat(self.end_datetime)
-            if start_dt > end_dt:
-                raise ValueError(f"start_datetime ({self.start_datetime}) không được lớn hơn end_datetime ({self.end_datetime})")
-        except Exception as e:
-            # Nếu parsing ISO format lỗi, bỏ qua khi Pydantic đang dùng để validate schema cho Gemini
-            if isinstance(e, ValueError) and "không được lớn hơn" in str(e):
-                raise e
+            default_start_time = "23:59:00" if self.event_type == "DEADLINE" else "07:00:00"
+            default_end_time = "23:59:00" if self.event_type == "DEADLINE" else "09:35:00"
+
+            start_dt, norm_start = _parse_and_normalize_vn_iso(self.start_datetime, default_start_time)
+            self.start_datetime = norm_start
+
+            if not self.end_datetime or not self.end_datetime.strip():
+                end_dt = start_dt if self.event_type == "DEADLINE" else (start_dt + timedelta(hours=2, minutes=35))
+                self.end_datetime = end_dt.strftime("%Y-%m-%dT%H:%M:%S+07:00")
+            else:
+                end_dt, norm_end = _parse_and_normalize_vn_iso(self.end_datetime, default_end_time)
+                if start_dt > end_dt:
+                    end_dt = start_dt if self.event_type == "DEADLINE" else (start_dt + timedelta(hours=2, minutes=35))
+                    self.end_datetime = end_dt.strftime("%Y-%m-%dT%H:%M:%S+07:00")
+                else:
+                    self.end_datetime = norm_end
+        except Exception:
+            # Nếu parsing ISO format lỗi khi Pydantic tạo schema hoặc dữ liệu thô chưa chuẩn, giữ nguyên để tầng sau xử lý
+            pass
         return self
 
 

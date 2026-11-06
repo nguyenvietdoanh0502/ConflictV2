@@ -446,7 +446,7 @@ export class ZaloUserClient {
     };
 
     console.log(`[ZaloBridge][User:${this.userId}] Forwarding to Backend: ${config.backendUrl} (hasImage: ${Boolean(imageBase64 || imageUrl)})`);
-    const response = await axios.post(config.backendUrl, payload, { headers, timeout: 30000 });
+    const response = await axios.post(config.backendUrl, payload, { headers, timeout: 120000 });
     console.log(`[ZaloBridge][User:${this.userId}] Backend responded with status: ${response.status}`);
     return response.data;
   }

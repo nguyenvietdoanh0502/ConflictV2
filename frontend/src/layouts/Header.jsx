@@ -171,6 +171,7 @@ export default function Header() {
 
   const [isMessengerOpen, setIsMessengerOpen] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const [failedAvatarUrl, setFailedAvatarUrl] = useState(null);
   const messengerRef = useRef(null);
   const notificationRef = useRef(null);
   const location = useLocation();
@@ -355,10 +356,11 @@ export default function Header() {
                 aria-label={`Mở hồ sơ của ${displayName}`}
                 title={displayName}
               >
-                {avatarUrl ? (
+                {avatarUrl && failedAvatarUrl !== avatarUrl ? (
                   <img
                     src={avatarUrl}
                     alt=""
+                    onError={() => setFailedAvatarUrl(avatarUrl)}
                     className="h-10 w-10 rounded-full object-cover ring-2 ring-[#E8E4F7]"
                   />
                 ) : (

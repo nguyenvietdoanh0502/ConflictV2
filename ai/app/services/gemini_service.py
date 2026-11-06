@@ -93,40 +93,41 @@ def enforce_single_shift(events: list[DetectedEventItem], student_name: Optional
     ca1_indices = [i for i, e in enumerate(events) if re.search(r'\b(ca\s*1|kíp\s*1|nhóm\s*1|đợt\s*1)\b', (e.title + " " + (e.note or "")).lower())]
     ca2_indices = [i for i, e in enumerate(events) if re.search(r'\b(ca\s*2|kíp\s*2|nhóm\s*2|đợt\s*2)\b', (e.title + " " + (e.note or "")).lower())]
 
-    if ca1_indices and ca2_indices:
-        indices_to_remove = set(ca2_indices if target_shift == 1 else ca1_indices)
-        filtered = [e for i, e in enumerate(events) if i not in indices_to_remove]
-        if filtered:
-            return filtered
-
-    # 2. Gom nhóm theo ngày học: nếu 2 dòng lịch học chung 1 ngày (khác tiết) -> đó là 2 ca học!
-    events_by_date = defaultdict(list)
-    for i, e in enumerate(events):
-        date_str = _get_vn_date_str(e.start_datetime)
-        events_by_date[date_str].append((i, e))
-
     indices_to_drop = set()
-    for date_str, date_events in events_by_date.items():
-        if len(date_events) >= 2:
+    if ca1_indices and ca2_indices:
+        indices_to_drop.update(ca2_indices if target_shift == 1 else ca1_indices)
+
+    remaining_events = [(i, e) for i, e in enumerate(events) if i not in indices_to_drop]
+
+    # 2. Gom nhóm theo ngày học và loại buổi học (chỉ xét REGULAR_CLASS / MAKEUP_CLASS):
+    # Tuyệt đối không xóa nhầm CANCELLED_CLASS, ROOM_CHANGE, EXAM, DEADLINE nếu diễn ra cùng ngày!
+    shift_candidate_types = {"REGULAR_CLASS", "MAKEUP_CLASS"}
+    events_by_date_and_type = defaultdict(list)
+    for i, e in remaining_events:
+        if e.event_type in shift_candidate_types:
+            date_str = _get_vn_date_str(e.start_datetime)
+            events_by_date_and_type[(date_str, e.event_type)].append((i, e))
+
+    for (_date_str, _etype), date_events in events_by_date_and_type.items():
+        if len(date_events) == 2:
             # Sắp xếp theo start_datetime tăng dần
             sorted_events = sorted(date_events, key=lambda x: x[1].start_datetime)
             first_start = sorted_events[0][1].start_datetime
-            has_different_periods = any(ev[1].start_datetime != first_start for ev in sorted_events[1:])
-            if has_different_periods:
+            second_start = sorted_events[1][1].start_datetime
+            if first_start != second_start:
                 shift1_idx = sorted_events[0][0]
                 shift2_idx = sorted_events[1][0]
                 if target_shift == 1:
-                    # Sinh viên A-L: chỉ lấy Ca 1 (dòng có tiết sớm hơn)
-                    for idx, _ in sorted_events[1:]:
-                        indices_to_drop.add(idx)
+                    # Sinh viên A-L: chỉ lấy Ca 1 (dòng có tiết sớm hơn), bỏ Ca 2
+                    indices_to_drop.add(shift2_idx)
                 else:
-                    # Sinh viên M-Z: chỉ lấy Ca 2 (dòng có tiết muộn hơn)
+                    # Sinh viên M-Z: chỉ lấy Ca 2 (dòng có tiết muộn hơn), bỏ Ca 1
                     indices_to_drop.add(shift1_idx)
-                    for idx, _ in sorted_events[2:]:
-                        indices_to_drop.add(idx)
 
     if indices_to_drop:
-        return [e for i, e in enumerate(events) if i not in indices_to_drop]
+        filtered = [e for i, e in enumerate(events) if i not in indices_to_drop]
+        if filtered:
+            return filtered
 
     return events
 
@@ -192,6 +193,18 @@ class GeminiService:
                 logger.info(f"Đã nạp ảnh đính kèm (size: {len(img_bytes)} bytes, mime: {mime}) vào prompt Gemini")
             except Exception as b64_err:
                 logger.warning(f"Không thể giải mã image_base64: {b64_err}")
+        elif request.image_url:
+            try:
+                import httpx
+                async with httpx.AsyncClient(timeout=15.0, follow_redirects=True) as http_client:
+                    img_resp = await http_client.get(request.image_url)
+                    if img_resp.status_code == 200 and img_resp.content:
+                        ct = img_resp.headers.get("content-type", "")
+                        mime = ct.split(";")[0].strip() if ct.startswith("image/") else (request.image_mime_type or "image/jpeg")
+                        contents.append(types.Part.from_bytes(data=img_resp.content, mime_type=mime))
+                        logger.info(f"Đã tải ảnh từ image_url (size: {len(img_resp.content)} bytes, mime: {mime}) vào prompt Gemini")
+            except Exception as url_err:
+                logger.warning(f"Không thể tải ảnh từ image_url: {url_err}")
 
         contents.append(user_prompt)
 
@@ -200,16 +213,22 @@ class GeminiService:
             response_mime_type="application/json",
             response_schema=AnalyzeMessageResponse,
             temperature=0.1,
+            max_output_tokens=8192,
         )
+
+        timeout_sec = max(30.0, settings.gemini_timeout_ms / 1000.0)
 
         # Thử gọi API (tối đa 2 lần nếu gặp sự cố mạng/quá tải)
         last_exception = None
         for attempt in range(1, 3):
             try:
-                response = await self._client.aio.models.generate_content(
-                    model=settings.gemini_model,
-                    contents=contents,
-                    config=config,
+                response = await asyncio.wait_for(
+                    self._client.aio.models.generate_content(
+                        model=settings.gemini_model,
+                        contents=contents,
+                        config=config,
+                    ),
+                    timeout=timeout_sec,
                 )
 
                 if not response.text:
@@ -515,6 +534,7 @@ class GeminiService:
             temperature=0.2,
         )
 
+        timeout_sec = max(60.0, settings.gemini_timeout_ms / 1000.0)
         last_exception = None
         for attempt in range(1, 3):
             try:
@@ -525,7 +545,7 @@ class GeminiService:
                         contents=[user_prompt],
                         config=config,
                     ),
-                    timeout=60.0
+                    timeout=timeout_sec
                 )
 
                 if response and response.text:
@@ -570,6 +590,7 @@ class GeminiService:
             temperature=0.2,
         )
 
+        timeout_sec = max(60.0, settings.gemini_timeout_ms / 1000.0)
         last_exception = None
         for attempt in range(1, 3):
             try:
@@ -580,7 +601,7 @@ class GeminiService:
                         contents=[user_prompt],
                         config=config,
                     ),
-                    timeout=60.0
+                    timeout=timeout_sec
                 )
 
                 if response and response.text:

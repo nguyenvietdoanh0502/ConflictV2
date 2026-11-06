@@ -65,7 +65,7 @@ UniSync. Tên thư mục/package cũ (`ConflictV2`, `com.conflict.be`, `conflict
               v                                          v
 +------- AI ENGINE (ai/) --------+          +------- ZALO BRIDGE (zalo-bridge/) -------+
 | FastAPI + google-genai         |          | Node.js + Express + zca-js               |
-| gemini-2.5-flash, Pydantic v2  |          | Multi-user session, QR login, groups,    |
+| gemini-3.5-flash-lite, Pydantic|          | Multi-user session, QR login, groups,    |
 | PyMuPDF, python-docx           |          | whitelist filter, POST message -> BE     |
 +--------------------------------+          +------------------------------------------+
 ```
@@ -132,7 +132,7 @@ Không chỉnh sửa: `node_modules/`, `target/`, `dist/`, `.venv/`, `.idea/`,
 | --- | --- | --- |
 | Backend | Java **17**, Spring Boot **3.5.15**, Security + JJWT 0.11.5, Data JPA, Flyway, WebSocket (STOMP + SockJS), Mail (`@EnableAsync`), Validation, Redis, Springdoc, Lombok, Cloudinary | Không dùng cú pháp chỉ có ở Java 21. DTO theo phong cách Lombok/record xung quanh |
 | Frontend | React 19, Vite 8, React Router 7, Redux Toolkit + **RTK Query** (lớp API duy nhất), Tailwind 3, FullCalendar 6, `@stomp/stompjs` + `sockjs-client`, `canvas-confetti`, `katex`, `lucide-react` | JavaScript/JSX (không TS). Giữ state server trong RTK Query |
-| AI Engine | Python 3.11+, FastAPI, Uvicorn, Pydantic v2, `google-genai`, PyMuPDF (`fitz`), `python-docx`, `httpx`, `streamlit`, `pytest` | Model chuẩn `gemini-2.5-flash`, `temperature=0.2`, `response_schema` bằng Pydantic |
+| AI Engine | Python 3.11+, FastAPI, Uvicorn, Pydantic v2, `google-genai`, PyMuPDF (`fitz`), `python-docx`, `httpx`, `streamlit`, `pytest` | Model chuẩn `gemini-3.5-flash-lite`, `GEMINI_TIMEOUT_MS=90000`, `temperature=0.2`, `response_schema` bằng Pydantic |
 | Zalo Bridge | Node.js 20+, Express, `zca-js` | Quản lý phiên theo `userId`, lưu session tại `data/sessions` |
 | Data | PostgreSQL 15 (JSONB cho dữ liệu game, BYTEA cho file đề cương gốc), Redis 7 | Flyway (`V1`..`V13`) là nguồn sự thật của schema |
 
@@ -183,7 +183,7 @@ INTERNAL_API_KEY, AI_TIMEOUT_SECONDS=120
 VITE_API_URL=http://localhost:8080/api      (có hậu tố /api; endpoint FE bắt đầu bằng /v1)
 VITE_WS_URL=ws://localhost:8080/ws
 # ai
-GEMINI_API_KEY, GEMINI_MODEL=gemini-2.5-flash, AI_MODE=live|mock, INTERNAL_API_KEY
+GEMINI_API_KEY, GEMINI_MODEL=gemini-3.5-flash-lite, GEMINI_TIMEOUT_MS=90000, AI_MODE=live|mock, INTERNAL_API_KEY
 # zalo-bridge
 BACKEND_URL=http://localhost:8080/api/v1/internal/zalo/messages, INTERNAL_API_KEY, PORT=3001
 ```

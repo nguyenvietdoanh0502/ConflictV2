@@ -12,7 +12,6 @@ import viLocale from "@fullcalendar/react/locales/vi";
 import {
   Calendar as CalendarIcon,
   RefreshCw,
-  Settings,
   CalendarPlus,
   QrCode
 } from "lucide-react";
@@ -518,9 +517,8 @@ export default function CalendarView({ onOpenSettings }) {
           slotMinTime="07:00:00"
           slotMaxTime="23:00:00"
           slotDuration="01:00:00"
-          slotLabelInterval="01:00:00"
+          slotHeaderInterval="01:00:00"
           slotHeaderContent={renderSlotHeaderContent}
-          slotLabelContent={renderSlotHeaderContent}
           allDaySlot={false}
           slotEventOverlap={false}
           nowIndicator={true}

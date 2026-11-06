@@ -547,4 +547,101 @@ class ZaloMessageProcessorTest {
 
         verify(scheduleEventRepository, times(1)).save(any(ScheduleEvent.class));
     }
+
+    @Test
+    @DisplayName("Ảnh TKB có nhiều sự kiện qua nhiều ngày và khác loại không bị xóa nhầm và tự chuẩn hóa thời gian")
+    void testMultiEventImage_PreservesAllValidEventsAcrossDaysAndTypes() {
+        testUser.setFullName("Nguyễn Việt Doanh");
+        when(mappingRepository.findAllActiveByZaloGroupIdWithSubjectAndUser("zalo-group-101"))
+                .thenReturn(List.of(testMapping));
+        when(scheduleEventRepository.existsByUserIdAndSourceMessageId(any(UUID.class), anyString()))
+                .thenReturn(false);
+
+        Instant d1MorningStart = Instant.parse("2026-10-28T00:00:00Z");
+        Instant d1MorningEnd = Instant.parse("2026-10-28T02:35:00Z");
+        Instant d1AfternoonStart = Instant.parse("2026-10-28T05:30:00Z");
+        Instant d1AfternoonEnd = Instant.parse("2026-10-28T08:05:00Z");
+        Instant d2Start = Instant.parse("2026-10-29T00:00:00Z");
+        Instant d2End = Instant.parse("2026-10-29T02:35:00Z");
+        Instant d3ExamStart = Instant.parse("2026-10-30T07:15:00Z");
+
+        AiDetectedEvent cancelEvt = AiDetectedEvent.builder()
+                .eventType(EventType.CANCELLED_CLASS)
+                .title("Nghỉ học: Lập trình Web (Tiết 1-3)")
+                .startDatetime(d1MorningStart)
+                .endDatetime(d1MorningEnd)
+                .room("401-A1")
+                .build();
+
+        AiDetectedEvent makeupEvt = AiDetectedEvent.builder()
+                .eventType(EventType.MAKEUP_CLASS)
+                .title("Học bù: Lập trình Web (Tiết 7-9)")
+                .startDatetime(d1AfternoonStart)
+                .endDatetime(d1AfternoonEnd)
+                .room("305-A2")
+                .build();
+
+        AiDetectedEvent regularEvt = AiDetectedEvent.builder()
+                .eventType(EventType.REGULAR_CLASS)
+                .title("Lịch học: Lập trình Web (Tiết 1-3)")
+                .startDatetime(d2Start)
+                .endDatetime(d2End)
+                .room("401-A1")
+                .build();
+
+        // Giả lập 1 sự kiện có endDatetime bị ngược (start > end) để kiểm tra tự sửa không lỗi
+        AiDetectedEvent examEvtReversedEnd = AiDetectedEvent.builder()
+                .eventType(EventType.EXAM)
+                .title("Kiểm tra giữa kỳ: Lập trình Web")
+                .startDatetime(d3ExamStart)
+                .endDatetime(d3ExamStart.minus(30, ChronoUnit.MINUTES))
+                .room("502-A1")
+                .build();
+
+        AiAnalyzeResponse aiResponse = AiAnalyzeResponse.builder()
+                .academicAnnouncement(true)
+                .confidenceScore(0.96)
+                .detectedEvents(List.of(cancelEvt, makeupEvt, regularEvt, examEvtReversedEnd))
+                .build();
+
+        when(aiEngineClient.analyzeMessage(any(AiAnalyzeRequest.class))).thenReturn(aiResponse);
+        when(scheduleEventRepository.save(any(ScheduleEvent.class))).thenAnswer(inv -> {
+            ScheduleEvent evt = inv.getArgument(0);
+            evt.setId(UUID.randomUUID());
+            return evt;
+        });
+
+        ZaloProcessResultDTO result = messageProcessor.processMessage(
+                "zalo-group-101",
+                "msg-img-multi-events",
+                "Giảng viên",
+                "Lịch học và thi tuần tới",
+                "https://example.com/tkb-full.png",
+                "dummyBase64",
+                "image/png",
+                Instant.now()
+        );
+
+        assertTrue(result.isMatchedFilter());
+        assertEquals(4, result.getEventsCreated());
+        assertEquals(4, result.getCreatedEvents().size());
+        verify(scheduleEventRepository, times(4)).save(any(ScheduleEvent.class));
+    }
+
+    @Test
+    @DisplayName("Jackson FlexibleVnInstantDeserializer phân tích chuẩn các chuỗi thời gian thiếu offset +07:00")
+    void testFlexibleVnInstantDeserializer() throws Exception {
+        com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+        String json = """
+                {
+                  "event_type": "MAKEUP_CLASS",
+                  "title": "Học bù Lập trình Web",
+                  "start_datetime": "2026-10-28 07:00:00",
+                  "end_datetime": "2026-10-28T09:35:00"
+                }
+                """;
+        AiDetectedEvent parsed = mapper.readValue(json, AiDetectedEvent.class);
+        assertEquals(Instant.parse("2026-10-28T00:00:00Z"), parsed.getStartDatetime());
+        assertEquals(Instant.parse("2026-10-28T02:35:00Z"), parsed.getEndDatetime());
+    }
 }

@@ -894,6 +894,22 @@ export default function WhitelistManager({ onSelectGroupForSimulator, onNavigate
 
                           {/* Controls for this Zalo group */}
                           <div className="flex items-center gap-3 shrink-0">
+                            {onSelectGroupForSimulator && (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  onSelectGroupForSimulator(
+                                    mapping.zaloGroupId,
+                                    mapping.zaloGroupName
+                                  )
+                                }
+                                className="text-[11px] font-extrabold text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 px-2.5 py-1 rounded-xl border border-indigo-200 bg-white transition cursor-pointer"
+                                title="Chọn nhóm này để test gửi tin nhắn Zalo giả lập"
+                              >
+                                Test Zalo
+                              </button>
+                            )}
+
                             {/* Active switch */}
                             <button
                               onClick={() => handleToggle(mapping.id)}

@@ -54,11 +54,12 @@ services:
       - AI_MODE=live
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - GEMINI_MODEL=${GEMINI_MODEL:-gemini-3.5-flash-lite}
+      - GEMINI_TIMEOUT_MS=${GEMINI_TIMEOUT_MS:-90000}
       - INTERNAL_API_KEY=${INTERNAL_API_KEY:-unisync_internal_secret_key_2026}
     deploy:
       resources:
         limits:
-          memory: 192M
+          memory: 256M
     networks:
       - unisync-net
 

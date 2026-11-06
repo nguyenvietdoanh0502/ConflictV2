@@ -6,7 +6,7 @@ import { sessionManager } from "./sessionManager.js";
 const app = express();
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: "20mb" }));
 
 // 1. Health Check (Public, no internal API key required)
 app.get("/health", (req, res) => {

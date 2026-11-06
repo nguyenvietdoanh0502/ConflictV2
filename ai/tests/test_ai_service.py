@@ -15,7 +15,7 @@ def test_health_check():
     assert data["status"] == "ok"
     assert data["service"] == "unisync-ai-engine"
     assert data["mode"] == "mock"
-    assert data["model"] == "gemini-3.8-flash"
+    assert data["model"] == "gemini-3.5-flash-lite"
 
 
 def test_internal_api_key_unauthorized():
@@ -305,5 +305,77 @@ def test_enforce_single_shift_same_day_unlabelled():
     filtered_ca2 = enforce_single_shift([e1, e2], "Lê Minh Tuấn")
     assert len(filtered_ca2) == 1
     assert filtered_ca2[0].start_datetime == "2026-10-28T09:40:00+07:00"
+
+
+def test_detected_event_datetime_normalization_and_auto_repair():
+    """Kiểm tra chuẩn hóa chuỗi datetime thiếu +07:00 và tự sửa khi start > end."""
+    from app.schemas import DetectedEventItem
+
+    ev_missing_tz = DetectedEventItem(
+        event_type="REGULAR_CLASS",
+        title="Lịch học: Lập trình Web (Tiết 1-3)",
+        start_datetime="2026-10-28 07:00:00",
+        end_datetime="2026-10-28T09:35:00",
+        room="401-A1"
+    )
+    assert ev_missing_tz.start_datetime == "2026-10-28T07:00:00+07:00"
+    assert ev_missing_tz.end_datetime == "2026-10-28T09:35:00+07:00"
+
+    ev_reversed = DetectedEventItem(
+        event_type="MAKEUP_CLASS",
+        title="Học bù: Lập trình Web",
+        start_datetime="2026-10-28T13:20:00+07:00",
+        end_datetime="2026-10-28T12:30:00+07:00",
+        room="401-A1"
+    )
+    assert ev_reversed.start_datetime == "2026-10-28T13:20:00+07:00"
+    assert ev_reversed.end_datetime > ev_reversed.start_datetime
+
+
+def test_enforce_single_shift_preserves_multi_day_and_mixed_type_events():
+    """Kiểm tra bảng TKB nhiều sự kiện qua nhiều ngày hoặc khác loại không bị xóa nhầm."""
+    from app.services.gemini_service import enforce_single_shift
+    from app.schemas import DetectedEventItem
+
+    events = [
+        DetectedEventItem(
+            event_type="CANCELLED_CLASS",
+            title="Nghỉ học: Lập trình Web (Tiết 1-3)",
+            start_datetime="2026-10-28T07:00:00+07:00",
+            end_datetime="2026-10-28T09:35:00+07:00",
+            room="401-A1"
+        ),
+        DetectedEventItem(
+            event_type="MAKEUP_CLASS",
+            title="Học bù: Lập trình Web (Tiết 7-9)",
+            start_datetime="2026-10-28T12:30:00+07:00",
+            end_datetime="2026-10-28T15:05:00+07:00",
+            room="305-A2"
+        ),
+        DetectedEventItem(
+            event_type="REGULAR_CLASS",
+            title="Lịch học: Lập trình Web (Tiết 1-3)",
+            start_datetime="2026-10-29T07:00:00+07:00",
+            end_datetime="2026-10-29T09:35:00+07:00",
+            room="401-A1"
+        ),
+        DetectedEventItem(
+            event_type="EXAM",
+            title="Kiểm tra giữa kỳ: Lập trình Web",
+            start_datetime="2026-10-29T14:15:00+07:00",
+            end_datetime="2026-10-29T16:00:00+07:00",
+            room="502-A1"
+        ),
+        DetectedEventItem(
+            event_type="DEADLINE",
+            title="Hạn nộp bài tập lớn: Lập trình Web",
+            start_datetime="2026-10-30T23:59:00+07:00",
+            end_datetime="2026-10-30T23:59:00+07:00"
+        ),
+    ]
+
+    filtered = enforce_single_shift(events, "Nguyễn Việt Doanh")
+    assert len(filtered) == 5
+
 
 

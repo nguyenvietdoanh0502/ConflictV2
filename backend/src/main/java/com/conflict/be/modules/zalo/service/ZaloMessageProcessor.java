@@ -182,7 +182,32 @@ public class ZaloMessageProcessor {
                     aiResponse.getDetectedEvents(), studentName);
 
             for (AiDetectedEvent detected : eventsToProcess) {
+                if (detected == null || detected.getStartDatetime() == null) {
+                    log.warn("Skipping detected event with null startDatetime: {}", detected);
+                    continue;
+                }
+
                 EventType type = detected.getEventType() != null ? detected.getEventType() : EventType.MAKEUP_CLASS;
+                Instant startDatetime = detected.getStartDatetime();
+                Instant endDatetime = detected.getEndDatetime();
+                if (endDatetime == null || endDatetime.isBefore(startDatetime)) {
+                    endDatetime = (type == EventType.DEADLINE)
+                            ? startDatetime
+                            : startDatetime.plus(155, ChronoUnit.MINUTES);
+                }
+
+                String safeTitle = truncate(
+                        detected.getTitle() != null && !detected.getTitle().isBlank()
+                                ? detected.getTitle().trim()
+                                : mapping.getSubject().getName(),
+                        250
+                );
+                String safeRoom = truncate(
+                        detected.getRoom() != null && !detected.getRoom().isBlank()
+                                ? detected.getRoom().trim()
+                                : mapping.getSubject().getDefaultRoom(),
+                        95
+                );
 
                 boolean isCancellation = (type == EventType.CANCELLED_CLASS);
                 boolean isRoomChange = (type == EventType.ROOM_CHANGE);
@@ -201,8 +226,8 @@ public class ZaloMessageProcessor {
                 ScheduleEvent matchedEvent = findMatchingExistingEvent(
                         user,
                         mapping.getSubject(),
-                        detected.getStartDatetime(),
-                        detected.getEndDatetime()
+                        startDatetime,
+                        endDatetime
                 );
 
                 if (isCancellation) {
@@ -238,13 +263,13 @@ public class ZaloMessageProcessor {
                         ScheduleEvent newCancelEvent = ScheduleEvent.builder()
                                 .user(user)
                                 .subject(mapping.getSubject())
-                                .title(detected.getTitle() != null ? detected.getTitle() : ("Nghỉ học: " + mapping.getSubject().getName()))
+                                .title(detected.getTitle() != null && !detected.getTitle().isBlank()
+                                        ? safeTitle
+                                        : truncate("Nghỉ học: " + mapping.getSubject().getName(), 250))
                                 .eventType(EventType.CANCELLED_CLASS)
-                                .startDatetime(detected.getStartDatetime())
-                                .endDatetime(detected.getEndDatetime())
-                                .room(detected.getRoom() != null && !detected.getRoom().isBlank()
-                                        ? detected.getRoom()
-                                        : mapping.getSubject().getDefaultRoom())
+                                .startDatetime(startDatetime)
+                                .endDatetime(endDatetime)
+                                .room(safeRoom)
                                 .source(EventSource.ZALO_AI)
                                 .status(EventStatus.PENDING_REVIEW)
                                 .aiConfidence(aiResponse.getConfidenceScore())
@@ -264,9 +289,7 @@ public class ZaloMessageProcessor {
                 } else if (isRoomChange) {
                     // YÊU CẦU 2: với sự kiện đổi phòng học:
                     // "không sinh sự kiện mới, chỉ update lại sự kiện cũ và đưa sự kiện vào trạng thái chờ duyệt"
-                    String newRoom = detected.getRoom() != null && !detected.getRoom().isBlank()
-                            ? detected.getRoom().trim()
-                            : mapping.getSubject().getDefaultRoom();
+                    String newRoom = safeRoom;
 
                     if (matchedEvent != null) {
                         if (matchedEvent.getOriginalRoom() == null) {
@@ -296,10 +319,12 @@ public class ZaloMessageProcessor {
                         ScheduleEvent newRoomEvent = ScheduleEvent.builder()
                                 .user(user)
                                 .subject(mapping.getSubject())
-                                .title(detected.getTitle() != null ? detected.getTitle() : ("Đổi phòng: " + mapping.getSubject().getName()))
+                                .title(detected.getTitle() != null && !detected.getTitle().isBlank()
+                                        ? safeTitle
+                                        : truncate("Đổi phòng: " + mapping.getSubject().getName(), 250))
                                 .eventType(EventType.REGULAR_CLASS)
-                                .startDatetime(detected.getStartDatetime())
-                                .endDatetime(detected.getEndDatetime())
+                                .startDatetime(startDatetime)
+                                .endDatetime(endDatetime)
                                 .room(newRoom)
                                 .source(EventSource.ZALO_AI)
                                 .status(EventStatus.PENDING_REVIEW)
@@ -324,13 +349,11 @@ public class ZaloMessageProcessor {
                             .user(user)
                             .subject(mapping.getSubject())
                             .relatedEvent(lastCancelledOldEvent)
-                            .title(detected.getTitle())
+                            .title(safeTitle)
                             .eventType(type)
-                            .startDatetime(detected.getStartDatetime())
-                            .endDatetime(detected.getEndDatetime())
-                            .room(detected.getRoom() != null && !detected.getRoom().isBlank()
-                                    ? detected.getRoom()
-                                    : mapping.getSubject().getDefaultRoom())
+                            .startDatetime(startDatetime)
+                            .endDatetime(endDatetime)
+                            .room(safeRoom)
                             .source(EventSource.ZALO_AI)
                             .status(EventStatus.PENDING_REVIEW)
                             .aiConfidence(aiResponse.getConfidenceScore())
@@ -505,10 +528,8 @@ public class ZaloMessageProcessor {
     }
 
     /**
-     * Lọc danh sách sự kiện từ AI sao cho tuyệt đối không được xếp cả 2 ca vào lịch học.
-     * 1. Kiểm tra nhãn rõ ràng: Ca 1 / Ca 2 (kíp 1 / kíp 2 / nhóm 1 / nhóm 2).
-     * 2. Gom nhóm theo ngày học: nếu cùng 1 ngày có 2 sự kiện học với giờ bắt đầu khác nhau,
-     *    sự kiện sớm hơn là Ca 1, sự kiện muộn hơn là Ca 2, chỉ giữ lại đúng ca của sinh viên.
+     * Lọc danh sách sự kiện từ AI sao cho không xếp trùng cả 2 ca học (Ca 1 và Ca 2) trong cùng một ngày,
+     * đồng thời giữ nguyên toàn bộ các sự kiện ở các ngày khác hoặc các sự kiện khác loại (báo nghỉ, đổi phòng, thi, deadline).
      */
     public static List<AiDetectedEvent> filterEventsForSingleShift(List<AiDetectedEvent> events, String studentName) {
         if (events == null || events.size() <= 1) {
@@ -516,12 +537,16 @@ public class ZaloMessageProcessor {
         }
 
         int targetShift = determineStudentShift(studentName);
+        java.util.Set<AiDetectedEvent> eventsToDrop = new java.util.HashSet<>();
 
-        // 1. Kiểm tra nhãn rõ ràng: Ca 1 / Ca 2
+        // 1. Kiểm tra nhãn rõ ràng: Ca 1 / Ca 2 (kíp 1 / kíp 2 / nhóm 1 / nhóm 2)
         boolean hasCa1 = false;
         boolean hasCa2 = false;
 
         for (AiDetectedEvent e : events) {
+            if (e == null) {
+                continue;
+            }
             String combined = ((e.getTitle() != null ? e.getTitle() : "") + " "
                     + (e.getNote() != null ? e.getNote() : "")).toLowerCase();
             if (CA1_PATTERN.matcher(combined).find()) {
@@ -536,58 +561,62 @@ public class ZaloMessageProcessor {
             log.info("Phát hiện 2 ca trong thông báo học vụ (theo nhãn). Sinh viên '{}' được xếp vào Ca {} (A-L: Ca 1, M-Z: Ca 2)",
                     studentName, targetShift);
 
-            List<AiDetectedEvent> filtered = new ArrayList<>();
             for (AiDetectedEvent e : events) {
+                if (e == null) {
+                    continue;
+                }
                 String combined = ((e.getTitle() != null ? e.getTitle() : "") + " "
                         + (e.getNote() != null ? e.getNote() : "")).toLowerCase();
                 boolean isOtherShift = (targetShift == 1)
                         ? CA2_PATTERN.matcher(combined).find()
                         : CA1_PATTERN.matcher(combined).find();
 
-                if (!isOtherShift) {
-                    filtered.add(e);
+                if (isOtherShift) {
+                    eventsToDrop.add(e);
                 }
             }
-            if (!filtered.isEmpty()) {
-                return filtered;
-            }
         }
 
-        // 2. Gom nhóm theo ngày học (áp dụng cho ảnh TKB hoặc thông báo không ghi chữ 'Ca 1'/'Ca 2')
-        java.util.Map<LocalDate, List<AiDetectedEvent>> eventsByDate = new java.util.LinkedHashMap<>();
+        // 2. Gom nhóm theo (Ngày học + Loại sự kiện) chỉ cho REGULAR_CLASS và MAKEUP_CLASS
+        // Khi cùng 1 ngày có ĐÚNG 2 sự kiện cùng loại REGULAR_CLASS/MAKEUP_CLASS với giờ bắt đầu khác nhau,
+        // coi đó là 2 ca (Ca 1 sớm, Ca 2 muộn) của cùng buổi học và giữ lại ca của sinh viên.
+        // Không bao giờ xóa sự kiện CANCELLED_CLASS, ROOM_CHANGE, EXAM, DEADLINE hoặc ngày có > 2 sự kiện riêng biệt.
+        java.util.Map<String, List<AiDetectedEvent>> classEventsByDateAndType = new java.util.LinkedHashMap<>();
         for (AiDetectedEvent e : events) {
-            if (e.getStartDatetime() != null) {
-                LocalDate date = e.getStartDatetime().atZone(ZoneId.of("Asia/Ho_Chi_Minh")).toLocalDate();
-                eventsByDate.computeIfAbsent(date, k -> new ArrayList<>()).add(e);
+            if (e == null || eventsToDrop.contains(e) || e.getStartDatetime() == null) {
+                continue;
             }
+            EventType type = e.getEventType() != null ? e.getEventType() : EventType.MAKEUP_CLASS;
+            if (type != EventType.REGULAR_CLASS && type != EventType.MAKEUP_CLASS) {
+                continue;
+            }
+            String combined = ((e.getTitle() != null ? e.getTitle() : "") + " "
+                    + (e.getNote() != null ? e.getNote() : "")).toLowerCase();
+            if (CA1_PATTERN.matcher(combined).find() || CA2_PATTERN.matcher(combined).find()) {
+                continue;
+            }
+            LocalDate date = e.getStartDatetime().atZone(ZoneId.of("Asia/Ho_Chi_Minh")).toLocalDate();
+            String key = date + "|" + type.name();
+            classEventsByDateAndType.computeIfAbsent(key, k -> new ArrayList<>()).add(e);
         }
 
-        java.util.Set<AiDetectedEvent> eventsToDrop = new java.util.HashSet<>();
-        for (java.util.Map.Entry<LocalDate, List<AiDetectedEvent>> entry : eventsByDate.entrySet()) {
+        for (java.util.Map.Entry<String, List<AiDetectedEvent>> entry : classEventsByDateAndType.entrySet()) {
             List<AiDetectedEvent> dayEvents = entry.getValue();
-            if (dayEvents.size() >= 2) {
+            if (dayEvents.size() == 2) {
                 dayEvents.sort(java.util.Comparator.comparing(AiDetectedEvent::getStartDatetime));
                 Instant firstStart = dayEvents.get(0).getStartDatetime();
-                boolean hasDifferentPeriods = dayEvents.stream()
-                        .anyMatch(ev -> !ev.getStartDatetime().equals(firstStart));
+                boolean hasDifferentPeriods = !dayEvents.get(1).getStartDatetime().equals(firstStart);
 
                 if (hasDifferentPeriods) {
                     AiDetectedEvent earlyShift = dayEvents.get(0);
                     AiDetectedEvent lateShift = dayEvents.get(1);
 
-                    log.info("Phát hiện 2 dòng lịch học chung 1 ngày {} (khác tiết): Sớm lúc {}, Muộn lúc {}. Xếp Ca {} cho '{}'",
+                    log.info("Phát hiện 2 ca lịch học chung nhóm {} (khác tiết): Sớm lúc {}, Muộn lúc {}. Xếp Ca {} cho '{}'",
                             entry.getKey(), earlyShift.getStartDatetime(), lateShift.getStartDatetime(), targetShift, studentName);
                     if (targetShift == 1) {
-                        // User tên A-L: giữ dòng có tiết sớm hơn (Ca 1), bỏ tất cả các dòng muộn hơn
-                        for (int i = 1; i < dayEvents.size(); i++) {
-                            eventsToDrop.add(dayEvents.get(i));
-                        }
+                        eventsToDrop.add(lateShift);
                     } else {
-                        // User tên M-Z: giữ dòng có tiết muộn hơn (Ca 2), bỏ dòng sớm hơn
                         eventsToDrop.add(earlyShift);
-                        for (int i = 2; i < dayEvents.size(); i++) {
-                            eventsToDrop.add(dayEvents.get(i));
-                        }
                     }
                 }
             }
@@ -596,13 +625,26 @@ public class ZaloMessageProcessor {
         if (!eventsToDrop.isEmpty()) {
             List<AiDetectedEvent> filtered = new ArrayList<>();
             for (AiDetectedEvent e : events) {
-                if (!eventsToDrop.contains(e)) {
+                if (e != null && !eventsToDrop.contains(e)) {
                     filtered.add(e);
                 }
             }
-            return filtered;
+            if (!filtered.isEmpty()) {
+                return filtered;
+            }
         }
 
         return events;
+    }
+
+    private static String truncate(String value, int maxLength) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        if (trimmed.length() <= maxLength) {
+            return trimmed;
+        }
+        return trimmed.substring(0, maxLength);
     }
 }

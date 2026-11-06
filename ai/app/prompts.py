@@ -13,13 +13,13 @@ VIETNAMESE_WEEKDAYS = {
 
 
 def _build_calendar_reference(base_dt: datetime) -> str:
-    """Tạo bảng tra cứu ngày tháng trong 14 ngày tới để hỗ trợ LLM tính ngày chuẩn 100%."""
+    """Tạo bảng tra cứu ngày tháng trong tuần hiện tại và 28 ngày tới để hỗ trợ LLM tính ngày chuẩn 100%."""
     lines = []
     weekday_name = VIETNAMESE_WEEKDAYS[base_dt.weekday()]
     lines.append(f"Hôm nay (mốc gửi tin): {weekday_name}, ngày {base_dt.strftime('%d/%m/%Y')}")
-    lines.append("Lịch tham chiếu 14 ngày tới:")
+    lines.append("Lịch tham chiếu các ngày tới:")
 
-    for i in range(1, 15):
+    for i in range(1, 29):
         next_dt = base_dt + timedelta(days=i)
         w_name = VIETNAMESE_WEEKDAYS[next_dt.weekday()]
         label = ""
@@ -93,24 +93,24 @@ Nhiệm vụ của bạn là đọc các tin nhắn chat trong nhóm Zalo lớp 
      - Ví dụ: Thấy Tiết BĐ = 7, Số tiết = 3 -> Dải tiết là Tiết 7-9 (12:30 – 15:05).
      - Ví dụ: Thấy Tiết BĐ = 10, Số tiết = 3 -> Dải tiết là Tiết 10-12 (15:10 – 17:45).
      - Ví dụ: Thấy Tiết BĐ = 1, Số tiết = 2 -> Dải tiết là Tiết 1-2 (07:00 – 08:40).
-  3. Kết hợp thông tin môn học (`subject_name`) để bóc tách đúng dòng của môn học đó.
+  3. Kết hợp thông tin môn học (`subject_name`) để bóc tách đầy đủ tất cả các dòng/buổi học/sự kiện học vụ có trong ảnh. Nếu bảng thời khóa biểu hoặc thông báo trong ảnh có NHIỀU ngày học, NHIỀU tuần hoặc NHIỀU sự kiện khác nhau, BẮT BUỘC phải bóc tách ĐẦY ĐỦ từng sự kiện vào danh sách `detected_events` (không được bỏ sót bất kỳ ngày học hay sự kiện nào).
   4. Nếu hình ảnh KHÔNG chứa thông tin học vụ (ảnh meme, đồ ăn, phong cảnh...), hãy đặt `is_academic_announcement = false` và `detected_events = []`.
 
-### QUY TẮC PHÂN CHIA CA HỌC (2 CA / NHÓM HỌC) - BẮT BUỘC TUÂN THỦ:
-- CÁCH NHẬN BIẾT 2 CA HỌC: Nếu trong hình ảnh hoặc tin nhắn xuất hiện 2 DÒNG LỊCH HỌC CHUNG 1 NGÀY (KHÁC TIẾT) (ví dụ: dòng 1 Tiết 1-3, dòng 2 Tiết 4-6; hoặc dòng 1 Tiết BĐ 1, dòng 2 Tiết BĐ 4; hoặc ca sáng và ca chiều) -> ĐÓ LÀ 2 CA HỌC!
+### QUY TẮC PHÂN CHIA CA HỌC (2 CA / NHÓM HỌC TRONG CÙNG 1 NGÀY) - BẮT BUỘC TUÂN THỦ:
+- CÁCH NHẬN BIẾT 2 CA HỌC TRONG CÙNG 1 NGÀY: Nếu trong cùng một ngày học xuất hiện 2 DÒNG LỊCH HỌC CỦA CÙNG BUỔI HỌC (KHÁC TIẾT, ví dụ: dòng 1 Tiết 1-3, dòng 2 Tiết 4-6; hoặc Ca 1 và Ca 2 của cùng ngày hôm đó) -> ĐÓ LÀ 2 CA HỌC CỦA NGÀY ĐÓ!
   + Dòng có tiết bắt đầu sớm hơn (tiết nhỏ hơn) = Ca 1 (Ca sớm).
   + Dòng có tiết bắt đầu muộn hơn (tiết lớn hơn) = Ca 2 (Ca muộn).
-- CHỈ LẤY 1 CA THEO TÊN CỦA USER:
+- CHỈ LẤY 1 CA THEO TÊN CỦA USER ĐỐI VỚI NGÀY CHIA 2 CA:
   1. Bạn sẽ nhận được `student_name` (Tên Zalo / Họ tên của sinh viên).
   2. Xác định chữ cái đầu trong Tên của sinh viên (ưu tiên từ cuối cùng là Tên trong họ tên tiếng Việt sau khi bỏ dấu, ví dụ: "Nguyễn Việt Doanh" -> Tên "Doanh" -> chữ cái 'D'; "Trần Văn Nam" -> Tên "Nam" -> chữ cái 'N'; "Lê Văn Đạt" -> 'D'; "Ánh" -> 'A'; "Linh" -> 'L'; "Minh Tuấn" -> 'T').
   3. Quy tắc xếp ca:
-     - Nếu chữ cái đầu của Tên thuộc khoảng từ `A` đến `L` (A, Ă, Â, B, C, D, Đ, E, Ê, F, G, H, I, J, K, L): Xếp sinh viên vào **Ca 1** (Dòng có tiết bắt đầu sớm hơn trong ngày).
-     - Nếu chữ cái đầu của Tên thuộc khoảng từ `M` đến `Z` (M, N, O, Ô, Ơ, P, Q, R, S, T, U, Ư, V, X, Y): Xếp sinh viên vào **Ca 2** (Dòng có tiết bắt đầu muộn hơn trong ngày).
-- TUYỆT ĐỐI KHÔNG ĐƯỢC XẾP CẢ 2 CA VÀO LỊCH HỌC:
-  + Danh sách `detected_events` PHẢI CHỈ CHỨA DUY NHẤT 1 SỰ KIỆN tương ứng với ca học của sinh viên.
-  + KHÔNG ĐƯỢC trả về cả Ca 1 và Ca 2 trong `detected_events`. Phải loại bỏ hoàn toàn ca còn lại!
-- Tiêu đề `title` ghi rõ ca và tiết, ví dụ: "Lịch học: [Tên môn] - Ca 1 (Tiết 1-3)".
-- Ghi chú vào trường `note`: `"Xếp Ca 1 (A-L) theo tên sinh viên"` hoặc `"Xếp Ca 2 (M-Z) theo tên sinh viên"`.
+     - Nếu chữ cái đầu của Tên thuộc khoảng từ `A` đến `L` (A, Ă, Â, B, C, D, Đ, E, Ê, F, G, H, I, J, K, L): Xếp sinh viên vào **Ca 1** (Dòng có tiết bắt đầu sớm hơn trong ngày đó).
+     - Nếu chữ cái đầu của Tên thuộc khoảng từ `M` đến `Z` (M, N, O, Ô, Ơ, P, Q, R, S, T, U, Ư, V, X, Y): Xếp sinh viên vào **Ca 2** (Dòng có tiết bắt đầu muộn hơn trong ngày đó).
+- LƯU Ý QUAN TRỌNG KHI ẢNH CÓ NHIỀU SỰ KIỆN / NHIỀU NGÀY:
+  + Trong mỗi ngày có chia 2 ca (Ca 1 và Ca 2), tuyệt đối chỉ giữ lại 1 ca đúng với tên sinh viên và loại bỏ ca còn lại của ngày hôm đó.
+  + NHƯNG nếu ảnh hoặc tin nhắn có nhiều sự kiện diễn ra ở CÁC NGÀY KHÁC NHAU (ví dụ: Thứ 2, Thứ 4, Thứ 6, hoặc lịch học nhiều tuần) hoặc CÁC LOẠI SỰ KIỆN KHÁC NHAU (ví dụ: vừa có lịch báo nghỉ `CANCELLED_CLASS`, vừa có lịch học bù `MAKEUP_CLASS`, kiểm tra `EXAM`, hạn nộp `DEADLINE`), bạn PHẢI TRÍCH XUẤT ĐẦY ĐỦ TẤT CẢ các sự kiện đó vào `detected_events`!
+- Tiêu đề `title` ghi rõ ca và tiết (nếu chia ca), ví dụ: "Lịch học: [Tên môn] - Ca 1 (Tiết 1-3)".
+- Ghi chú vào trường `note`: `"Xếp Ca 1 (A-L) theo tên sinh viên"` hoặc `"Xếp Ca 2 (M-Z) theo tên sinh viên"` khi áp dụng phân ca.
 """
 
 
@@ -172,14 +172,10 @@ def build_user_prompt(
     )
 
     shift_notice = (
-        f"\n* CHỈ THỊ PHÂN CA BẮT BUỘC (QUAN TRỌNG NHẤT): "
-        f"Theo quy tắc: nếu thấy 2 dòng lịch học chung 1 ngày (khác tiết) thì đó là 2 ca học! "
-        f"Dòng có tiết bắt đầu sớm hơn là Ca 1, dòng có tiết bắt đầu muộn hơn là Ca 2. "
-        f"Sinh viên nhận lịch là '{student_info}' (Tên gọi: '{given_name}', chữ cái đầu '{base_letter}' thuộc {group_label}). "
-        f"Do đó, sinh viên này ĐƯỢC CHỈ ĐỊNH HỌC {shift_label}. "
-        f"Nếu trong ảnh hoặc tin nhắn xuất hiện 2 dòng lịch học chung 1 ngày (khác tiết): "
-        f"BẠN BẮT BUỘC CHỈ ĐƯỢC TRÍCH XUẤT DUY NHẤT 1 SỰ KIỆN CỦA {shift_label}. "
-        f"TUYỆT ĐỐI KHÔNG ĐƯỢC XẾP CẢ 2 CA / 2 DÒNG VÀO LỊCH HỌC!"
+        f"\n* CHỈ THỊ PHÂN CA & ĐA SỰ KIỆN (QUAN TRỌNG NHẤT): "
+        f"Sinh viên nhận lịch là '{student_info}' (Tên gọi: '{given_name}', chữ cái đầu '{base_letter}' thuộc {group_label} -> học {shift_label}). "
+        f"1) Nếu hình ảnh/tin nhắn có NHIỀU ngày học hoặc NHIỀU sự kiện khác nhau (nghỉ học, học bù, đổi phòng, lịch học các ngày trong tuần/tháng, kiểm tra, deadline), BẠN BẮT BUỘC PHẢI BÓC TÁCH ĐẦY ĐỦ TẤT CẢ CÁC SỰ KIỆN ĐÓ! "
+        f"2) Riêng trong cùng 1 ngày mà có 2 dòng lịch học thực hành/chia ca (Ca 1 tiết sớm và Ca 2 tiết muộn trong cùng ngày đó), chỉ giữ lại đúng 1 dòng của {shift_label} cho ngày đó (loại bỏ ca còn lại trong cùng ngày đó)."
     )
 
     text_section = f'Nội dung tin nhắn văn bản / caption đi kèm:\n"""{clean_text}"""' if clean_text else "Tin nhắn không có văn bản đi kèm (chỉ gửi hình ảnh)."

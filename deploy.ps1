@@ -72,8 +72,9 @@ if ($Target -eq "ai" -or $Target -eq "all") {
     Write-Host "[2/3] Dang push image len Docker Hub..." -ForegroundColor Green
     docker push "$DockerUser/unisync-ai:latest"
     
-    Write-Host "[3/3] Dang cap nhat va khoi dong lai AI tren EC2..." -ForegroundColor Green
-    Run-SshCommand "sudo docker compose -f docker-compose.prod.yml pull ai-engine && sudo docker compose -f docker-compose.prod.yml up -d ai-engine"
+    Write-Host "[3/3] Dang dong bo docker-compose.prod.yml, .env va khoi dong lai AI tren EC2..." -ForegroundColor Green
+    scp -i "$PemKey" -o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL docker-compose.prod.yml ubuntu@${Ec2Ip}:/home/ubuntu/unisync/docker-compose.prod.yml
+    Run-SshCommand "grep -q '^GEMINI_MODEL=' .env && sed -i 's/^GEMINI_MODEL=.*/GEMINI_MODEL=gemini-3.5-flash-lite/' .env || echo 'GEMINI_MODEL=gemini-3.5-flash-lite' >> .env; grep -q '^GEMINI_TIMEOUT_MS=' .env && sed -i 's/^GEMINI_TIMEOUT_MS=.*/GEMINI_TIMEOUT_MS=90000/' .env || echo 'GEMINI_TIMEOUT_MS=90000' >> .env; sudo docker compose -f docker-compose.prod.yml pull ai-engine && sudo docker compose -f docker-compose.prod.yml up -d ai-engine"
     Write-Host "[OK] AI Engine da duoc cap nhat thanh cong tren server!" -ForegroundColor Green
 }
 
